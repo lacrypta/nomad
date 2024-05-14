@@ -25,7 +25,7 @@ class NomadVM extends EventCaster {
   /**
    * Generate a pseudo-random string.
    *
-   * NOE: this is NOT cryptographically-secure, it simply calls {@link Math.random}.
+   * NOTE: this is NOT cryptographically-secure, it simply calls {@link Math.random}.
    *
    * @returns {string} - A pseudo-random string.
    * @private
@@ -1148,7 +1148,7 @@ class NomadVM extends EventCaster {
           }, timeout);
 
           blobURL = URL.createObjectURL(
-            new Blob([`"use strict";(${NomadVM.#workerRunner})();`], {
+            new Blob([`"use strict"; (${NomadVM.#workerRunner})();`], {
               type: 'application/javascript',
             }),
           );
