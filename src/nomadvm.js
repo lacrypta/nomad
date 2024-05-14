@@ -223,7 +223,7 @@ class NomadVM extends EventCaster {
   /**
    * Construct a new {@link NomadVM} instance, using the given name.
    *
-   * @param {string | null} name - The VM's name to use, or `null` to have one generated randomly.
+   * @param {?string} name - The VM's name to use, or `null` to have one generated randomly.
    * @throws {Error} If the given name already exists.
    */
   constructor(name = null) {
@@ -528,7 +528,7 @@ class NomadVM extends EventCaster {
    * {
    *   name: "create",
    *   namespace: <string>,
-   *   parent: <string | null>,
+   *   parent: <?string>,
    *   tunnel: <int>
    * }
    * ```
@@ -540,7 +540,7 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
    * @param {string} namespace - The namespace to create.
-   * @param {string | null} parent - The WW-side namespace to use as parent, or `null` if no parent is used.
+   * @param {?string} parent - The WW-side namespace to use as parent, or `null` if no parent is used.
    * @param {number} tunnel - The tunnel index to expect a response on.
    * @returns {void}
    * @private
@@ -915,7 +915,7 @@ class NomadVM extends EventCaster {
    *
    * @param {Function} resolve - The resolution callback.
    * @param {Function} reject - The rejection callback.
-   * @param {string | null} namespace - The WW-side namespace that will respond (or `null`, if not namespace-targeted).
+   * @param {?string} namespace - The WW-side namespace that will respond (or `null`, if not namespace-targeted).
    * @returns {number} The created tunnel's index.
    * @private
    */

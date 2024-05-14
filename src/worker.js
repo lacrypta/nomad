@@ -1302,7 +1302,7 @@ const workerRunner = () => {
    * @property {boolean} muted - Whether this namespace is muted for the host.
    * @property {Array<SimpleTunnelDescriptor>} tunnels - List of active tunnels in this namespace.
    * @property {Set<string>} subs - Set of sub-namespaces inheriting from this one.
-   * @property {string | null} sup - The parent namespace, or `null` if none.
+   * @property {?string} sup - The parent namespace, or `null` if none.
    */
 
   /**

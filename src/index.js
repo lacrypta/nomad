@@ -27,7 +27,7 @@ import { NomadVM } from './nomadvm.js';
  * @global
  * @property {Function} resolve - Resolution callback.
  * @property {Function} reject - Rejection callback.
- * @property {string | null} namespace - WW-side namespace handling the call.
+ * @property {?string} namespace - WW-side namespace handling the call.
  */
 
 /**
