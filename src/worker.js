@@ -168,7 +168,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimArrayBuffer = () => {
-    // TODO
+    // TODO: add shim for ArrayBuffer
   };
 
   /**
@@ -179,7 +179,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimAtomicsWaitAsync = () => {
-    // TODO
+    // TODO: add shim for Atomics.waitAsync
   };
 
   /**
@@ -190,7 +190,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimFinalizationRegistry = () => {
-    // TODO:
+    // TODO: add shim for FinalizationRegistry
   };
 
   /**
@@ -201,7 +201,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorConstructor = () => {
-    // TODO
+    // TODO: add shim for Iterator
   };
 
   /**
@@ -212,7 +212,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorFrom = () => {
-    // TODO
+    // TODO: add shim for Iterator.from
   };
 
   /**
@@ -223,7 +223,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeDrop = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.drop
   };
 
   /**
@@ -234,7 +234,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeEvery = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.every
   };
 
   /**
@@ -245,7 +245,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeFilter = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.filter
   };
 
   /**
@@ -256,7 +256,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeFind = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.find
   };
 
   /**
@@ -267,7 +267,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeFlatMap = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.flatMap
   };
 
   /**
@@ -278,7 +278,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeForEach = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.forEach
   };
 
   /**
@@ -289,7 +289,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeMap = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.map
   };
 
   /**
@@ -300,7 +300,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeReduce = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.reduce
   };
 
   /**
@@ -311,7 +311,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeSome = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.some
   };
 
   /**
@@ -322,7 +322,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeTake = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.take
   };
 
   /**
@@ -333,7 +333,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimIteratorPrototypeToArray = () => {
-    // TODO
+    // TODO: add shim for Iterator.prototype.toArray
   };
 
   /**
@@ -543,7 +543,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimWeakMap = () => {
-    // TODO
+    // TODO: add shim for WeakMap
   };
 
   /**
@@ -554,7 +554,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimWeakRef = () => {
-    // TODO
+    // TODO: add shim for WeakRef
   };
 
   /**
@@ -565,7 +565,7 @@ const workerRunner = () => {
    * @returns {void}
    */
   const shimWeakSet = () => {
-    // TODO
+    // TODO: add shim for WeakSet
   };
 
   // --------------------------------------------------------------------------------------------
