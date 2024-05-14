@@ -5,8 +5,8 @@
 
 // TODO: in order to have children being assimilated into parents, we need to unify the EventCasters used and segregate them internally so that one namespace does not get another one's events
 
-import { Dependency } from './dependency';
-import { NomadVM } from './nomadvm';
+import { Dependency } from './dependency.js';
+import { NomadVM } from './nomadvm.js';
 
 /**
  * The type of a Dependency primitive object.
