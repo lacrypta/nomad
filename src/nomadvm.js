@@ -122,7 +122,7 @@ class NomadVM extends EventCaster {
   static #castGlobal;
 
   static {
-    this.events = Object.freeze(
+    this.#events = Object.freeze(
       new EventCaster((protectedMethods) => {
         this.#castGlobal = protectedMethods.get('cast');
       }),
