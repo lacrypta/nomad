@@ -212,7 +212,7 @@ class Dependency {
    * Construct a new {@link Dependency} from the given {@link Function} instance.
    *
    * @param {Function} func - Function to use for constructing the {@link Dependency}.
-   * @param {string | null} fName - Name to use instead if given.
+   * @param {?string} fName - Name to use instead if given.
    * @returns {Dependency} The constructed {@link Dependency}.
    * @throws {Error} If the given argument is not a {@link Function}.
    * @throws {Error} If the given argument is an arrow function.
