@@ -1,10 +1,10 @@
 'use strict';
 
-import { Validation } from './validation';
-import { EventCaster } from './eventCaster';
-import { Dependency } from './dependency';
+import { Validation } from './validation.js';
+import { EventCaster } from './eventCaster.js';
+import { Dependency } from './dependency.js';
 
-import { workerRunner } from './worker';
+import { workerRunner } from './worker.js';
 
 /* global DependencyObject */
 /* global TunnelDescriptor */

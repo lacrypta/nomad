@@ -1,6 +1,6 @@
 'use strict';
 
-import { Validation } from './validation';
+import { Validation } from './validation.js';
 
 /* global DependencyObject */
 
