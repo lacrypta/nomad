@@ -1110,15 +1110,6 @@ const workerRunner = () => {
     }
 
     /**
-     * Regular expression all event names must adhere to.
-     *
-     * @type {RegExp}
-     * @private
-     * @see {@link EventCaster.#eventRegex} for a more detailed treatment.
-     */
-    static #eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
-
-    /**
      * Validate the given event name and return it if valid.
      *
      * @param {unknown} name - The event name to validate.
@@ -1128,23 +1119,15 @@ const workerRunner = () => {
      * @see {@link EventCaster.validateEvent} for a more detailed treatment.
      */
     static validateEvent(name) {
+      const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
       if ('string' !== typeof name) {
         throw new _Error('event name must be a string');
-      } else if (!WorkerEventCaster.#eventRegex.test(name)) {
-        throw new _Error(`event name must adhere to ${WorkerEventCaster.#eventRegex}`);
+      } else if (!eventRegex.test(name)) {
+        throw new _Error(`event name must adhere to ${eventRegex}`);
       }
 
       return name;
     }
-
-    /**
-     * Regular expression all event name filters must adhere to.
-     *
-     * @type {RegExp}
-     * @private
-     * @see {@link EventCaster.#filterRegex} for a more detailed treatment.
-     */
-    static #filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
 
     /**
      * Validate the given event name filter and return it if valid.
@@ -1156,10 +1139,11 @@ const workerRunner = () => {
      * @see {@link EventCaster.validateFilter} for a more detailed treatment.
      */
     static validateFilter(filter) {
+      const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
       if ('string' !== typeof filter) {
         throw new _Error('event name filter must be a string');
-      } else if (!WorkerEventCaster.#filterRegex.test(filter)) {
-        throw new _Error(`event name filter must adhere to ${WorkerEventCaster.#filterRegex}`);
+      } else if (!filterRegex.test(filter)) {
+        throw new _Error(`event name filter must adhere to ${filterRegex}`);
       } else if (-1 != filter.indexOf('**:**')) {
         throw new _Error('event name filter must not contain consecutive ** wildcards');
       }
