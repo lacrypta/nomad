@@ -1,0 +1,18 @@
+module.exports = {
+  clearMocks: true,
+  collectCoverage: true,
+  collectCoverageFrom: ['<rootDir>/src/**/*.js', '<rootDir>/test/unit/**/*.js'],
+  coveragePathIgnorePatterns: ['\\.test\\.js'],
+  coverageDirectory: '<rootDir>/dist/.coverage/unit',
+  coverageProvider: 'babel',
+  logHeapUsage: true,
+  passWithNoTests: true,
+  randomize: true,
+  resetModules: true,
+  restoreMocks: false,
+  rootDir: '..',
+  testEnvironment: 'node',
+  testMatch: ['<rootDir>/test/unit/**/*.test.js'],
+  verbose: true,
+  maxWorkers: 1,
+};
