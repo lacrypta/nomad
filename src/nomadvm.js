@@ -65,7 +65,7 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:{NAMESPACE}:create:ok(vm, parent)`: when a new namespace has been successfully created on VM `vm` using `parent` as its parent.
    * - `nomadvm:{NAME}:{NAMESPACE}:create:error(vm, parent, error)`: when a new namespace has failed to be created on VM `vm` using `parent` as its parent with error `error`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete(vm)`: when a namespace is being deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:delete:ok(vm)`: when a namespace has been successfully deleted from VM `vm`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:delete:ok(vm, deleted)`: when namespaces `deleted` have been successfully deleted from VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete:error(vm, error)`: when a namespace has failed to be deleted from VM `vm` with error `error`.
    * - `nomadvm:{NAME}:{NAMESPACE}:link(vm, target)`: when a namespace is being linked to the `target` one on VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:link:ok(vm, target)`: when a namespace has been successfully linked to the `target` one on VM `vm`.
@@ -1270,8 +1270,8 @@ class NomadVM extends EventCaster {
         this.#postDeleteMessage(
           this.#addTunnel(
             (deleted) => {
+              this.#castEvent(`${namespace}:delete:ok`, deleted);
               this.#rejectAllInNamespaces(deleted, new Error('deleting namespace'));
-              this.#castEvent(`${namespace}:delete:ok`);
               resolve(deleted);
             },
             (error) => {
@@ -1606,7 +1606,7 @@ class NomadVM extends EventCaster {
    */
   predefine(namespace, name, callback) {
     return new Promise((resolve, reject) => {
-      const idx = this.#predefined.length;
+      const idx = this.#predefined.push(null) - 1;
       this.#castEvent(`${namespace}:predefined:add`, name, callback, idx);
       try {
         if ('running' !== this.#state) {
@@ -1616,6 +1616,7 @@ class NomadVM extends EventCaster {
           namespace,
           this.#addTunnel(
             () => {
+              this.#predefined[idx] = callback;
               this.#castEvent(`${namespace}:predefined:add:ok`, name, callback, idx);
               resolve();
             },
