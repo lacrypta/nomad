@@ -857,6 +857,7 @@ class NomadVM extends EventCaster {
    * {
    *   name: "getDescendants",
    *   namespace: <string>,
+   *   depth: <int>,
    *   tunnel: <int>
    * }
    * ```
@@ -864,15 +865,17 @@ class NomadVM extends EventCaster {
    * Where:
    *
    * - `namespace` is the WW-side namespace to determine the descendants of.
+   * - `depth` is the maximum namespace depth to retrieve, `0` meaning unlimited.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
    * @param {string} namespace - The namespace to determine the descendants of.
+   * @param {number} depth - The maximum namespace depth to retrieve, or `0` for unlimited.
    * @param {number} tunnel - The tunnel index to expect a response on.
    * @returns {void}
    * @private
    */
-  #postGetDescendantsMessage = (namespace, tunnel) => {
-    this.#postJsonMessage({ name: 'getDescendants', namespace, tunnel });
+  #postGetDescendantsMessage = (namespace, depth, tunnel) => {
+    this.#postJsonMessage({ name: 'getDescendants', namespace, depth, tunnel });
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1473,16 +1476,21 @@ class NomadVM extends EventCaster {
    * List the given namespace's descendants.
    *
    * @param {string} namespace - Namespace to list the descendants of.
+   * @param {number} depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
    * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getDescendants(namespace) {
+  getDescendants(namespace, depth = null) {
     return new Promise((resolve, reject) => {
       try {
         Validation.namespace(namespace);
 
         this.#assertRunning();
 
-        this.#postGetDescendantsMessage(namespace, this.#addTunnel(resolve, reject));
+        this.#postGetDescendantsMessage(
+          namespace,
+          Validation.nonNegativeInteger(depth ?? 0),
+          this.#addTunnel(resolve, reject),
+        );
       } catch (e) {
         reject(e);
       }
@@ -1811,10 +1819,11 @@ class NomadVMNamespace {
   /**
    * List the wrapped namespace's descendants.
    *
+   * @param {number} depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
    * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getDescendants() {
-    return this.vm.getDescendants(this.namespace);
+  getDescendants(depth = null) {
+    return this.vm.getDescendants(this.namespace, depth);
   }
 
   /**
