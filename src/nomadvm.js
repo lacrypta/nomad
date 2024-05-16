@@ -1775,40 +1775,44 @@ class NomadVMNamespace {
     this.#namespace = namespace;
   }
 
+  get vm() {
+    return this.#vm;
+  }
+
   get namespace() {
     return this.#namespace;
   }
 
   link(target) {
-    return this.#vm.linkNamespaces(this.#namespace, target);
+    return this.vm.linkNamespaces(this.namespace, target);
   }
 
   unlink(target) {
-    return this.#vm.unlinkNamespaces(this.#namespace, target);
+    return this.vm.unlinkNamespaces(this.namespace, target);
   }
 
   mute() {
-    return this.#vm.muteNamespace(this.#namespace);
+    return this.vm.muteNamespace(this.namespace);
   }
 
   unmute() {
-    return this.#vm.unmuteNamespace(this.#namespace);
+    return this.vm.unmuteNamespace(this.namespace);
   }
 
   listInstalled() {
-    return this.#vm.listInstalled(this.#namespace);
+    return this.vm.listInstalled(this.namespace);
   }
 
   listLinksTo() {
-    return this.#vm.listLinksTo(this.#namespace);
+    return this.vm.listLinksTo(this.namespace);
   }
 
   listLinkedFrom() {
-    return this.#vm.listLinkedFrom(this.#namespace);
+    return this.vm.listLinkedFrom(this.namespace);
   }
 
   isMuted() {
-    return this.#vm.isMuted(this.#namespace);
+    return this.vm.isMuted(this.namespace);
   }
 
   getAncestors() {
@@ -1816,7 +1820,7 @@ class NomadVMNamespace {
   }
 
   getDescendants() {
-    return this.#vm.getDescendants(this.#namespace);
+    return this.vm.getDescendants(this.namespace);
   }
 
   getChildren() {
@@ -1824,19 +1828,19 @@ class NomadVMNamespace {
   }
 
   predefine(name, callback) {
-    return this.#vm.predefine(this.#namespace, name, callback);
+    return this.vm.predefine(this.namespace, name, callback);
   }
 
   install(dependency) {
-    return this.#vm.install(this.#namespace, dependency);
+    return this.vm.install(this.namespace, dependency);
   }
 
   execute(dependency, args = new Map()) {
-    return this.#vm.execute(this.#namespace, dependency, args);
+    return this.vm.execute(this.namespace, dependency, args);
   }
 
   installAll(dependencies) {
-    return this.#vm.installAll(this.#namespace, dependencies);
+    return this.vm.installAll(this.namespace, dependencies);
   }
 }
 
