@@ -261,6 +261,32 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
+   * Assert that the VM is currently in the "created" state.
+   *
+   * @returns {void}
+   * @throws {Error} If the VM is in any state other than "created".
+   */
+  #assertCreated() {
+    if ('created' !== this.#state) {
+      throw new Error("expected state to be 'created'");
+    }
+  }
+
+  /**
+   * Assert that the VM is currently in the "running" state.
+   *
+   * @returns {void}
+   * @throws {Error} If the VM is in any state other than "running".
+   */
+  #assertRunning() {
+    if ('running' !== this.#state) {
+      throw new Error("expected state to be 'running'");
+    }
+  }
+
+  // ----------------------------------------------------------------------------------------------
+
+  /**
    * Cast an event both from the static {@link EventCaster} at {@link NomadVM.events}, and from the current instance.
    *
    * @param {string} name - Event name to cast.
@@ -1096,9 +1122,7 @@ class NomadVM extends EventCaster {
     return new Promise((resolve, reject) => {
       this.#castEvent('start');
       try {
-        if ('created' !== this.#state) {
-          throw new Error("state mismatch --- should be 'created'");
-        }
+        this.#assertCreated();
         timeout = Validation.timeout(timeout);
         this.#state = 'booting';
         let blobURL;
@@ -1212,9 +1236,7 @@ class NomadVM extends EventCaster {
           Validation.parent(parent);
         }
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postCreateMessage(
           namespace,
@@ -1251,9 +1273,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postDeleteMessage(
           this.#addTunnel(
@@ -1289,9 +1309,7 @@ class NomadVM extends EventCaster {
         Validation.namespace(namespace);
         Validation.namespace(target);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postLinkMessage(
           namespace,
@@ -1328,9 +1346,7 @@ class NomadVM extends EventCaster {
 
       this.#castEvent(`${namespace}:unlink`, target);
       try {
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postUnlinkMessage(
           namespace,
@@ -1365,9 +1381,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postMuteMessage(
           namespace,
@@ -1401,9 +1415,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postUnmuteMessage(
           namespace,
@@ -1433,9 +1445,7 @@ class NomadVM extends EventCaster {
   listNamespaces() {
     return new Promise((resolve, reject) => {
       try {
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postListNamespacesMessage(this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1455,9 +1465,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postListInstalledMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1477,9 +1485,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postListLinksToMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1499,9 +1505,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postListLinkedFromMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1521,9 +1525,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postIsMutedMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1545,9 +1547,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postGetAncestorsMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1567,9 +1567,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postGetDescendantsMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1589,9 +1587,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postGetChildrenMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -1617,9 +1613,7 @@ class NomadVM extends EventCaster {
       try {
         Validation.namespace(namespace);
 
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
         this.#postPredefineMessage(
           namespace,
           this.#addTunnel(
@@ -1660,9 +1654,7 @@ class NomadVM extends EventCaster {
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only install Dependency');
         }
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postInstallMessage(
           namespace,
@@ -1703,9 +1695,7 @@ class NomadVM extends EventCaster {
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only execute Dependency');
         }
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
+        this.#assertRunning();
 
         this.#postExecuteMessage(
           namespace,
