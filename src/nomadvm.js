@@ -1647,16 +1647,38 @@ class NomadVM extends EventCaster {
   }
 }
 
+/**
+ * A {@link NomadVM} namespace interface wrapper object.
+ *
+ */
 class NomadVMNamespace {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
   }
 
+  /**
+   * The {@link NomadVM} instance to wrap.
+   *
+   * @type {NomadVM}
+   */
   #vm;
 
+  /**
+   * The namespace to wrap for.
+   *
+   * @type {string}
+   */
   #namespace;
 
+  /**
+   * Create a new {@link NomadVMNamespace} wrapper around the given {@link NomadVM} for the given namespace.
+   *
+   * @param {NomadVM} vm - The VM instance to wrap.
+   * @param {string} namespace - The namespace to wrap for.
+   * @throws {Error} If the given VM is not a {@link NomadVM} instance.
+   * @throws {Error} If the given namespace is not a string.
+   */
   constructor(vm, namespace) {
     if (!(vm instanceof NomadVM)) {
       throw new Error('expected vm to be an instance of NomadVM');
@@ -1668,62 +1690,171 @@ class NomadVMNamespace {
     this.#namespace = namespace;
   }
 
+  /**
+   * Getter used to retrieve the wrapped {@link NomadVM}.
+   *
+   * @type {NomadVM}
+   */
   get vm() {
     return this.#vm;
   }
 
+  /**
+   * Getter used to retrieve the wrapped namespace.
+   *
+   * @type {string}
+   */
   get namespace() {
     return this.#namespace;
   }
 
+  /**
+   * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped namespace.
+   *
+   * @param {unknown} filter - Event name filter to assign the listener to.
+   * @param {unknown} callback - Callback to call on a matching event being cast.
+   * @returns {this} `this`, for chaining.
+   * @see {@link NomadVM.onThis} for additional exceptions thrown.
+   */
+  onThis(filter, callback) {
+    this.vm.onThis(`${this.namespace}:${filter}`, callback);
+    return this;
+  }
+
+  /**
+   * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped namespace, and removed upon being called once.
+   *
+   * @param {unknown} filter - Event name filter to assign the listener to.
+   * @param {unknown} callback - Callback to call on a matching event being cast.
+   * @returns {this} `this`, for chaining.
+   * @see {@link NomadVM.onThis} for additional exceptions thrown.
+   */
+  onceThis(filter, callback) {
+    this.vm.onceThis(`${this.namespace}:${filter}`, callback);
+    return this;
+  }
+
+  /**
+   * Link the wrapped namespace to another, so that events cast on the wrapped namespace are also handled in the other.
+   *
+   * @param {string} target - "Destination" namespace to use.
+   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   */
   link(target) {
     return this.vm.linkNamespaces(this.namespace, target);
   }
 
+  /**
+   * Unlink the wrapped namespace from another, so that events cast on the wrapped namespace are no longer handled in the other.
+   *
+   * @param {string} target - "Destination" namespace to use.
+   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   */
   unlink(target) {
     return this.vm.unlinkNamespaces(this.namespace, target);
   }
 
+  /**
+   * Mute the wrapped namespace, so that events cast on it are no longer propagated to the wrapped VM.
+   *
+   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   */
   mute() {
     return this.vm.muteNamespace(this.namespace);
   }
 
+  /**
+   * Unmute the wrapped namespace, so that events cast on it are propagated to wrapped VM.
+   *
+   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   */
   unmute() {
     return this.vm.unmuteNamespace(this.namespace);
   }
 
+  /**
+   * List the dependencies (user-level and predefined) installed on the wrapped namespace or its ancestors.
+   *
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   */
   listInstalled() {
     return this.vm.listInstalled(this.namespace);
   }
 
+  /**
+   * List the namespaces the wrapped one is linked to.
+   *
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   */
   listLinksTo() {
     return this.vm.listLinksTo(this.namespace);
   }
 
+  /**
+   * List the namespaces that link to the wrapped one.
+   *
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   */
   listLinkedFrom() {
     return this.vm.listLinkedFrom(this.namespace);
   }
 
+  /**
+   * Determine whether the wrapped namespace is muted.
+   *
+   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean value indicating whether the wrapped namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   */
   isMuted() {
     return this.vm.isMuted(this.namespace);
   }
 
+  /**
+   * List the wrapped namespace's descendants.
+   *
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   */
   getDescendants() {
     return this.vm.getDescendants(this.namespace);
   }
 
+  /**
+   * Add a predefined function to the VM's list under the wrapped namespace.
+   *
+   * @param {string} name - Function name to add.
+   * @param {Function} callback - {@link Function} callback to use.
+   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   */
   predefine(name, callback) {
     return this.vm.predefine(this.namespace, name, callback);
   }
 
+  /**
+   * Install the given {@link Dependency} on the wrapped VM under the wrapped namespace.
+   *
+   * @param {Dependency} dependency - The {@link Dependency} to install.
+   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   */
   install(dependency) {
     return this.vm.install(this.namespace, dependency);
   }
 
+  /**
+   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped namespace.
+   *
+   * @param {Dependency} dependency - The {@link Dependency} to execute.
+   * @param {Map<string, unknown>} args - The arguments map to execute with.
+   * @returns {Promise<unknown, Error>} A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   */
   execute(dependency, args = new Map()) {
     return this.vm.execute(this.namespace, dependency, args);
   }
 
+  /**
+   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
+   *
+   * @param {Iterable<Dependency>} dependencies - Dependencies to install.
+   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   */
   installAll(dependencies) {
     return this.vm.installAll(this.namespace, dependencies);
   }
