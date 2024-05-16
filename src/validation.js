@@ -347,7 +347,7 @@ class Validation {
    * @returns {Function} The validated callback value.
    * @throws {Error} If the given callback is not a `Function` instance.
    */
-  static validateCallback(callback) {
+  static callback(callback) {
     if (!(callback instanceof Function)) {
       throw new Error('expected callback to be a function');
     }

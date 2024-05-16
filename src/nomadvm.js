@@ -282,7 +282,7 @@ class NomadVM extends EventCaster {
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {NomadVM} `this`, for chaining.
    * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
-   * @see {@link Validation.validateCallback} for additional exceptions thrown.
+   * @see {@link Validation.callback} for additional exceptions thrown.
    */
   onThis(filter, callback) {
     return this.on(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
