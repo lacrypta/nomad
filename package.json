@@ -7,7 +7,7 @@
     "NOMAD",
     "Virtual Machine"
   ],
-  "license": "AGPL-3.0-or-later",
+  "license": "MIT",
   "homepage": "https://lacrypta.ar",
   "bugs": {
     "url": "https://github.com/lacrypta/nomadvm/issues",
