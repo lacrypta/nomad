@@ -403,7 +403,10 @@ class Validation {
       throw new Error('expected namespace to be a string');
     }
 
-    return ns.split('.').map((part) => Validation.identifier(part)).join('.');
+    return ns
+      .split('.')
+      .map((part) => Validation.identifier(part))
+      .join('.');
   }
 }
 
