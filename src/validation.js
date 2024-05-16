@@ -387,6 +387,24 @@ class Validation {
 
     return iter;
   }
+
+  /**
+   * Validate the given argument is a namespace identifier and return it if valid.
+   *
+   * A namespace identifier is a sequence of identifiers (as per {@link Validation.identifier}) separated by periods (`"."`).
+   *
+   * @param {unknown} ns - The argument to validate.
+   * @returns {string} The validated namespace identifier.
+   * @throws {Error} If the given argument is not a valid namespace identifier.
+   * @see {@link Validation.identifier} for additional exceptions thrown.
+   */
+  static namespace(ns) {
+    if ('string' !== typeof ns) {
+      throw new Error('expected namespace to be a string');
+    }
+
+    return ns.split('.').map((part) => Validation.identifier(part)).join('.');
+  }
 }
 
 export { Validation };
