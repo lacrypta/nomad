@@ -939,7 +939,7 @@ const workerRunner = () => {
         _Object.freeze(current);
 
         const descriptors = _Object.getOwnPropertyDescriptors(current);
-        for (const key of _Object.getOwnPropertyNames(current).concat(_Object.getOwnPropertySymbols(current))) {
+        for (const key of [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)]) {
           if ('get' in descriptors[key]) {
             _Object.freeze(descriptors[key].get);
           }
@@ -1583,9 +1583,7 @@ const workerRunner = () => {
       const missing = importedNames.filter((name) => !(dependency.dependencies[name] in installedDependencies));
       if (0 !== missing.length) {
         throw new _Error(
-          `missing dependencies: [${_Array
-            .from(new _Set(missing.map((name) => dependency.dependencies[name])))
-            .join(', ')}]`,
+          `missing dependencies: [${[...new _Set(missing.map((name) => dependency.dependencies[name]))].join(', ')}]`,
         );
       }
     }
@@ -1596,7 +1594,7 @@ const workerRunner = () => {
       }
       const shadowed = argumentNames.filter((name) => name in dependency.dependencies);
       if (0 < shadowed.length) {
-        throw new _Error(`shadowing arguments [${_Array.from(new _Set(shadowed)).join(', ')}]`);
+        throw new _Error(`shadowing arguments [${[...new _Set(shadowed)].sort().join(', ')}]`);
       }
     }
 
@@ -1813,16 +1811,18 @@ const workerRunner = () => {
         'toString',
         'valueOf',
       ];
-      keep['Function.prototype'] = keep['Object.prototype'].concat([
+      keep['Function.prototype'] = [
+        ...keep['Object.prototype'],
         // "arguments", // Deprecated
         // "caller", // Deprecated
         'apply',
         'bind',
         'call',
         Symbol.hasInstance,
-      ]);
-      keep['Function.instance'] = keep['Function.prototype'].concat(['length', 'name']);
-      keep['Object'] = keep['Function.instance'].concat([
+      ];
+      keep['Function.instance'] = [...keep['Function.prototype'], 'length', 'name'];
+      keep['Object'] = [
+        ...keep['Function.instance'],
         'prototype',
         'assign',
         'create',
@@ -1852,9 +1852,10 @@ const workerRunner = () => {
         // "__defineSetter__", // Deprecated
         // "__lookupGetter__", // Deprecated
         // "__lookupSetter__", // Deprecated
-      ]);
-      keep['Boolean.prototype'] = keep['Object.prototype'];
-      keep['Symbol'] = keep['Function.instance'].concat([
+      ];
+      keep['Boolean.prototype'] = [...keep['Object.prototype']];
+      keep['Symbol'] = [
+        ...keep['Function.instance'],
         'prototype',
         'asyncIterator',
         'hasInstance',
@@ -1871,29 +1872,26 @@ const workerRunner = () => {
         'unscopables',
         'for',
         'keyFor',
-      ]);
-      keep['Symbol.prototype'] = keep['Object.prototype'].concat([
-        'description',
-        Symbol.toPrimitive,
-        Symbol.toStringTag,
-      ]);
-      keep['Error'] = keep['Function.instance'].concat(['prototype']);
-      keep['Error.prototype'] = keep['Object.prototype'].concat(['name']);
-      keep['AggregateError'] = keep['Error'];
-      keep['AggregateError.prototype'] = keep['Error.prototype'];
-      keep['EvalError'] = keep['Error'];
-      keep['EvalError.prototype'] = keep['Error.prototype'];
-      keep['RangeError'] = keep['Error'];
-      keep['RangeError.prototype'] = keep['Error.prototype'];
-      keep['ReferenceError'] = keep['Error'];
-      keep['ReferenceError.prototype'] = keep['Error.prototype'];
-      keep['SyntaxError'] = keep['Error'];
-      keep['SyntaxError.prototype'] = keep['Error.prototype'];
-      keep['TypeError'] = keep['Error'];
-      keep['TypeError.prototype'] = keep['Error.prototype'];
-      keep['URIError'] = keep['Error'];
-      keep['URIError.prototype'] = keep['Error.prototype'];
-      keep['Number'] = keep['Function.instance'].concat([
+      ];
+      keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', Symbol.toPrimitive, Symbol.toStringTag];
+      keep['Error'] = [...keep['Function.instance'], 'prototype'];
+      keep['Error.prototype'] = [...keep['Object.prototype'], 'name'];
+      keep['AggregateError'] = [...keep['Error']];
+      keep['AggregateError.prototype'] = [...keep['Error.prototype']];
+      keep['EvalError'] = [...keep['Error']];
+      keep['EvalError.prototype'] = [...keep['Error.prototype']];
+      keep['RangeError'] = [...keep['Error']];
+      keep['RangeError.prototype'] = [...keep['Error.prototype']];
+      keep['ReferenceError'] = [...keep['Error']];
+      keep['ReferenceError.prototype'] = [...keep['Error.prototype']];
+      keep['SyntaxError'] = [...keep['Error']];
+      keep['SyntaxError.prototype'] = [...keep['Error.prototype']];
+      keep['TypeError'] = [...keep['Error']];
+      keep['TypeError.prototype'] = [...keep['Error.prototype']];
+      keep['URIError'] = [...keep['Error']];
+      keep['URIError.prototype'] = [...keep['Error.prototype']];
+      keep['Number'] = [
+        ...keep['Function.instance'],
         'prototype',
         'EPSILON',
         'MAX_SAFE_INTEGER',
@@ -1909,18 +1907,20 @@ const workerRunner = () => {
         'isSafeInteger',
         'parseFloat',
         'parseInt',
-      ]);
-      keep['Number.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['Number.prototype'] = [
+        ...keep['Object.prototype'],
         'toExponential',
         'toFixed',
         'toPrecision',
         // "toLocaleString", // ---> Number.prototype.toString
-      ]);
-      keep['BigInt'] = keep['Function.instance'].concat(['prototype', 'asIntN', 'asUintN']);
-      keep['BigInt.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['BigInt'] = [...keep['Function.instance'], 'prototype', 'asIntN', 'asUintN'];
+      keep['BigInt.prototype'] = [
+        ...keep['Object.prototype'],
         Symbol.toStringTag,
         // "toLocaleString", // ---> BigInt.prototype.toString
-      ]);
+      ];
       keep['Math'] = [
         'E',
         'LN10',
@@ -1967,13 +1967,15 @@ const workerRunner = () => {
         'pow',
         // "random", // ---> () => NaN
       ];
-      keep['Date'] = keep['Function.instance'].concat([
+      keep['Date'] = [
+        ...keep['Function.instance'],
         'prototype',
         // "now", // ---> () => NaN
         'parse',
         'UTC',
-      ]);
-      keep['Date.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['Date.prototype'] = [
+        ...keep['Object.prototype'],
         // "getDate", // ---> Date.prototype.getUTCDate
         // "getDay", // ---> Date.prototype.getUTCDay
         // "getFullYear", // ---> Date.prototype.getUTCFullYear
@@ -2020,9 +2022,10 @@ const workerRunner = () => {
         // "toString", // ---> Date.prototype.toISOString
         // "toLocaleString", // ---> Date.prototype.toString
         Symbol.toPrimitive,
-      ]);
-      keep['String'] = keep['Function.instance'].concat(['prototype', 'fromCharCode', 'fromCodePoint', 'raw']);
-      keep['String.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['String'] = [...keep['Function.instance'], 'prototype', 'fromCharCode', 'fromCodePoint', 'raw'];
+      keep['String.prototype'] = [
+        ...keep['Object.prototype'],
         'at',
         'charAt',
         'charCodeAt',
@@ -2071,8 +2074,9 @@ const workerRunner = () => {
         // "strike", // Deprecated
         // "sub", // Deprecated
         // "sup", // Deprecated
-      ]);
-      keep['RegExp'] = keep['Function.instance'].concat([
+      ];
+      keep['RegExp'] = [
+        ...keep['Function.instance'],
         'prototype',
         // "$1", // Deprecated // ???
         // "$2", // Deprecated // ???
@@ -2094,8 +2098,9 @@ const workerRunner = () => {
         // "rightContext", // Deprecated // ???
         // "$'", // Deprecated // ???
         Symbol.species,
-      ]);
-      keep['RegExp.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['RegExp.prototype'] = [
+        ...keep['Object.prototype'],
         'dotAll',
         'flags',
         'global',
@@ -2115,16 +2120,10 @@ const workerRunner = () => {
         Symbol.replace,
         Symbol.split,
         Symbol.search,
-      ]);
-      keep['Array'] = keep['Function.instance'].concat([
-        'prototype',
-        Symbol.species,
-        'from',
-        'fromAsync',
-        'isArray',
-        'of',
-      ]);
-      keep['Array.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['Array'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'from', 'fromAsync', 'isArray', 'of'];
+      keep['Array.prototype'] = [
+        ...keep['Object.prototype'],
         Symbol.unscopables,
         'at',
         'length',
@@ -2165,15 +2164,17 @@ const workerRunner = () => {
         'toSpliced',
         'with',
         Symbol.iterator,
-      ]);
-      keep['TypedArray'] = keep['Function.instance'].concat([
+      ];
+      keep['TypedArray'] = [
+        ...keep['Function.instance'],
         'prototype',
         Symbol.species,
         'BYTES_PER_ELEMENT',
         'from',
         'of',
-      ]);
-      keep['TypedArray.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['TypedArray.prototype'] = [
+        ...keep['Object.prototype'],
         'buffer',
         'byteLength',
         'byteOffset',
@@ -2211,9 +2212,10 @@ const workerRunner = () => {
         'toSorted',
         'with',
         Symbol.iterator,
-      ]);
-      keep['Map'] = keep['Function.instance'].concat(['prototype', Symbol.species, 'groupBy']);
-      keep['Map.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['Map'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'groupBy'];
+      keep['Map.prototype'] = [
+        ...keep['Object.prototype'],
         'size',
         Symbol.toStringTag,
         'delete',
@@ -2226,9 +2228,10 @@ const workerRunner = () => {
         'clear',
         'forEach',
         Symbol.iterator,
-      ]);
-      keep['Set'] = keep['Function.instance'].concat(['prototype', Symbol.species]);
-      keep['Set.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['Set'] = [...keep['Function.instance'], 'prototype', Symbol.species];
+      keep['Set.prototype'] = [
+        ...keep['Object.prototype'],
         'size',
         Symbol.toStringTag,
         'add',
@@ -2247,13 +2250,14 @@ const workerRunner = () => {
         'values',
         'forEach',
         Symbol.iterator,
-      ]);
-      keep['WeakMap'] = keep['Function.instance'].concat(['prototype', Symbol.toStringTag]);
-      keep['WeakMap.prototype'] = keep['Object.prototype'].concat(['delete', 'get', 'has', 'set']);
-      keep['WeakSet'] = keep['Function.instance'].concat(['prototype', Symbol.toStringTag]);
-      keep['WeakSet.prototype'] = keep['Object.prototype'].concat(['add', 'delete', 'has']);
-      keep['ArrayBuffer'] = keep['Function.instance'].concat(['prototype', Symbol.species, 'isView']);
-      keep['ArrayBuffer.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['WeakMap'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
+      keep['WeakMap.prototype'] = [...keep['Object.prototype'], 'delete', 'get', 'has', 'set'];
+      keep['WeakSet'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
+      keep['WeakSet.prototype'] = [...keep['Object.prototype'], 'add', 'delete', 'has'];
+      keep['ArrayBuffer'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'isView'];
+      keep['ArrayBuffer.prototype'] = [
+        ...keep['Object.prototype'],
         'byteLength',
         'maxByteLength',
         'detached',
@@ -2263,9 +2267,10 @@ const workerRunner = () => {
         'slice',
         'transfer',
         'transferToFixedLength',
-      ]);
-      keep['DataView'] = keep['Function.instance'].concat(['prototype']);
-      keep['DataView.prototype'] = keep['Object.prototype'].concat([
+      ];
+      keep['DataView'] = [...keep['Function.instance'], 'prototype'];
+      keep['DataView.prototype'] = [
+        ...keep['Object.prototype'],
         'buffer',
         'byteLength',
         'byteOffset',
@@ -2290,7 +2295,7 @@ const workerRunner = () => {
         'setUint8',
         'setUint16',
         'setUint32',
-      ]);
+      ];
       keep['Atomics'] = [
         Symbol.toStringTag,
         'add',
@@ -2308,15 +2313,17 @@ const workerRunner = () => {
         'waitAsync',
       ];
       keep['JSON'] = [Symbol.toStringTag, 'parse', 'stringify'];
-      keep['WeakRef'] = keep['Function.instance'].concat(['prototype']);
-      keep['WeakRef.prototype'] = keep['Object.prototype'].concat(['deref', Symbol.toStringTag]);
-      keep['FinalizationRegistry'] = keep['Function.instance'].concat(['prototype']);
-      keep['FinalizationRegistry.prototype'] = keep['Object.prototype'].concat([
+      keep['WeakRef'] = [...keep['Function.instance'], 'prototype'];
+      keep['WeakRef.prototype'] = [...keep['Object.prototype'], 'deref', Symbol.toStringTag];
+      keep['FinalizationRegistry'] = [...keep['Function.instance'], 'prototype'];
+      keep['FinalizationRegistry.prototype'] = [
+        ...keep['Object.prototype'],
         Symbol.toStringTag,
         'register',
         'unregister',
-      ]);
-      keep['Promise'] = keep['Function.instance'].concat([
+      ];
+      keep['Promise'] = [
+        ...keep['Function.instance'],
         'prototype',
         Symbol.species,
         'all',
@@ -2326,15 +2333,15 @@ const workerRunner = () => {
         'reject',
         'resolve',
         'withResolvers',
-      ]);
-      keep['Promise.prototype'] = keep['Object.prototype'].concat([Symbol.toStringTag, 'catch', 'finally', 'then']);
-      keep['GeneratorFunction'] = keep['Function.instance'].concat(['prototype']);
-      keep['GeneratorFunction.prototype'] = keep['Function.prototype'].concat(['prototype', Symbol.toStringTag]);
-      keep['AsyncGeneratorFunction'] = keep['Function.instance'].concat(['prototype']);
-      keep['AsyncGeneratorFunction.prototype'] = keep['Function.prototype'].concat(['prototype', Symbol.toStringTag]);
-      keep['AsyncFunction'] = keep['Function.instance'].concat(['prototype']);
-      keep['AsyncFunction.prototype'] = keep['Function.prototype'].concat(['prototype', Symbol.toStringTag]);
-      keep['Proxy'] = keep['Function.instance'].concat(['revocable']);
+      ];
+      keep['Promise.prototype'] = [...keep['Object.prototype'], Symbol.toStringTag, 'catch', 'finally', 'then'];
+      keep['GeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
+      keep['GeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['AsyncGeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
+      keep['AsyncGeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['AsyncFunction'] = [...keep['Function.instance'], 'prototype'];
+      keep['AsyncFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['Proxy'] = [...keep['Function.instance'], 'revocable'];
       keep['Reflect'] = [
         Symbol.toStringTag,
         'apply',
@@ -2367,23 +2374,20 @@ const workerRunner = () => {
       const prune = (start, name, toKeep) => {
         let current = start;
         do {
-          _Object
-            .getOwnPropertyNames(current)
-            .concat(_Object.getOwnPropertySymbols(current))
-            .forEach((key) => {
-              if (!keep[toKeep].includes(key)) {
-                try {
-                  delete current[key];
-                } catch {
-                  if ('symbol' === typeof key) {
-                    const sKey = key.toString();
-                    failed.push(`${name}.@@${sKey.substring(14, sKey.length - 1)}`);
-                  } else {
-                    failed.push(`${name}.${key}`);
-                  }
+          [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)].forEach((key) => {
+            if (!keep[toKeep].includes(key)) {
+              try {
+                delete current[key];
+              } catch {
+                if ('symbol' === typeof key) {
+                  const sKey = key.toString();
+                  failed.push(`${name}.@@${sKey.substring(14, sKey.length - 1)}`);
+                } else {
+                  failed.push(`${name}.${key}`);
                 }
               }
-            });
+            }
+          });
           current = _Object.getPrototypeOf(current);
         } while (null !== current);
       };
