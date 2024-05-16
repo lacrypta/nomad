@@ -3,8 +3,6 @@
 // TODO: ADD MISSING SHIMS
 // TODO: ANALYZE Iterator AND OTHER HIDDEN OBJECTS
 
-// TODO: expose a new class "namespace" (or thereabouts) that will behave just like the namespace-oriented methods of NomadVM but be initialized with a specific namespace, so as to allow the end users to use a more comfortable interface.
-
 import { Dependency } from './dependency.js';
 import { NomadVM, NomadVMNamespace } from './nomadvm.js';
 
