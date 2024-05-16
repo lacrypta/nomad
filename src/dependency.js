@@ -382,7 +382,7 @@ class Dependency {
    * Set the {@link Dependency} name (chainable).
    *
    * @param {string} name - The name to set.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link Validation.identifier} for exceptions thrown.
    */
   setName(name) {
@@ -394,7 +394,7 @@ class Dependency {
    * Set the {@link Dependency} source code (chainable).
    *
    * @param {string} code - The function source code to set.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link Validation.functionCode} for exceptions thrown.
    */
   setCode(code) {
@@ -406,7 +406,7 @@ class Dependency {
    * Set the {@link Dependency} dependencies (chainable).
    *
    * @param {Map<string, string>} dependencies - The dependencies to set.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link Validation.dependencyMap} for exceptions thrown.
    */
   setDependencies(dependencies) {
@@ -419,7 +419,7 @@ class Dependency {
    *
    * @param {string} importedName - Dependency name to use for importing.
    * @param {string} dependencyName - Dependency being depended on.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link Validation.identifier} for exceptions thrown.
    */
   addDependency(importedName, dependencyName) {
@@ -431,7 +431,7 @@ class Dependency {
    * Remove the given import name from this {@link Dependency}'s dependencies.
    *
    * @param {string} importName - Import name to remove from the dependencies.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    */
   removeImport(importName) {
     this.#dependencies.delete(importName);
@@ -444,7 +444,7 @@ class Dependency {
    * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
    *
    * @param {string} dependencyName - Dependency name to remove from the dependencies.
-   * @returns {Dependency} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    */
   removeDependency(dependencyName) {
     this.#dependencies = new Map([...this.#dependencies.entries()].filter(([, dName]) => dName !== dependencyName));

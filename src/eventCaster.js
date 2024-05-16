@@ -164,7 +164,7 @@ class EventCaster {
    *
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {EventCaster} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
    * @see {@link Validation.callback} for additional exceptions thrown.
    */
@@ -182,7 +182,7 @@ class EventCaster {
    *
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {EventCaster} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link EventCaster.on} for additional exceptions thrown.
    */
   once(filter, callback) {
@@ -197,7 +197,7 @@ class EventCaster {
    * Remove the given callback from the listeners set.
    *
    * @param {unknown} callback - The callback to remove.
-   * @returns {EventCaster} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    */
   off(callback) {
     this.#listeners.delete(callback);
@@ -209,7 +209,7 @@ class EventCaster {
    *
    * @param {unknown} name - The event name to cast.
    * @param {...unknown} args - Any additional arguments o associate to the cast event.
-   * @returns {EventCaster} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @protected
    * @see {@link EventCaster.validateEvent} for additional exceptions thrown.
    */
