@@ -381,11 +381,7 @@ class Validation {
    * @throws {Error} If the given argument is not an {@link Iterable}.
    */
   static iterable(iter) {
-    if (
-      null === iter ||
-      'object' !== typeof iter ||
-      'function' !== typeof iter[Symbol.iterator]
-    ) {
+    if (null === iter || 'object' !== typeof iter || 'function' !== typeof iter[Symbol.iterator]) {
       throw new Error('expected Iterable');
     }
 
