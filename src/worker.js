@@ -79,7 +79,6 @@ const workerRunner = () => {
   const _Error = Error;
   const _Function = Function;
   const _Map = Map;
-  const _Number = Number;
   const _Object = Object;
   const _Promise = Promise;
   const _RegExp = RegExp;
@@ -693,8 +692,8 @@ const workerRunner = () => {
           case 'string':
             {
               const parse = (str, def) => {
-                const num = _Number.parseInt(str, 10);
-                _Number.isNaN(num) ? def : num;
+                const num = Number.parseInt(str, 10);
+                Number.isNaN(num) ? def : num;
               };
               const toPaddedDecimal = (num, padding, withSign = false) =>
                 (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
@@ -727,7 +726,7 @@ const workerRunner = () => {
                   31,
                 ];
                 if (
-                  !_Number.isNaN(year) &&
+                  !Number.isNaN(year) &&
                   between(1, month, 12) &&
                   between(1, day, daysInMonth[month - 1]) &&
                   between(0, hours, 24) &&
