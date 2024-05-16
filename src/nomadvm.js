@@ -1694,8 +1694,27 @@ class NomadVM extends EventCaster {
   installAll(namespace, dependencies) {
     return new Promise((resolve, reject) => {
       try {
-        this.listInstalled(namespace).then((installed) => {
-          Promise.all(Dependency.sort(dependencies, Object.keys(installed)).map(this.install)).then(resolve, reject);
+        this.createNamespace(`${namespace}.tmp_${NomadVM.#pseudoRandomString()}`).then((wrapper) => {
+          wrapper.listInstalled().then(
+            (installed) => {
+              Promise.all(Dependency.sort(dependencies, Object.keys(installed)).map(wrapper.install)).then(
+                () => {
+                  this.assimilateNamespace(wrapper.namespace).then(resolve, (error) => {
+                    this.deleteNamespace(wrapper.namespace);
+                    reject(error);
+                  });
+                },
+                (error) => {
+                  this.deleteNamespace(wrapper.namespace);
+                  reject(error);
+                },
+              );
+            },
+            (error) => {
+              this.deleteNamespace(wrapper.namespace);
+              reject(error);
+            },
+          );
         }, reject);
       } catch (e) {
         reject(e);
