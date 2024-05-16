@@ -60,9 +60,9 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
-   * - `nomadvm:{NAME}:{NAMESPACE}:create(vm, parent)`: when a new namespace is being created on VM `vm` using `parent` as its parent.
-   * - `nomadvm:{NAME}:{NAMESPACE}:create:ok(vm, parent)`: when a new namespace has been successfully created on VM `vm` using `parent` as its parent.
-   * - `nomadvm:{NAME}:{NAMESPACE}:create:error(vm, parent, error)`: when a new namespace has failed to be created on VM `vm` using `parent` as its parent with error `error`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:create(vm)`: when a new namespace is being created on VM `vm`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:create:ok(vm)`: when a new namespace has been successfully created on VM `vm`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:create:error(vm, error)`: when a new namespace has failed to be created on VM `vm` with error `error`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete(vm)`: when a namespace is being deleted from VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete:ok(vm, deleted)`: when namespaces `deleted` have been successfully deleted from VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete:error(vm, error)`: when a namespace has failed to be deleted from VM `vm` with error `error`.
@@ -553,7 +553,6 @@ class NomadVM extends EventCaster {
    * {
    *   name: "create",
    *   namespace: <string>,
-   *   parent: <?string>,
    *   tunnel: <int>
    * }
    * ```
@@ -561,20 +560,17 @@ class NomadVM extends EventCaster {
    * Where:
    *
    * - `namespace` is the WW-side namespace to create.
-   * - `parent` is an optional WW-side namespace name to use as parent.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
    * @param {string} namespace - The namespace to create.
-   * @param {?string} parent - The WW-side namespace to use as parent, or `null` if no parent is used.
    * @param {number} tunnel - The tunnel index to expect a response on.
    * @returns {void}
    * @private
    */
-  #postCreateMessage = (namespace, parent, tunnel) => {
+  #postCreateMessage = (namespace, tunnel) => {
     this.#postJsonMessage({
       name: 'create',
       namespace,
-      parent,
       tunnel,
     });
   };
@@ -721,13 +717,13 @@ class NomadVM extends EventCaster {
   };
 
   /**
-   * Post a `listNamespaces` message to the {@link Worker}.
+   * Post a `listRootNamespaces` message to the {@link Worker}.
    *
-   * A `listNamespaces` message has the form:
+   * A `listRootNamespaces` message has the form:
    *
    * ```json
    * {
-   *   name: "listNamespaces",
+   *   name: "listRootNamespaces",
    *   tunnel: <int>
    * }
    * ```
@@ -740,8 +736,8 @@ class NomadVM extends EventCaster {
    * @returns {void}
    * @private
    */
-  #postListNamespacesMessage = (tunnel) => {
-    this.#postJsonMessage({ name: 'listNamespaces', tunnel });
+  #postListRootNamespacesMessage = (tunnel) => {
+    this.#postJsonMessage({ name: 'listRootNamespaces', tunnel });
   };
 
   /**
@@ -853,33 +849,6 @@ class NomadVM extends EventCaster {
   };
 
   /**
-   * Post a `getAncestors` message to the {@link Worker}.
-   *
-   * A `getAncestors` message has the form:
-   *
-   * ```json
-   * {
-   *   name: "getAncestors",
-   *   namespace: <string>,
-   *   tunnel: <int>
-   * }
-   * ```
-   *
-   * Where:
-   *
-   * - `namespace` is the WW-side namespace to determine the ancestors of.
-   * - `tunnel` is the VM-side tunnel index awaiting a response.
-   *
-   * @param {string} namespace - The namespace to determine the ancestors of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
-   */
-  #postGetAncestorsMessage = (namespace, tunnel) => {
-    this.#postJsonMessage({ name: 'getAncestors', namespace, tunnel });
-  };
-
-  /**
    * Post a `getDescendants` message to the {@link Worker}.
    *
    * A `getDescendants` message has the form:
@@ -904,33 +873,6 @@ class NomadVM extends EventCaster {
    */
   #postGetDescendantsMessage = (namespace, tunnel) => {
     this.#postJsonMessage({ name: 'getDescendants', namespace, tunnel });
-  };
-
-  /**
-   * Post a `getChildren` message to the {@link Worker}.
-   *
-   * A `getChildren` message has the form:
-   *
-   * ```json
-   * {
-   *   name: "getChildren",
-   *   namespace: <string>,
-   *   tunnel: <int>
-   * }
-   * ```
-   *
-   * Where:
-   *
-   * - `namespace` is the WW-side namespace to determine the children of.
-   * - `tunnel` is the VM-side tunnel index awaiting a response.
-   *
-   * @param {string} namespace - The namespace to determine the children of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
-   */
-  #postGetChildrenMessage = (namespace, tunnel) => {
-    this.#postJsonMessage({ name: 'getChildren', namespace, tunnel });
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1219,41 +1161,34 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Create a new namespace with the given name and, optionally, using the given namespace as parent.
+   * Create a new namespace with the given name.
    *
    * @param {string} namespace - Namespace to create.
-   * @param {string} parent - Namespace to use as parent, or `null` if no parent given.
    * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  createNamespace(namespace, parent = null) {
+  createNamespace(namespace) {
     return new Promise((resolve, reject) => {
-      this.#castEvent(`${namespace}:create`, parent);
+      this.#castEvent(`${namespace}:create`);
       try {
         Validation.namespace(namespace);
-
-        parent ??= null;
-        if (null !== parent) {
-          Validation.parent(parent);
-        }
 
         this.#assertRunning();
 
         this.#postCreateMessage(
           namespace,
-          parent,
           this.#addTunnel(
             () => {
-              this.#castEvent(`${namespace}:create:ok`, parent);
+              this.#castEvent(`${namespace}:create:ok`);
               resolve(new NomadVMNamespace(this, namespace));
             },
             (error) => {
-              this.#castEvent(`${namespace}:create:error`, parent, error);
+              this.#castEvent(`${namespace}:create:error`, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:create:error`, parent, e);
+        this.#castEvent(`${namespace}:create:error`, e);
         reject(e);
       }
     });
@@ -1438,16 +1373,16 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the namespaces created.
+   * List the root namespaces created.
    *
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of namespaces created if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of root namespaces created if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listNamespaces() {
+  listRootNamespaces() {
     return new Promise((resolve, reject) => {
       try {
         this.#assertRunning();
 
-        this.#postListNamespacesMessage(this.#addTunnel(resolve, reject));
+        this.#postListRootNamespacesMessage(this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1535,28 +1470,6 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the given namespace's ancestors.
-   *
-   * The resolved value will contain one entry per ancestry level, starting with the given namespace's parent in position `0`, its parent in position `1`, etc.
-   *
-   * @param {string} namespace - Namespace to list the ancestry of.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of ancestors if successful, and rejects with an {@link Error} in case errors occur.
-   */
-  getAncestors(namespace) {
-    return new Promise((resolve, reject) => {
-      try {
-        Validation.namespace(namespace);
-
-        this.#assertRunning();
-
-        this.#postGetAncestorsMessage(namespace, this.#addTunnel(resolve, reject));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  }
-
-  /**
    * List the given namespace's descendants.
    *
    * @param {string} namespace - Namespace to list the descendants of.
@@ -1576,30 +1489,10 @@ class NomadVM extends EventCaster {
     });
   }
 
-  /**
-   * List the given namespace's children.
-   *
-   * @param {string} namespace - Namespace to list the children of.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of children namespaces if successful, and rejects with an {@link Error} in case errors occur.
-   */
-  getChildren(namespace) {
-    return new Promise((resolve, reject) => {
-      try {
-        Validation.namespace(namespace);
-
-        this.#assertRunning();
-
-        this.#postGetChildrenMessage(namespace, this.#addTunnel(resolve, reject));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  }
-
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}).
+   * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}) under the given namespace.
    *
    * @param {string} namespace - Namespace to use.
    * @param {string} name - Function name to add.
@@ -1815,16 +1708,8 @@ class NomadVMNamespace {
     return this.vm.isMuted(this.namespace);
   }
 
-  getAncestors() {
-    return this.#vm.getAncestors(this.#namespace);
-  }
-
   getDescendants() {
     return this.vm.getDescendants(this.namespace);
-  }
-
-  getChildren() {
-    return this.#vm.getChildren(this.#namespace);
   }
 
   predefine(name, callback) {
