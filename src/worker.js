@@ -1204,10 +1204,14 @@ const workerRunner = () => {
    * Retrieve a list of _all_ descendants of the given namespace (including transitive relationships).
    *
    * @param {string} namespace - Namespace to retrieve the list of descendants of.
+   * @param {number} depth - Maximum depth to retrieve results for, or `0` for unlimited results.
    * @returns {Array<string>} An array with the namespace's descendants.
    */
-  const namespaceDescendants = (namespace) => {
-    return [...namespaces.keys()].filter((candidate) => candidate.startsWith(`${namespace}.`));
+  const namespaceDescendants = (namespace, depth = 0) => {
+    const limit = 0 < depth ? depth + namespaces.split('.').length : Infinity;
+    return [...namespaces.keys()].filter(
+      (candidate) => candidate.startsWith(`${namespace}.`) && candidate.split('.').length <= limit,
+    );
   };
 
   /**
@@ -2794,9 +2798,9 @@ const workerRunner = () => {
           break;
         case 'getDescendants':
           {
-            const { namespace, tunnel } = parsedData;
+            const { namespace, tunnel, depth } = parsedData;
             try {
-              postResolveMessage(tunnel, namespaceDescendants(namespace));
+              postResolveMessage(tunnel, namespaceDescendants(namespace, depth));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }

@@ -197,6 +197,26 @@ class Validation {
   }
 
   /**
+   * Validate the given datum is a non-negative integer number and return it if valid.
+   *
+   * @param {unknown} datum - The datum to validate.
+   * @returns {number} The validated non-negative integer.
+   * @throws {Error} If the given datum is not a `number`.
+   * @throws {Error} If the given datum is not a safe integer (cf. {@link Number.isSafeInteger}).
+   * @throws {Error} If the given datum is negative.
+   */
+  static nonNegativeInteger(datum) {
+    if ('number' !== typeof datum) {
+      throw new Error('expected datum to be a number');
+    } else if (!Number.isSafeInteger(datum)) {
+      throw new Error('expected datum to be a safe integer');
+    } else if (datum < 0) {
+      throw new Error('expected datum to be non-negative');
+    }
+    return datum;
+  }
+
+  /**
    * ASCII codes of all allowed characters in function source code.
    *
    * No Unicode characters are allowed, only a subset of 7-bit ASCII characters are allowed:
