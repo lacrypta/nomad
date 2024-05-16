@@ -66,6 +66,9 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:{NAMESPACE}:delete(vm)`: when a namespace is being deleted from VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete:ok(vm, deleted)`: when namespaces `deleted` have been successfully deleted from VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:delete:error(vm, error)`: when a namespace has failed to be deleted from VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate(vm, namespace)`: when a namespace `namespace` is being assimilated to its parent from VM `vm`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate:ok(vm, namespace)`: when namespace `namespace` has been successfully assimilated to its parent on VM `vm`.
+   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate:error(vm, namespace, error)`: when a namespace `namespace` has failed to be assimilated to its parent in VM `vm` with error `error`.
    * - `nomadvm:{NAME}:{NAMESPACE}:link(vm, target)`: when a namespace is being linked to the `target` one on VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:link:ok(vm, target)`: when a namespace has been successfully linked to the `target` one on VM `vm`.
    * - `nomadvm:{NAME}:{NAMESPACE}:link:error(vm, target, error)`: when a namespace has failed to be linked to the `target` one on VM `vm` with error `error`.
@@ -600,6 +603,33 @@ class NomadVM extends EventCaster {
    */
   #postDeleteMessage = (tunnel, namespace) => {
     this.#postJsonMessage({ name: 'delete', tunnel, namespace });
+  };
+
+  /**
+   * Post an `assimilate` message to the {@link Worker}.
+   *
+   * An `assimilate` message has the form:
+   *
+   * ```json
+   * {
+   *   name: "assimilate",
+   *   namespace: <string>,
+   *   tunnel: <int>,
+   * }
+   * ```
+   *
+   * Where:
+   *
+   * - `namespace` is the WW-side namespace to assimilate.
+   * - `tunnel` is the VM-side tunnel index awaiting a response.
+   *
+   * @param {string} namespace - The namespace to assimilate.
+   * @param {number} tunnel - The tunnel index to expect a response on.
+   * @returns {void}
+   * @private
+   */
+  #postAssimilateMessage = (namespace, tunnel) => {
+    this.#postJsonMessage({ name: 'assimilate', namespace, tunnel });
   };
 
   /**
@@ -1228,6 +1258,40 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:delete:error`, e);
+        reject(e);
+      }
+    });
+  }
+
+  /**
+   * Assimilate the given namespace to its parent.
+   *
+   * @param {string} namespace - Namespace to assimilate.
+   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
+   */
+  assimilateNamespace(namespace) {
+    return new Promise((resolve, reject) => {
+      this.#castEvent(`${namespace}:assimilate`, namespace);
+      try {
+        Validation.namespace(namespace);
+
+        this.#assertRunning();
+
+        this.#postAssimilateMessage(
+          namespace,
+          this.#addTunnel(
+            () => {
+              this.#castEvent(`${namespace}:assimilate:ok`, namespace);
+              resolve();
+            },
+            (error) => {
+              this.#castEvent(`${namespace}:assimilate:error`, namespace, error);
+              reject(error);
+            },
+          ),
+        );
+      } catch (e) {
+        this.#castEvent(`"${namespace}:assimilate:error`, namespace, e);
         reject(e);
       }
     });
