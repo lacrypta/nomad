@@ -2,7 +2,7 @@
 
 import { Validation } from './validation.js';
 
-/* global ProtectedMethodInjector */
+/* global MethodInjector */
 
 /**
  * Glob-enabled Event Caster.
@@ -148,7 +148,7 @@ class EventCaster {
    *
    * Passing a callback to inject the "protected" methods map into allows for derived classes to have access to these whilst preventing access to outside agents.
    *
-   * @param {ProtectedMethodInjector} protectedMethodInjector - Callback that will receive the "protected" methods map.
+   * @param {MethodInjector} protectedMethodInjector - Callback that will receive the "protected" methods map.
    */
   constructor(protectedMethodInjector) {
     if (!(protectedMethodInjector instanceof Function)) {
