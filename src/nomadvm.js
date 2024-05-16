@@ -1698,57 +1698,10 @@ class NomadVM extends EventCaster {
    * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
   installAll(namespace, dependencies) {
-    /**
-     * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
-     *
-     * @param {Iterable<string>} installed - Installed {@link Dependency} names to assume existing.
-     * @param {Iterable<Dependency>} dependencies - Dependencies to sort.
-     * @returns {Array<Dependency>} Sorted {@link Dependency} list.
-     * @throws {Error} If unresolved dependencies found.
-     */
-    const topologicalSort = (installed, dependencies) => {
-      const existing = new Set(installed);
-      const pending = new Set(dependencies);
-      const newOnes = new Set();
-      const result = [];
-
-      do {
-        newOnes.forEach((element) => {
-          pending.delete(element);
-          existing.add(element.name);
-          result.push(element);
-        });
-        newOnes.clear();
-        pending.forEach((element) => {
-          if (Object.keys(element.dependencies).every((dep) => existing.has(dep))) {
-            newOnes.add(element);
-          }
-        });
-      } while (0 < newOnes.size);
-
-      if (0 < pending.size) {
-        throw new Error(
-          `unresolved dependencies: [${pending
-            .values()
-            .map((value) => value.toString())
-            .join(', ')}]`,
-        );
-      }
-
-      return result;
-    };
-
     return new Promise((resolve, reject) => {
-      if (
-        null === dependencies ||
-        'object' !== typeof dependencies ||
-        'function' !== typeof dependencies[Symbol.iterator]
-      ) {
-        throw new Error('expected Iterable');
-      }
       try {
         this.listInstalled(namespace).then((installed) => {
-          Promise.all(topologicalSort(Object.keys(installed), dependencies).map(this.install)).then(resolve, reject);
+          Promise.all(Dependency.sort(dependencies, Object.keys(installed)).map(this.install)).then(resolve, reject);
         }, reject);
       } catch (e) {
         reject(e);

@@ -367,8 +367,29 @@ class Validation {
     if (null === args || 'object' !== typeof args || !(args instanceof Map)) {
       throw new Error('expected arguments map to be a Map instance');
     }
+
     [...args.keys()].forEach(Validation.identifier);
+
     return new Map(args.entries());
+  }
+
+  /**
+   * Validate the given argument is an {@link Iterable} and return it if valid.
+   *
+   * @param {unknown} iter - The argument to validate.
+   * @returns {Iterable} The validated iterable.
+   * @throws {Error} If the given argument is not an {@link Iterable}.
+   */
+  static iterable(iter) {
+    if (
+      null === iter ||
+      'object' !== typeof iter ||
+      'function' !== typeof iter[Symbol.iterator]
+    ) {
+      throw new Error('expected Iterable');
+    }
+
+    return iter;
   }
 }
 
