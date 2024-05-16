@@ -306,7 +306,7 @@ class NomadVM extends EventCaster {
    *
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {NomadVM} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
    * @see {@link Validation.callback} for additional exceptions thrown.
    */
@@ -319,7 +319,7 @@ class NomadVM extends EventCaster {
    *
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {NomadVM} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    * @see {@link EventCaster.on} for additional exceptions thrown.
    */
   onceThis(filter, callback) {
@@ -1746,7 +1746,7 @@ class NomadVM extends EventCaster {
    * @param {number} namespace - Namespace to use.
    * @param {string} event - Event name to emit.
    * @param {...any} args - Associated arguments to emit alongside the event.
-   * @returns {NomadVM} `this`, for chaining.
+   * @returns {this} `this`, for chaining.
    */
   emit(namespace, event, ...args) {
     this.#postEmitMessage(Validation.namespace(namespace), EventCaster.validateEvent(event), args);
