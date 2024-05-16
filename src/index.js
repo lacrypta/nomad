@@ -20,17 +20,6 @@ import { NomadVM } from './nomadvm.js';
  */
 
 /**
- * The type of a VM-side tunnel descriptor.
- *
- * @typedef TunnelDescriptor
- * @type {object}
- * @global
- * @property {Function} resolve - Resolution callback.
- * @property {Function} reject - Rejection callback.
- * @property {?string} namespace - WW-side namespace handling the call.
- */
-
-/**
  * The type of a "protected" method injector.
  *
  * @callback ProtectedMethodInjector
@@ -40,7 +29,6 @@ import { NomadVM } from './nomadvm.js';
  */
 
 /* exported DependencyObject */
-/* exported TunnelDescriptor */
 /* exported ProtectedMethodInjector */
 /* exported NomadVM */
 /* exported Validation */

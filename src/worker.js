@@ -2,9 +2,6 @@
 
 /* global NomadVM */
 /* global DependencyObject */
-/* global EventCaster */
-/* global Validation */
-/* global WorkerEventCaster */
 
 /**
  * The code the {@link Worker} will end up executing.
@@ -16,6 +13,11 @@
 const workerRunner = () => {
   'use strict';
 
+  /**
+   * Millisecond in which {@link Worker} execution started.
+   *
+   * @type {number}
+   */
   const STARTUP = Date.now();
 
   // ----------------------------------------------------------------------------------------------
@@ -74,7 +76,6 @@ const workerRunner = () => {
   const _setTimeout = setTimeout;
   const _Date_now = Date.now;
 
-  const _Array = Array;
   const _Date = Date;
   const _Error = Error;
   const _Function = Function;
@@ -927,7 +928,7 @@ const workerRunner = () => {
      * @returns {void}
      */
     const deepFreeze = (subject, processed = new _WeakSet()) => {
-      if (null === subject || ('object' !== typeof subject && 'function' !== typeof subject)) {
+      if (null === subject || !['object', 'function'].includes(typeof subject)) {
         return;
       }
       let current = subject;
@@ -1067,7 +1068,7 @@ const workerRunner = () => {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace that is awaiting the call's result.
+   * - `namespace` is the WW-side namespace that is awaiting the call's result (for reporting on the VM's side).
    * - `tunnel` is the WW-side tunnel index awaiting the call's result.
    * - `idx` is the function index being called.
    * - `args` is an array of optional call arguments.
@@ -1089,87 +1090,463 @@ const workerRunner = () => {
   };
 
   // ----------------------------------------------------------------------------------------------
-  // -- Event Management --------------------------------------------------------------------------
+  // -- Namespace Framework -----------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Glob-enabled Event Caster ({@link Worker}-side implementation).
+   * The type of a Namespace object.
    *
-   * @inner
-   * @see {@link EventCaster} for a more detailed treatment.
+   * @typedef NamespaceObject
+   * @type {object}
+   * @internal
+   * @property {?string} parent - Parent namespace, or `null` if orphaned.
+   * @property {Set<string>} children - Set of children namespaces.
+   * @property {Set<number>} tunnels - Set of tunnels associated to this namespace.
+   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this namespace, mapping listener proper to a set of filter {@link RegExp}s.
+   * @property {Set<string>} linked - Set of linked namespaces to forward events to.
+   * @property {boolean} muted - Whether this namespace is inhibited from emitting events on the host.
+   * @property {object} dependencies - The installed dependencies object.
+   * @property {number} port - The port number where to find this namespace's back-reference.
    */
-  class WorkerEventCaster {
-    /**
-     * Validate the given callback and return it if valid.
-     *
-     * @param {unknown} callback - The callback to validate.
-     * @returns {Function} The validated callback value.
-     * @throws {Error} If the given callback is not a `Function` instance.
-     * @see {@link Validation.validateCallback} for a more detailed treatment.
-     */
-    static validateCallback(callback) {
-      if (!(callback instanceof _Function)) {
-        throw new _Error('expected callback to be a function');
-      }
 
-      return callback;
+  /**
+   * Mapping from namespace name to {@link NamespaceObject}.
+   *
+   * @type {Map<string, NamespaceObject>}
+   */
+  const namespaces = new _Map();
+
+  /**
+   * Back-references from "port number" to namespace name.
+   *
+   * This device is in place so as to allow for transparent assimilation of namespaces.
+   *
+   * @type {Array<string>}
+   */
+  const namespacePorts = [];
+
+  /**
+   * A list of inter-process tunnels being used, alongside with namespace port number.
+   *
+   * @type {Array<{ resolve: Function, reject: Function, port: number }>}
+   */
+  const tunnels = [];
+
+  /**
+   * Add the given namespace, optionally stemming from the given parent one.
+   *
+   * @param {string} namespace - Namespace to create.
+   * @param {?string} parent - Parent namespace to use, or `null` to leave the namespace orphaned.
+   * @returns {void}
+   * @throws {Error} If the given namespace does not exist.
+   * @throws {Error} If the given non-`null` parent does not exist.
+   */
+  const addNamespace = (namespace, parent) => {
+    parent ??= null;
+
+    if (namespaces.has(namespace)) {
+      throw new _Error(`duplicate namespace name ${namespace}`);
+    } else if (parent !== null && !namespaces.has(parent)) {
+      throw new _Error(`parent namespace ${parent} does not exist`);
     }
 
-    /**
-     * Validate the given event name and return it if valid.
-     *
-     * @param {unknown} name - The event name to validate.
-     * @returns {string} The validated event name.
-     * @throws {Error} If the given event name is not a `string`.
-     * @throws {Error} If the given event name fails regular expression validation.
-     * @see {@link EventCaster.validateEvent} for a more detailed treatment.
-     */
-    static validateEvent(name) {
-      const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
-      if ('string' !== typeof name) {
-        throw new _Error('event name must be a string');
-      } else if (!eventRegex.test(name)) {
-        throw new _Error(`event name must adhere to ${eventRegex}`);
-      }
+    namespaces.set(namespace, {
+      parent,
+      children: new _Set(),
+      tunnels: new _Set(),
+      listeners: new _Map(),
+      linked: new _Set(),
+      muted: false,
+      dependencies: _Object.create(null === parent ? null : getNamespace(parent).dependencies),
+      port: namespacePorts.push(namespace) - 1,
+    });
 
-      return name;
+    if (null !== parent) {
+      getNamespace(parent).children.add(namespace);
+    }
+  };
+
+  /**
+   * Retrieve the namespace given.
+   *
+   * @param {string} namespace - Namespace to retrieve.
+   * @returns {NamespaceObject} Namespace object under the given name.
+   * @throws {Error} If the given namespace does not exist.
+   */
+  const getNamespace = (namespace) => {
+    if (!namespaces.has(namespace)) {
+      throw new _Error(`namespace ${namespace} does not exist`);
     }
 
-    /**
-     * Validate the given event name filter and return it if valid.
-     *
-     * @param {unknown} filter - The event name filter to validate.
-     * @returns {string} The validated event name filter.
-     * @throws {Error} If the given event name filter is not a `string`.
-     * @throws {Error} If the given event name filter fails regular expression validation.
-     * @see {@link EventCaster.validateFilter} for a more detailed treatment.
-     */
-    static validateFilter(filter) {
-      const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
-      if ('string' !== typeof filter) {
-        throw new _Error('event name filter must be a string');
-      } else if (!filterRegex.test(filter)) {
-        throw new _Error(`event name filter must adhere to ${filterRegex}`);
-      } else if (-1 != filter.indexOf('**:**')) {
-        throw new _Error('event name filter must not contain consecutive ** wildcards');
-      }
+    return namespaces.get(namespace);
+  };
 
-      return filter;
+  /**
+   * Retrieve a list of progressively-more-removed ancestor namespaces of the given one.
+   *
+   * @param {string} namespace - Namespace to retrieve the ancestors list of.
+   * @returns {Array<string>} An array of namespace names, the further down the list, the more removed the namespace in said position is with respect to the given namespace.
+   */
+  const namespaceAncestors = (namespace) => {
+    const result = [];
+
+    namespace = getNamespace(namespace).parent;
+    while (null !== namespace) {
+      result.push(namespace);
+      namespace = getNamespace(namespace).parent;
     }
 
-    /**
-     * Turn an event name filter into a filtering {@link RegExp}.
-     *
-     * @param {unknown} filter - The event name filter to transform.
-     * @returns {RegExp} The transformed event name filter.
-     * @private
-     * @see {@link WorkerEventCaster.validateFilter} for additional exceptions thrown.
-     * @see {@link EventCaster.#filterToRegExp} for a more detailed treatment.
-     */
-    static #filterToRegExp(filter) {
-      return new _RegExp(
+    return result;
+  };
+
+  /**
+   * Retrieve a list of _all_ descendants of the given namespace (including transitive relationships).
+   *
+   * @param {string} namespace - Namespace to retrieve the list of descendants of.
+   * @returns {Array<string>} An array with the namespace's descendants.
+   */
+  const namespaceDescendants = (namespace) => {
+    const children = [...getNamespace(namespace).children];
+    return [...children, ...children.map(namespaceDescendants)].sort();
+  };
+
+  /**
+   * Retrieve a list of all the namespace's children namespaces.
+   *
+   * @param {string} namespace - Namespace to retrieve the list of children of.
+   * @returns {Array<string>} An array with the given namespace's children.
+   */
+  const namespaceChildren = (namespace) => {
+    return [...getNamespace(namespace).children].sort();
+  };
+
+  /**
+   * Remove the given namespace and return a list of transitively-removed namespaces.
+   *
+   * Upon deleting a namespace, all of its descendants will be delete along with it.
+   * Any tunnel in a so removed namespace will be rejected.
+   * Any port back-referencing a so removed namespace will be deleted.
+   *
+   * @param {string} namespace - Namespace to remove.
+   * @returns {Array<string>} A list of namespaces that actually got removed (this includes the one given, and all of its descendants).
+   */
+  const removeNamespace = (namespace) => {
+    {
+      const { parent } = getNamespace(namespace);
+      if (null !== parent) {
+        getNamespace(parent).children.delete(namespace);
+      }
+    }
+
+    let toReject = [];
+
+    const removed = [namespace, ...namespaceDescendants(namespace)].sort();
+    removed.forEach((toRemove) => {
+      const { tunnels, port } = getNamespace(toRemove);
+      toReject = [...toReject, ...tunnels];
+      delete namespacePorts[port];
+      delete namespaces[toRemove];
+    });
+
+    const error = new _Error('deleting namespace');
+    toReject.sort().forEach((tunnel) => rejectTunnel(tunnel, error));
+
+    return removed;
+  };
+
+  /**
+   * Assimilate the given namespace into its parent.
+   *
+   * Assimilation merges a namespace's dependencies with those of its parent, as does its tunnels and event listeners.
+   * The given namespace's parent adopts all of the given namespace's children.
+   * Finally, the given namespace's port is redirected to its parent.
+   *
+   * NOTE: we can never get rid of assimilated ports because the wrapped event caster may have been cached dependency-side.
+   *
+   * @param {string} namespace - The namespace to assimilate to its parent.
+   * @returns {void}
+   * @throws {Error} If the given namespace is orphaned.
+   */
+  const assimilateNamespace = (namespace) => {
+    const { parent, children, tunnels, listeners, dependencies, port } = getNamespace(namespace);
+
+    if (null === parent) {
+      throw new _Error(`namespace ${namespace} has no parent`);
+    }
+
+    const {
+      children: parentChildren,
+      tunnels: parentTunnels,
+      listeners: parentListeners,
+      dependencies: parentDependencies,
+      linked: parentLinked,
+    } = getNamespace(parent);
+
+    parentChildren.delete(namespace);
+    [...children].forEach((child) => {
+      parentChildren.add(child);
+      parentLinked.delete(child);
+      const childNamespace = getNamespace(child);
+      childNamespace.parent = parent;
+      _Object.setPrototypeOf(childNamespace.dependencies, parentDependencies);
+    });
+
+    [...tunnels].forEach((tunnel) => parentTunnels.add(tunnel));
+
+    [...listeners.entries()].forEach(([callback, filters]) => {
+      if (!parentListeners.has(callback)) {
+        parentListeners.set(callback, new _Set());
+      }
+      [...filters].forEach((filter) => parentListeners.get(callback).add(filter));
+    });
+
+    _Object.entries(dependencies).forEach(([name, value]) => {
+      parentDependencies[name] = value;
+    });
+
+    namespacePorts[port] = parent;
+  };
+
+  /**
+   * Link the given namespace with the given target namespace.
+   *
+   * Linking one namespace to another makes it so that events emitted on the former are also cast on the latter.
+   *
+   * A namespace may not be linked to either itself, any of its ancestors, any of its descendants.
+   * Likewise, a namespace may not be linked to the same target twice.
+   * In any of these cases, this function does nothing but return `false`.
+   *
+   * @param {string} namespace - Namespace to link "from".
+   * @param {string} target - Target namespace to link "to".
+   * @returns {boolean} Whether a link was actually added.
+   */
+  const linkNamespace = (namespace, target) => {
+    getNamespace(target); // just for validation
+    const { linked } = getNamespace(namespace);
+
+    if ([namespace, ...namespaceDescendants(namespace), ...namespaceAncestors(namespace), ...linked].includes(target)) {
+      return false;
+    }
+    linked.add(target);
+    return true;
+  };
+
+  /**
+   * Unlink the given target from the given namespace.
+   *
+   * @param {string} namespace - Namespace to unlink "from".
+   * @param {string} target - Target namespace to unlink "to".
+   * @returns {boolean} Whether a link was actually severed.
+   */
+  const unlinkNamespace = (namespace, target) => {
+    getNamespace(target); // just for validation
+    return getNamespace(namespace).linked.delete(target);
+  };
+
+  /**
+   * Mute the given namespace.
+   *
+   * Muting a namespace prevents it from emitting events towards the host.
+   *
+   * @param {string} namespace - Namespace to mute.
+   * @returns {boolean} The previous muting status of the given namespace.
+   */
+  const muteNamespace = (namespace) => {
+    const namespaceObject = getNamespace(namespace);
+    const result = namespaceObject.muted;
+    namespaceObject.muted = true;
+    return result;
+  };
+
+  /**
+   * Unmute the given namespace.
+   *
+   * @param {string} namespace - Namespace to unmute.
+   * @returns {boolean} The previous muting status of the given namespace.
+   */
+  const unmuteNamespace = (namespace) => {
+    const namespaceObject = getNamespace(namespace);
+    const result = namespaceObject.muted;
+    namespaceObject.muted = false;
+    return result;
+  };
+
+  /**
+   * Retrieve a list of defined namespaces.
+   *
+   * @returns {Array<string>} A list of namespaces created and not assimilated nor removed.
+   */
+  const listNamespaces = () => {
+    return [...namespaces.keys()].sort();
+  };
+
+  /**
+   * Create a new tunnel with the given resolution and rejection callbacks for the given namespace, returning the index of the created tunnel.
+   *
+   * @param {string} namespace - Namespace to use.
+   * @param {Function} resolve - The resolution callback.
+   * @param {Function} reject - The rejection callback.
+   * @returns {number} The created tunnel's index.
+   */
+  const addTunnel = (namespace, resolve, reject) => {
+    const { tunnels: namespaceTunnels, port } = getNamespace(namespace);
+    const tunnel = tunnels.push({ resolve, reject, port }) - 1;
+    namespaceTunnels.add(tunnel);
+
+    return tunnel;
+  };
+
+  /**
+   * Remove the given tunnel and return its former resolution / rejection callbacks.
+   *
+   * @param {number} tunnel - The tunnel to remove.
+   * @returns {{reject: Function, resolve: Function}} The resolution / rejection callbacks that used to be at the given index.
+   * @throws {Error} If the given tunnel does not exist.
+   */
+  const removeTunnel = (tunnel) => {
+    if (!(tunnel in tunnels)) {
+      throw new _Error(`tunnel ${tunnel} does not exist`);
+    }
+
+    const { resolve, reject, port } = tunnels[tunnel];
+
+    getNamespace(namespacePorts[port]).tunnels.delete(tunnel);
+
+    return { resolve, reject };
+  };
+
+  /**
+   * Resolve the given tunnel with the given arguments, removing the tunnel from the tunnels list.
+   *
+   * @param {number} tunnel - Tunnel to resolve.
+   * @param {unknown} arg - Argument to pass on to the resolution callback.
+   * @returns {void}
+   */
+  const resolveTunnel = (tunnel, arg) => {
+    removeTunnel(tunnel).resolve(arg);
+  };
+
+  /**
+   * Reject the given tunnel with the given error object, removing the tunnel from the tunnels list.
+   *
+   * @param {number} tunnel - Tunnel to reject.
+   * @param {Error} error - {@link Error} to pass on to the rejection callback.
+   * @returns {void}
+   */
+  const rejectTunnel = (tunnel, error) => {
+    removeTunnel(tunnel).reject(error);
+  };
+
+  /**
+   * Cast the given event with the given arguments and trigger any matching listeners in the given namespace.
+   *
+   * @param {string} namespace - The namespace to cast the given event on.
+   * @param {string} event - The event name to cast.
+   * @param {...unknown} args - Any additional arguments o associate to the cast event.
+   * @returns {void}
+   * @throws {Error} If the given event name is not a `string`.
+   * @throws {Error} If the given event name fails regular expression validation.
+   */
+  const cast = (namespace, event, ...args) => {
+    const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
+
+    if ('string' !== typeof event) {
+      throw new _Error('event name must be a string');
+    } else if (!eventRegex.test(event)) {
+      throw new _Error(`event name must adhere to ${eventRegex}`);
+    }
+
+    const { linked } = getNamespace(namespace);
+
+    const callbacks = new _Set();
+    [namespace, ...namespaceAncestors(namespace), ...namespaceDescendants(namespace), ...linked].forEach((target) => {
+      for (let [callback, filters] of getNamespace(target).listeners.entries()) {
+        if ([...filters.values()].some((filter) => filter.test(event))) {
+          callbacks.add(callback);
+        }
+      }
+    });
+
+    [...callbacks].forEach((callback) => _setTimeout(callback.apply(undefined, [event, ...args]), 0));
+  };
+
+  /**
+   * Cast the given user event with the given arguments in the given namespace and its linked namespaces; cast towards the host if not muted.
+   *
+   * @param {string} namespace - Namespace to use.
+   * @param {string} event - Event name to cast.
+   * @param {...unknown} args - Arguments to cast alongside the event.
+   * @returns {void}
+   */
+  const castUser = (namespace, event, ...args) => {
+    cast(namespace, event, ...args);
+
+    if (!getNamespace(namespace).muted) {
+      postEmitMessage(`${namespace}:user:${event}`, args);
+    }
+  };
+
+  /**
+   * Cast the given host event with the given arguments in the given namespace and its linked namespaces.
+   *
+   * @param {string} namespace - Namespace to use.
+   * @param {string} event - Event name to cast.
+   * @param {...unknown} args - Arguments to cast alongside the event.
+   * @returns {void}
+   */
+  const castHost = (namespace, event, ...args) => {
+    cast(namespace, `${namespace}:user:${event}`, ...args);
+  };
+
+  /**
+   * Remove the given callback from the listeners set in the given namespace.
+   *
+   * @param {string} namespace - Namespace to use.
+   * @param {Function} callback - The callback to remove.
+   * @returns {void}
+   * @throws {Error} If the given callback is not a {@link Function} instance.
+   */
+  const off = (namespace, callback) => {
+    if (!(callback instanceof _Function)) {
+      throw new _Error('expected callback to be a function');
+    }
+
+    getNamespace(namespace).listeners.delete(callback);
+  };
+
+  /**
+   * Attach the given callback to the event caster, triggered on events matching the given filter on the given namespace.
+   *
+   * @param {string} namespace - Namespace to use.
+   * @param {unknown} filter - Event name filter to assign the listener to.
+   * @param {unknown} callback - Callback to call on a matching event being cast.
+   * @returns {void}
+   * @throws {Error} If the given callback is not a {@link Function} instance.
+   * @throws {Error} If the given event name filter is not a `string`.
+   * @throws {Error} If the given event name filter fails regular expression validation.
+   * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
+   */
+  const on = (namespace, filter, callback) => {
+    const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
+
+    if (!(callback instanceof _Function)) {
+      throw new _Error('expected callback to be a function');
+    } else if ('string' !== typeof filter) {
+      throw new _Error('event name filter must be a string');
+    } else if (!filterRegex.test(filter)) {
+      throw new _Error(`event name filter must adhere to ${filterRegex}`);
+    } else if (-1 != filter.indexOf('**:**')) {
+      throw new _Error('event name filter must not contain consecutive ** wildcards');
+    }
+
+    const { listeners } = getNamespace(namespace);
+    if (!listeners.has(callback)) {
+      listeners.set(callback, new _Set());
+    }
+    listeners.get(callback).add(
+      _RegExp(
         '^' +
-          WorkerEventCaster.validateFilter(filter)
+          filter
             .split(':')
             .map((part) => {
               switch (part) {
@@ -1184,375 +1561,103 @@ const workerRunner = () => {
             .join(':')
             .replace(/^\?/g, '') +
           '$',
-      );
-    }
-
-    /**
-     * The event listener map.
-     *
-     * @type {Map.<Function, Set.<RegExp>>}
-     * @private
-     * @see {@link EventCaster.#listeners} for a more detailed treatment.
-     */
-    #listeners = new _Map();
-
-    /**
-     * Attach the given callback to the event caster, triggered on events matching the given filter.
-     *
-     * @param {unknown} filter - Event name filter to assign the listener to.
-     * @param {unknown} callback - Callback to call on a matching event being cast.
-     * @returns {WorkerEventCaster} `this`, for chaining.
-     * @see {@link WorkerEventCaster.#filterToRegExp} for additional exceptions thrown.
-     * @see {@link WorkerEventCaster.validateCallback} for additional exceptions thrown.
-     * @see {@link EventCaster.on} for additional exceptions thrown.
-     */
-    on(filter, callback) {
-      if (!this.#listeners.has(WorkerEventCaster.validateCallback(callback))) {
-        this.#listeners.set(callback, new Set());
-      }
-      this.#listeners.get(callback).add(WorkerEventCaster.#filterToRegExp(filter));
-
-      return this;
-    }
-
-    /**
-     * Attach the given callback to the event caster, triggered on events matching the given filter, and removed upon being called once.
-     *
-     * @param {unknown} filter - Event name filter to assign the listener to.
-     * @param {unknown} callback - Callback to call on a matching event being cast.
-     * @returns {WorkerEventCaster} `this`, for chaining.
-     * @see {@link WorkerEventCaster.on} for additional exceptions thrown.
-     * @see {@link EventCaster.once} for a more detailed treatment.
-     */
-    once(filter, callback) {
-      const wrapped = (...args) => {
-        callback.apply(undefined, args);
-        this.off(wrapped);
-      };
-      return this.on(filter, wrapped);
-    }
-
-    /**
-     * Remove the given callback from the listeners set.
-     *
-     * @param {unknown} callback - The callback to remove.
-     * @returns {WorkerEventCaster} `this`, for chaining.
-     * @see {@link EventCaster.off} for a more detailed treatment.
-     */
-    off(callback) {
-      this.#listeners.delete(callback);
-      return this;
-    }
-
-    /**
-     * Cast the given event with the given arguments and trigger any matching listeners.
-     *
-     * @param {unknown} name - The event name to cast.
-     * @param {...unknown} args - Any additional arguments o associate to the cast event.
-     * @returns {WorkerEventCaster} `this`, for chaining.
-     * @see {@link WorkerEventCaster.validateEvent} for additional exceptions thrown.
-     * @see {@link EventCaster.cast} for a more detailed treatment.
-     */
-    cast(name, ...args) {
-      WorkerEventCaster.validateEvent(name);
-
-      for (let [callback, filters] of this.#listeners.entries()) {
-        if (filters.values().some((filter) => filter.test(name))) {
-          _setTimeout(callback.apply(undefined, [name, ...args]));
-        }
-      }
-
-      return this;
-    }
-  }
-
-  // ----------------------------------------------------------------------------------------------
-  // -- Namespace Framework -----------------------------------------------------------------------
-  // ----------------------------------------------------------------------------------------------
-
-  /**
-   * The type of a WW-side tunnel descriptor.
-   *
-   * @typedef SimpleTunnelDescriptor
-   * @type {object}
-   * @internal
-   * @property {Function} resolve - Resolution callback.
-   * @property {Function} reject - Rejection callback.
-   */
-
-  /**
-   * The type of a Namespace object.
-   *
-   * @typedef NamespaceObject
-   * @type {object}
-   * @internal
-   * @property {Object<string, unknown>} installedDependencies - Dependencies installed in the namespace.
-   * @property {WorkerEventCaster} eventCaster - Event caster for this namespace.
-   * @property {Set<string>} linked - Set of linked namespaces (for event propagation).
-   * @property {boolean} muted - Whether this namespace is muted for the host.
-   * @property {Array<SimpleTunnelDescriptor>} tunnels - List of active tunnels in this namespace.
-   * @property {Set<string>} subs - Set of sub-namespaces inheriting from this one.
-   * @property {?string} sup - The parent namespace, or `null` if none.
-   */
-
-  /**
-   * Active namespace map.
-   *
-   * @type {Map<string, NamespaceObject>}
-   */
-  const namespaces = new _Map();
-
-  /**
-   * Retrieve the given namespace's data.
-   *
-   * @param {string} namespace - Namespace to retrieve.
-   * @returns {NamespaceObject} The namespace data associated with the given namespace name.
-   * @throws {Error} If the given namespace does not exist.
-   */
-  const getNamespace = (namespace) => {
-    if (!namespaces.has(namespace)) {
-      throw new _Error(`namespace ${namespace} does not exist`);
-    }
-    return namespaces.get(namespace);
+      ),
+    );
   };
 
   /**
-   * Add the given namespace to the active namespaces mapping, using the given parent namespace.
-   *
-   * @param {string} namespace - Namespace to add.
-   * @param {string} parent - Parent namespace to use as base.
-   * @returns {void}
-   * @throws {Error} If the given namespace already exists.
-   */
-  const addNamespace = (namespace, parent = null) => {
-    if (namespaces.has(namespace)) {
-      throw new _Error(`namespace ${namespace} already exists`);
-    }
-
-    parent ??= null;
-
-    let proto = null;
-    if (parent !== null) {
-      const { installedDependencies: parentInstalledDependencies, subs: parentSubs } = getNamespace(parent);
-      proto = parentInstalledDependencies;
-      parentSubs.add(namespace);
-    }
-
-    namespaces.set(namespace, {
-      installedDependencies: _Object.create(proto),
-      eventCaster: new WorkerEventCaster(),
-      linked: new _Set(),
-      muted: false,
-      tunnels: [],
-      subs: new Set(),
-      sup: parent,
-    });
-  };
-
-  /**
-   * Remove the given namespace (with its children) and reject all of their awaiting tunnels.
-   *
-   * @param {string} namespace - Namespace to remove.
-   * @returns {Array<string>} The removed namespaces (the one given, and any transitive children of it).
-   */
-  const removeNamespace = (namespace) => {
-    const { tunnels, subs } = getNamespace(namespace);
-    namespaces.delete(namespace);
-
-    const result = [namespace];
-    subs.forEach((subNamespace) => {
-      result.push(...removeNamespace(subNamespace));
-    });
-
-    const error = new _Error('deleting namespace');
-    tunnels.forEach(({ reject }, tunnel) => {
-      delete tunnels[tunnel];
-      reject(error);
-    });
-
-    return result;
-  };
-
-  /**
-   * Cast the given user event with the given arguments in the given namespace and its linked namespaces; cast towards the host if not muted.
+   * Attach the given callback to the event caster, triggered on events matching the given filter on the given namespace, and removed upon being called once.
    *
    * @param {string} namespace - Namespace to use.
-   * @param {string} name - Event name to cast.
-   * @param {...unknown} args - Arguments to cast alongside the event.
+   * @param {unknown} filter - Event name filter to assign the listener to.
+   * @param {Function} callback - Callback to call on a matching event being cast.
    * @returns {void}
    */
-  const castUserInNamespace = (namespace, name, ...args) => {
-    const { eventCaster, linked, muted } = getNamespace(namespace);
-    eventCaster.cast(`user:${name}`, ...args);
-    for (const linkedNamespace in linked) {
-      getNamespace(linkedNamespace).eventCaster.cast(`user:${name}`, ...args);
-    }
-    if (!muted) {
-      postEmitMessage(`${namespace}:user:${name}`, args);
-    }
+  const once = (namespace, filter, callback) => {
+    const wrapped = (...args) => {
+      callback.apply(undefined, args);
+      off(namespace, wrapped);
+    };
+    on(namespace, filter, wrapped);
   };
 
   /**
-   * Cast the given host event with the given arguments in the given namespace and its linked namespaces.
+   * Create a wrapped event caster for the given namespace (that will survive the namespace being assimilated).
    *
    * @param {string} namespace - Namespace to use.
-   * @param {string} name - Event name to cast.
-   * @param {...unknown} args - Arguments to cast alongside the event.
-   * @returns {void}
+   * @returns {{ on: Function, once: Function, off: Function, cast: Function }} The wrapped event caster created.
    */
-  const castHostInNamespace = (namespace, name, ...args) => {
-    const { eventCaster, linked } = getNamespace(namespace);
-    eventCaster.cast(`host:${name}`, ...args);
-    for (const linkedNamespace in linked) {
-      getNamespace(linkedNamespace).eventCaster.cast(`host:${name}`, ...args);
-    }
+  const eventCaster = (namespace) => {
+    const { port } = getNamespace(namespace);
+
+    const eventCaster = _Object.create(null);
+    const __on = (filter, callback) => {
+      on(namespacePorts[port], filter, callback);
+      return eventCaster;
+    };
+    const __once = (filter, callback) => {
+      once(namespacePorts[port], filter, callback);
+      return eventCaster;
+    };
+    const __off = (callback) => {
+      off(namespacePorts[port], callback);
+      return eventCaster;
+    };
+    const __cast = (event, ...args) => {
+      castUser(namespacePorts[port], event, ...args);
+      return eventCaster;
+    };
+    eventCaster.on = _Object.freeze((...args) => __on(...args));
+    eventCaster.once = _Object.freeze((...args) => __once(...args));
+    eventCaster.off = _Object.freeze((...args) => __off(...args));
+    eventCaster.cast = _Object.freeze((...args) => __cast(...args));
+
+    return _Object.freeze(eventCaster);
   };
 
   /**
-   * Retrieve a list of all installed dependencies in a given namespace (and its ancestors).
+   * Retrieve a list of installed dependencies on the given namespace.
    *
    * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} List of installed dependency names.
+   * @returns {Array<string>} A list of installed dependencies.
    */
   const listInstalled = (namespace) => {
     const result = [];
-    for (const dep in getNamespace(namespace).installedDependencies) {
+    for (const dep in getNamespace(namespace).dependencies) {
       result.push(dep);
     }
-    return result;
+    return result.sort();
   };
 
   /**
-   * Retrieve a list of all namespaces the given one links to.
+   * Retrieve a list of namespaces the given one links to.
    *
    * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} List of linked namespace names.
+   * @returns {Array<string>} A list of namespaces linked to by the given one.
    */
-  const listLinkedTo = (namespace) => {
-    return _Array.from(getNamespace(namespace).linked.values()).sort();
+  const listLinksTo = (namespace) => {
+    return [...getNamespace(namespace).linked].sort();
   };
 
   /**
-   * Retrieve a list of all namespaces the given one is linked from.
+   * Retrieve a list of namespaces that link to the given one.
    *
    * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} List of linking namespace names.
+   * @returns {Array<string>} A list of namespaces linking to the given one.
    */
   const listLinkedFrom = (namespace) => {
     getNamespace(namespace);
-    return _Array
-      .from(
-        namespaces
-          .entries()
-          .filter(([, { linked }]) => linked.has(namespace))
-          .map(([name]) => name),
-      )
-      .sort();
+    return [...namespaces.entries()].filter(([, { linked }]) => linked.has(namespace)).map(([name]) => name);
   };
 
   /**
-   * Determine whether the given namespace is muted.
+   * Determine whether the given namespace is muted or not.
    *
    * @param {string} namespace - Namespace to use.
    * @returns {boolean} Whether the given namespace is muted or not.
    */
   const isMuted = (namespace) => {
     return getNamespace(namespace).muted;
-  };
-
-  /**
-   * Retrieve a list of all namespaces in the given one's ancestry (the result will start with the given namespace and move "upwards" in the ancestry chain).
-   *
-   * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} List of namespace names in the ancestry chain.
-   */
-  const getAncestors = (namespace) => {
-    const result = [];
-    for (let current = namespace; null !== current; current = getNamespace(current).sup) {
-      result.push(current);
-    }
-    return result;
-  };
-
-  /**
-   * Retrieve a list of all children namespaces of the given one.
-   *
-   * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} List of children namespace names.
-   */
-  const getChildren = (namespace) => {
-    return _Array.from(getNamespace(namespace).subs).sort();
-  };
-
-  /**
-   * Retrieve the number of pending tunnels in the given namespace.
-   *
-   * @param {string} namespace - Namespace to use.
-   * @returns {number} The number of pending tunnels in the given namespace.
-   */
-  const pendingTunnels = (namespace) => {
-    return getNamespace(namespace).tunnels.filter((x) => undefined !== x).length;
-  };
-
-  // ----------------------------------------------------------------------------------------------
-  // -- Tunnelling Framework ----------------------------------------------------------------------
-  // ----------------------------------------------------------------------------------------------
-
-  /**
-   * Create a new tunnel (cf. {@link NomadVM.#tunnels}) on the given namespace, with the given resolution and rejection callbacks, returning the index of the created tunnel.
-   *
-   * @param {string} namespace - Namespace to add the tunnel on.
-   * @param {Function} resolve - The resolution callback.
-   * @param {Function} reject - The rejection callback.
-   * @returns {number} The created tunnel's ID.
-   */
-  const addTunnel = (namespace, resolve, reject) => {
-    const { tunnels } = getNamespace(namespace);
-    return tunnels.push({ resolve, reject }) - 1;
-  };
-
-  /**
-   * Remove the given tunnel ID from the given namespace, and return its former resolution / rejection callbacks.
-   *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel to remove.
-   * @returns {{reject: Function, resolve: Function}} The resolution / rejection callbacks that used to be at the given index.
-   * @throws {Error} If the given tunnel ID does not exist.
-   */
-  const removeTunnel = (namespace, tunnel) => {
-    const { tunnels } = getNamespace(namespace);
-    if (!(tunnel in tunnels)) {
-      throw new _Error('tunnel does not exist');
-    }
-    const result = tunnels[tunnel];
-    delete tunnels[tunnel];
-    return result;
-  };
-
-  /**
-   * Resolve the given tunnel in the given namespace ID with the given arguments, removing the tunnel from the namespace's tunnels list.
-   *
-   * @param {string} namespace - Namespace to use.
-   * @param {number} tunnel - Tunnel to resolve.
-   * @param {unknown} arg - Argument to pass on to the resolution callback.
-   * @returns {void}
-   * @see {@link NomadVM.removeTunnel} for additional exceptions thrown.
-   */
-  const resolveTunnel = (namespace, tunnel, arg) => {
-    removeTunnel(namespace, tunnel).resolve(arg);
-  };
-
-  /**
-   * Reject the given tunnel in the given namespace ID with the given error object, removing the tunnel from the namespace's tunnels list.
-   *
-   * @param {string} namespace - Namespace to use.
-   * @param {number} tunnel - Tunnel to reject.
-   * @param {Error} error - {@link Error} to pass on to the rejection callback.
-   * @returns {void}
-   * @see {@link NomadVM.removeTunnel} for additional exceptions thrown.
-   */
-  const rejectTunnel = (namespace, tunnel, error) => {
-    removeTunnel(namespace, tunnel).reject(error);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1574,13 +1679,13 @@ const workerRunner = () => {
    * @throws {Error} If any argument would shadow an imported dependency.
    */
   const executeDependency = (namespace, dependency, args) => {
-    const { installedDependencies, eventCaster } = getNamespace(namespace);
+    const { dependencies } = getNamespace(namespace);
     const importedNames = _Object.keys(dependency.dependencies);
     {
       if (IMPORT_LIMIT < importedNames.length) {
         throw new _Error(`too many imports 1024 < ${importedNames.length}`);
       }
-      const missing = importedNames.filter((name) => !(dependency.dependencies[name] in installedDependencies));
+      const missing = importedNames.filter((name) => !(dependency.dependencies[name] in dependencies));
       if (0 !== missing.length) {
         throw new _Error(
           `missing dependencies: [${[...new _Set(missing.map((name) => dependency.dependencies[name]))].join(', ')}]`,
@@ -1598,28 +1703,6 @@ const workerRunner = () => {
       }
     }
 
-    const __events__ = _Object.create(null);
-    const __on = (filter, callback) => {
-      eventCaster.on(filter, callback);
-      return __events__;
-    };
-    const __once = (filter, callback) => {
-      eventCaster.once(filter, callback);
-      return __events__;
-    };
-    const __off = (callback) => {
-      eventCaster.off(callback);
-      return __events__;
-    };
-    const __cast = (name, ...args) => {
-      castUserInNamespace(namespace, name, ...args);
-      return __events__;
-    };
-    __events__.on = (...args) => __on(...args);
-    __events__.once = (...args) => __once(...args);
-    __events__.off = (...args) => __off(...args);
-    __events__.cast = (...args) => __cast(...args);
-
     // ref: https://stackoverflow.com/a/34523915
     return new _Function(
       '__events__',
@@ -1630,8 +1713,8 @@ const workerRunner = () => {
     `,
     ).call(
       undefined,
-      __events__,
-      ...importedNames.map((importedName) => installedDependencies[dependency.dependencies[importedName]]),
+      eventCaster(namespace),
+      ...importedNames.map((importedName) => dependencies[dependency.dependencies[importedName]]),
       ...argumentNames.map((argumentName) => args.get(argumentName)),
     );
   };
@@ -1646,16 +1729,12 @@ const workerRunner = () => {
    * @see {@link NomadVM.executeDependency} for further execution context details.
    */
   const installDependency = (namespace, dependency) => {
-    const { installedDependencies } = getNamespace(namespace);
-    if (dependency.name in installedDependencies) {
+    const { dependencies } = getNamespace(namespace);
+    if (dependency.name in dependencies) {
       throw new _Error(`duplicate dependency ${dependency.name}`);
     }
     const result = executeDependency(namespace, dependency, new _Map());
-    if ('object' === typeof result) {
-      installedDependencies[dependency.name] = _Object.freeze(result);
-    } else {
-      installedDependencies[dependency.name] = result;
-    }
+    dependencies[dependency.name] = 'object' === typeof result ? _Object.freeze(result) : result;
   };
 
   /**
@@ -1668,17 +1747,17 @@ const workerRunner = () => {
    * @throws {Error} If the given name is already in use.
    */
   const addPredefined = (namespace, idx, name) => {
-    const { installedDependencies } = getNamespace(namespace);
-    if (name in installedDependencies) {
+    const { dependencies, port } = getNamespace(namespace);
+    if (name in dependencies) {
       throw new _Error(`duplicate dependency ${name}`);
     }
     const __predefined = _Object.freeze(
       (...args) =>
         new _Promise((resolve, reject) => {
-          postCallMessage(namespace, addTunnel(namespace, resolve, reject), idx, args);
+          postCallMessage(namespacePorts[port], addTunnel(namespace, resolve, reject), idx, args);
         }),
     );
-    installedDependencies[name] = (...args) => __predefined(...args);
+    dependencies[name] = (...args) => __predefined(...args);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -2539,20 +2618,20 @@ const workerRunner = () => {
       switch (name) {
         case 'resolve':
           {
-            const { namespace, tunnel, payload } = parsedData;
-            resolveTunnel(namespace, tunnel, payload);
+            const { tunnel, payload } = parsedData;
+            resolveTunnel(tunnel, payload);
           }
           break;
         case 'reject':
           {
-            const { namespace, tunnel, error } = parsedData;
-            rejectTunnel(namespace, tunnel, new _Error(error));
+            const { tunnel, error } = parsedData;
+            rejectTunnel(tunnel, new _Error(error));
           }
           break;
         case 'emit':
           {
             const { namespace, event, args } = parsedData;
-            castHostInNamespace(namespace, event, args);
+            castHost(namespace, event, args);
           }
           break;
         case 'install':
@@ -2591,7 +2670,8 @@ const workerRunner = () => {
           {
             const { namespace, parent, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, addNamespace(namespace, parent ?? null));
+              addNamespace(namespace, parent ?? null);
+              postResolveMessage(tunnel);
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2607,15 +2687,22 @@ const workerRunner = () => {
             }
           }
           break;
+        case 'assimilate':
+          {
+            const { namespace, tunnel } = parsedData;
+            try {
+              assimilateNamespace(namespace);
+              postResolveMessage(tunnel);
+            } catch (e) {
+              postRejectMessage(tunnel, e.message);
+            }
+          }
+          break;
         case 'link':
           {
             const { namespace, tunnel, target } = parsedData;
             try {
-              getNamespace(target);
-              if (namespace !== target) {
-                getNamespace(namespace).linked.add(target);
-              }
-              postResolveMessage(tunnel);
+              postResolveMessage(tunnel, linkNamespace(namespace, target));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2625,8 +2712,7 @@ const workerRunner = () => {
           {
             const { namespace, tunnel, target } = parsedData;
             try {
-              getNamespace(target);
-              postResolveMessage(tunnel, getNamespace(namespace).linked.delete(target));
+              postResolveMessage(tunnel, unlinkNamespace(namespace, target));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2636,10 +2722,7 @@ const workerRunner = () => {
           {
             const { namespace, tunnel } = parsedData;
             try {
-              const namespaceObject = getNamespace(namespace);
-              const previous = namespaceObject.muted;
-              namespaceObject.muted = true;
-              postResolveMessage(tunnel, previous);
+              postResolveMessage(tunnel, muteNamespace(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2649,10 +2732,7 @@ const workerRunner = () => {
           {
             const { namespace, tunnel } = parsedData;
             try {
-              const namespaceObject = getNamespace(namespace);
-              const previous = namespaceObject.muted;
-              namespaceObject.muted = false;
-              postResolveMessage(tunnel, previous);
+              postResolveMessage(tunnel, unmuteNamespace(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2662,7 +2742,7 @@ const workerRunner = () => {
           {
             const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, _Array.from(namespaces.keys()).sort());
+              postResolveMessage(tunnel, listNamespaces());
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2678,11 +2758,11 @@ const workerRunner = () => {
             }
           }
           break;
-        case 'listLinkedTo':
+        case 'listLinksTo':
           {
             const { namespace, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listLinkedTo(namespace));
+              postResolveMessage(tunnel, listLinksTo(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2712,7 +2792,17 @@ const workerRunner = () => {
           {
             const { namespace, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, getAncestors(namespace));
+              postResolveMessage(tunnel, namespaceAncestors(namespace));
+            } catch (e) {
+              postRejectMessage(tunnel, e.message);
+            }
+          }
+          break;
+        case 'getDescendants':
+          {
+            const { namespace, tunnel } = parsedData;
+            try {
+              postResolveMessage(tunnel, namespaceDescendants(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2722,17 +2812,7 @@ const workerRunner = () => {
           {
             const { namespace, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, getChildren(namespace));
-            } catch (e) {
-              postRejectMessage(tunnel, e.message);
-            }
-          }
-          break;
-        case 'pendingTunnels':
-          {
-            const { namespace, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, pendingTunnels(namespace));
+              postResolveMessage(tunnel, namespaceChildren(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }

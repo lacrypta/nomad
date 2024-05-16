@@ -1,7 +1,6 @@
 'use strict';
 
 /* global DependencyObject */
-/* global TunnelDescriptor */
 
 /**
  * Static container class for generic NomadVM Validation.
@@ -293,25 +292,21 @@ class Validation {
   }
 
   /**
-   * Validate the given tunnel descriptor parts and return them if valid.
+   * Validate the given resolve / reject pair and return it if valid.
    *
    * @param {unknown} resolve - The resolve value to validate.
    * @param {unknown} reject - The reject value to validate.
-   * @param {unknown} namespace - The namespace value to validate.
-   * @returns {TunnelDescriptor} The validated {@link TunnelDescriptor}.
+   * @returns {{ resolve: Function, reject: Function }} The validated reject / resolve pair.
    * @throws {Error} If the given resolve value is not a `Function` instance.
    * @throws {Error} If the given reject value is not a `Function` instance.
-   * @throws {Error} If the given namespace value is not a `string`.
    */
-  static tunnelDescriptor(resolve, reject, namespace) {
+  static resolveRejectPair(resolve, reject) {
     if (!(resolve instanceof Function)) {
       throw new Error('expected resolve to be a function');
     } else if (!(reject instanceof Function)) {
       throw new Error('expected reject to be a function');
-    } else if (null !== namespace && 'string' !== typeof namespace) {
-      throw new Error('expected namespace to be a string or null');
     }
-    return { resolve, reject, namespace };
+    return { resolve, reject };
   }
 
   /**
