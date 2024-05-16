@@ -227,6 +227,46 @@ class Dependency {
   }
 
   /**
+   * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
+   *
+   * @param {Iterable<Dependency>} dependencies - Dependencies to sort.
+   * @param {?Iterable<string>} installed - Installed {@link Dependency} names to assume existing (defaults to `null`, meaning none).
+   * @returns {Array<Dependency>} Sorted {@link Dependency} list.
+   * @throws {Error} If unresolved dependencies found.
+   */
+  static sort(dependencies, installed = null) {
+    const existing = new Set(Validation.iterable(installed ?? []));
+    const pending = new Set(Validation.iterable(dependencies));
+    const newOnes = new Set();
+    const result = [];
+
+    do {
+      newOnes.forEach((element) => {
+        pending.delete(element);
+        existing.add(element.name);
+        result.push(element);
+      });
+      newOnes.clear();
+      pending.forEach((element) => {
+        if (Object.keys(element.dependencies).every((dep) => existing.has(dep))) {
+          newOnes.add(element);
+        }
+      });
+    } while (0 < newOnes.size);
+
+    if (0 < pending.size) {
+      throw new Error(
+        `unresolved dependencies: [${pending
+          .values()
+          .map((value) => value.toString())
+          .join(', ')}]`,
+      );
+    }
+
+    return result;
+  }
+
+  /**
    * Validate the given dependency and return it if valid.
    *
    * @param {unknown} dependency - The dependency to validate.
