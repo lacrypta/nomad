@@ -1265,7 +1265,7 @@ class NomadVM extends EventCaster {
    * This method will reject all tunnels awaiting responses on the given namespace.
    *
    * @param {string} namespace - Namespace to delete.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of deleted namespaces (the one given and any children of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of deleted namespaces (the one given and any descendant of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
    */
   deleteNamespace(namespace) {
     return new Promise((resolve, reject) => {
@@ -1518,7 +1518,7 @@ class NomadVM extends EventCaster {
    * Determine whether the given namespace is muted.
    *
    * @param {string} namespace - Namespace to determine mute status of.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean value indicating whether the namespaces is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean value indicating whether the namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
    */
   isMuted(namespace) {
     return new Promise((resolve, reject) => {
@@ -1559,7 +1559,7 @@ class NomadVM extends EventCaster {
   /**
    * List the given namespace's descendants.
    *
-   * @param {string} namespace - Namespace to list the children of.
+   * @param {string} namespace - Namespace to list the descendants of.
    * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
   getDescendants(namespace) {
