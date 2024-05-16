@@ -48,7 +48,7 @@ const workerRunner = () => {
    *
    * @type {string}
    */
-  const DEFAULT_NAMESPACE_NAME = 'default';
+  const DEFAULT_NAMESPACE_NAME = 'main';
 
   // ----------------------------------------------------------------------------------------------
   // -- Expose Standard Classes -------------------------------------------------------------------
