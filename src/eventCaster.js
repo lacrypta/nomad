@@ -166,10 +166,10 @@ class EventCaster {
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {EventCaster} `this`, for chaining.
    * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
-   * @see {@link Validation.validateCallback} for additional exceptions thrown.
+   * @see {@link Validation.callback} for additional exceptions thrown.
    */
   on(filter, callback) {
-    if (!this.#listeners.has(Validation.validateCallback(callback))) {
+    if (!this.#listeners.has(Validation.callback(callback))) {
       this.#listeners.set(callback, new Set());
     }
     this.#listeners.get(callback).add(EventCaster.#filterToRegExp(filter));
