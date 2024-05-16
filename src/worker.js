@@ -1099,8 +1099,6 @@ const workerRunner = () => {
    * @typedef NamespaceObject
    * @type {object}
    * @internal
-   * @property {?string} parent - Parent namespace, or `null` if orphaned.
-   * @property {Set<string>} children - Set of children namespaces.
    * @property {Set<number>} tunnels - Set of tunnels associated to this namespace.
    * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this namespace, mapping listener proper to a set of filter {@link RegExp}s.
    * @property {Set<string>} linked - Set of linked namespaces to forward events to.
@@ -1133,16 +1131,43 @@ const workerRunner = () => {
   const tunnels = [];
 
   /**
-   * Add the given namespace, optionally stemming from the given parent one.
+   * Retrieve the "base" of the namespace (ie. all but the last segment).
+   *
+   * @param {string} namespace - Namespace to retrieve the base of.
+   * @returns {string} The given namespace's base.
+   */
+  const getNamespaceBase = (namespace) => {
+    return namespace.split('.').slice(0, -1).join('.');
+  };
+
+  /**
+   * Retrieve a list of ancestor namespaces of the given one.
+   *
+   * @param {string} namespace - Namespace to retrieve the ancestors list of.
+   * @returns {Array<string>} An array of namespace names.
+   */
+  const namespaceAncestors = (namespace) => {
+    return getNamespaceBase(namespace)
+      .split('.')
+      .reduce(
+        ([all, prev], part) => [
+          [[...prev, part].join('.'), ...all],
+          [...prev, part],
+        ],
+        [[], []],
+      )[0];
+  };
+
+  /**
+   * Add the given namespace.
    *
    * @param {string} namespace - Namespace to create.
-   * @param {?string} parent - Parent namespace to use, or `null` to leave the namespace orphaned.
    * @returns {void}
-   * @throws {Error} If the given namespace does not exist.
-   * @throws {Error} If the given non-`null` parent does not exist.
+   * @throws {Error} If the given namespace already exists.
+   * @throws {Error} If the given namespace's parent does not exist.
    */
-  const addNamespace = (namespace, parent) => {
-    parent ??= null;
+  const addNamespace = (namespace) => {
+    const parent = getNamespaceBase(namespace) || null;
 
     if (namespaces.has(namespace)) {
       throw new _Error(`duplicate namespace name ${namespace}`);
@@ -1151,8 +1176,6 @@ const workerRunner = () => {
     }
 
     namespaces.set(namespace, {
-      parent,
-      children: new _Set(),
       tunnels: new _Set(),
       listeners: new _Map(),
       linked: new _Set(),
@@ -1160,10 +1183,6 @@ const workerRunner = () => {
       dependencies: _Object.create(null === parent ? null : getNamespace(parent).dependencies),
       port: namespacePorts.push(namespace) - 1,
     });
-
-    if (null !== parent) {
-      getNamespace(parent).children.add(namespace);
-    }
   };
 
   /**
@@ -1182,42 +1201,13 @@ const workerRunner = () => {
   };
 
   /**
-   * Retrieve a list of progressively-more-removed ancestor namespaces of the given one.
-   *
-   * @param {string} namespace - Namespace to retrieve the ancestors list of.
-   * @returns {Array<string>} An array of namespace names, the further down the list, the more removed the namespace in said position is with respect to the given namespace.
-   */
-  const namespaceAncestors = (namespace) => {
-    const result = [];
-
-    namespace = getNamespace(namespace).parent;
-    while (null !== namespace) {
-      result.push(namespace);
-      namespace = getNamespace(namespace).parent;
-    }
-
-    return result;
-  };
-
-  /**
    * Retrieve a list of _all_ descendants of the given namespace (including transitive relationships).
    *
    * @param {string} namespace - Namespace to retrieve the list of descendants of.
    * @returns {Array<string>} An array with the namespace's descendants.
    */
   const namespaceDescendants = (namespace) => {
-    const children = [...getNamespace(namespace).children];
-    return [...children, ...children.map(namespaceDescendants)].sort();
-  };
-
-  /**
-   * Retrieve a list of all the namespace's children namespaces.
-   *
-   * @param {string} namespace - Namespace to retrieve the list of children of.
-   * @returns {Array<string>} An array with the given namespace's children.
-   */
-  const namespaceChildren = (namespace) => {
-    return [...getNamespace(namespace).children].sort();
+    return [...namespaces.keys()].filter((candidate) => candidate.startsWith(`${namespace}.`));
   };
 
   /**
@@ -1231,13 +1221,6 @@ const workerRunner = () => {
    * @returns {Array<string>} A list of namespaces that actually got removed (this includes the one given, and all of its descendants).
    */
   const removeNamespace = (namespace) => {
-    {
-      const { parent } = getNamespace(namespace);
-      if (null !== parent) {
-        getNamespace(parent).children.delete(namespace);
-      }
-    }
-
     let toReject = [];
 
     const removed = [namespace, ...namespaceDescendants(namespace)].sort();
@@ -1258,7 +1241,7 @@ const workerRunner = () => {
    * Assimilate the given namespace into its parent.
    *
    * Assimilation merges a namespace's dependencies with those of its parent, as does its tunnels and event listeners.
-   * The given namespace's parent adopts all of the given namespace's children.
+   * The given namespace's parent adopts all of the given namespace's descendants.
    * Finally, the given namespace's port is redirected to its parent.
    *
    * NOTE: we can never get rid of assimilated ports because the wrapped event caster may have been cached dependency-side.
@@ -1268,28 +1251,31 @@ const workerRunner = () => {
    * @throws {Error} If the given namespace is orphaned.
    */
   const assimilateNamespace = (namespace) => {
-    const { parent, children, tunnels, listeners, dependencies, port } = getNamespace(namespace);
+    const { tunnels, listeners, dependencies, port } = getNamespace(namespace);
 
+    const parent = getNamespaceBase(namespace) || null;
     if (null === parent) {
       throw new _Error(`namespace ${namespace} has no parent`);
     }
 
+    const newDescendants = new _Map(
+      namespaceDescendants(namespace).map((descendant) => [
+        descendant,
+        `${parent}.${descendant.slice(namespace.length + 1)}`,
+      ]),
+    );
+    {
+      const collisions = [...newDescendants.values()].filter((newDescendant) => namespaces.has(newDescendant));
+      if (0 < collisions.length) {
+        throw new Error(`collisions found on [${collisions.join(', ')}]`);
+      }
+    }
+
     const {
-      children: parentChildren,
       tunnels: parentTunnels,
       listeners: parentListeners,
       dependencies: parentDependencies,
-      linked: parentLinked,
     } = getNamespace(parent);
-
-    parentChildren.delete(namespace);
-    [...children].forEach((child) => {
-      parentChildren.add(child);
-      parentLinked.delete(child);
-      const childNamespace = getNamespace(child);
-      childNamespace.parent = parent;
-      _Object.setPrototypeOf(childNamespace.dependencies, parentDependencies);
-    });
 
     [...tunnels].forEach((tunnel) => parentTunnels.add(tunnel));
 
@@ -1297,7 +1283,8 @@ const workerRunner = () => {
       if (!parentListeners.has(callback)) {
         parentListeners.set(callback, new _Set());
       }
-      [...filters].forEach((filter) => parentListeners.get(callback).add(filter));
+      const callbackFilters = parentListeners.get(callback);
+      [...filters].forEach((filter) => callbackFilters.add(filter));
     });
 
     _Object.entries(dependencies).forEach(([name, value]) => {
@@ -1305,6 +1292,23 @@ const workerRunner = () => {
     });
 
     namespacePorts[port] = parent;
+
+    [...newDescendants.entries()].forEach(([descendant, newDescendant]) => {
+      listLinkedFrom(descendant).forEach((linkSource) => {
+        const { linked } = getNamespace(linkSource);
+        linked.delete(descendant);
+        linked.add(newDescendant);
+      });
+      const descendantNamespace = getNamespace(descendant);
+      if (-1 === newDescendant.slice(parent.length + 1).indexOf('.')) {
+        _Object.setPrototypeOf(descendantNamespace.dependencies, parentDependencies);
+      }
+      namespacePorts[descendantNamespace.port] = newDescendant;
+      namespaces.set(newDescendant, descendantNamespace);
+      namespaces.delete(descendant);
+    });
+
+    namespaces.delete(namespace);
   };
 
   /**
@@ -1372,12 +1376,12 @@ const workerRunner = () => {
   };
 
   /**
-   * Retrieve a list of defined namespaces.
+   * Retrieve a list of root namespaces.
    *
-   * @returns {Array<string>} A list of namespaces created and not assimilated nor removed.
+   * @returns {Array<string>} A list of namespaces created at the root level.
    */
-  const listNamespaces = () => {
-    return [...namespaces.keys()].sort();
+  const listRootNamespaces = () => {
+    return [...namespaces.keys()].filter((namespace) => -1 === namespace.indexOf('.')).sort();
   };
 
   /**
@@ -2668,9 +2672,9 @@ const workerRunner = () => {
           break;
         case 'create':
           {
-            const { namespace, parent, tunnel } = parsedData;
+            const { namespace, tunnel } = parsedData;
             try {
-              addNamespace(namespace, parent ?? null);
+              addNamespace(namespace);
               postResolveMessage(tunnel);
             } catch (e) {
               postRejectMessage(tunnel, e.message);
@@ -2738,11 +2742,11 @@ const workerRunner = () => {
             }
           }
           break;
-        case 'listNamespaces':
+        case 'listRootNamespaces':
           {
             const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listNamespaces());
+              postResolveMessage(tunnel, listRootNamespaces());
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2788,31 +2792,11 @@ const workerRunner = () => {
             }
           }
           break;
-        case 'getAncestors':
-          {
-            const { namespace, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, namespaceAncestors(namespace));
-            } catch (e) {
-              postRejectMessage(tunnel, e.message);
-            }
-          }
-          break;
         case 'getDescendants':
           {
             const { namespace, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, namespaceDescendants(namespace));
-            } catch (e) {
-              postRejectMessage(tunnel, e.message);
-            }
-          }
-          break;
-        case 'getChildren':
-          {
-            const { namespace, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, namespaceChildren(namespace));
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
