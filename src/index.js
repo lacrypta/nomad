@@ -20,16 +20,16 @@ import { NomadVM, NomadVMNamespace } from './nomadvm.js';
  */
 
 /**
- * The type of a "protected" method injector.
+ * The type of a method injector.
  *
- * @callback ProtectedMethodInjector
+ * @callback MethodInjector
  * @global
- * @param {Map<string, Function>} protectedMethodMap - A map from "protected" method name to a {@link Function} that will effectively forward the call to it.
+ * @param {Map<string, Function>} methodMap - A map from method name to a {@link Function} that will effectively forward the call to it.
  * @returns {void}
  */
 
 /* exported DependencyObject */
-/* exported ProtectedMethodInjector */
+/* exported MethodInjector */
 /* exported NomadVM */
 /* exported Validation */
 
