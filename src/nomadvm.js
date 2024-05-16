@@ -1197,7 +1197,7 @@ class NomadVM extends EventCaster {
    * Create a new namespace with the given name.
    *
    * @param {string} namespace - Namespace to create.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns {Promise<NomadVMNamespace, Error>} A {@link Promise} that resolves with a {@link NomadVMNamespace} wrapper if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
   createNamespace(namespace) {
     return new Promise((resolve, reject) => {
