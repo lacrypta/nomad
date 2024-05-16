@@ -7,7 +7,6 @@ import { Dependency } from './dependency.js';
 import { workerRunner } from './worker.js';
 
 /* global DependencyObject */
-/* global TunnelDescriptor */
 
 /**
  * A safe execution environment for NOMAD code execution.
@@ -215,7 +214,7 @@ class NomadVM extends EventCaster {
    *
    * Tunnels are a way of holding on to `resolve` / `reject` {@link Promise} callbacks under a specific index number, so that both the {@link Worker} and the {@link NomadVM} can interact through these.
    *
-   * @type {Array<TunnelDescriptor>}
+   * @type {Array<{ resolve: Function, reject: Function }>}
    * @private
    */
   #tunnels = [];
@@ -747,13 +746,13 @@ class NomadVM extends EventCaster {
   };
 
   /**
-   * Post a `listLinkedTo` message to the {@link Worker}.
+   * Post a `listLinksTo` message to the {@link Worker}.
    *
-   * A `listLinkedTo` message has the form:
+   * A `listLinksTo` message has the form:
    *
    * ```json
    * {
-   *   name: "listLinkedTo",
+   *   name: "listLinksTo",
    *   namespace: <string>,
    *   tunnel: <int>
    * }
@@ -769,8 +768,8 @@ class NomadVM extends EventCaster {
    * @returns {void}
    * @private
    */
-  #postListLinkedToMessage = (namespace, tunnel) => {
-    this.#postJsonMessage({ name: 'listLinkedTo', namespace, tunnel });
+  #postListLinksToMessage = (namespace, tunnel) => {
+    this.#postJsonMessage({ name: 'listLinksTo', namespace, tunnel });
   };
 
   /**
@@ -855,6 +854,33 @@ class NomadVM extends EventCaster {
   };
 
   /**
+   * Post a `getDescendants` message to the {@link Worker}.
+   *
+   * A `getDescendants` message has the form:
+   *
+   * ```json
+   * {
+   *   name: "getDescendants",
+   *   namespace: <string>,
+   *   tunnel: <int>
+   * }
+   * ```
+   *
+   * Where:
+   *
+   * - `namespace` is the WW-side namespace to determine the descendants of.
+   * - `tunnel` is the VM-side tunnel index awaiting a response.
+   *
+   * @param {string} namespace - The namespace to determine the descendants of.
+   * @param {number} tunnel - The tunnel index to expect a response on.
+   * @returns {void}
+   * @private
+   */
+  #postGetDescendantsMessage = (namespace, tunnel) => {
+    this.#postJsonMessage({ name: 'getDescendants', namespace, tunnel });
+  };
+
+  /**
    * Post a `getChildren` message to the {@link Worker}.
    *
    * A `getChildren` message has the form:
@@ -881,46 +907,18 @@ class NomadVM extends EventCaster {
     this.#postJsonMessage({ name: 'getChildren', namespace, tunnel });
   };
 
-  /**
-   * Post a `pendingTunnels` message to the {@link Worker}.
-   *
-   * A `pendingTunnels` message has the form:
-   *
-   * ```json
-   * {
-   *   name: "pendingTunnels",
-   *   namespace: <string>,
-   *   tunnel: <int>
-   * }
-   * ```
-   *
-   * Where:
-   *
-   * - `namespace` is the WW-side namespace to determine the number of pending tunnels of.
-   * - `tunnel` is the VM-side tunnel index awaiting a response.
-   *
-   * @param {string} namespace - The namespace to determine the number of pending tunnels of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
-   */
-  #postPendingTunnelsMessage = (namespace, tunnel) => {
-    this.#postJsonMessage({ name: 'pendingTunnels', namespace, tunnel });
-  };
-
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Create a new tunnel (cf. {@link NomadVM.#tunnels}) with the given resolution and rejection callbacks and namespace handling it, returning the index of the created tunnel.
+   * Create a new tunnel (cf. {@link NomadVM.#tunnels}) with the given resolution and rejection callbacks, returning the index of the created tunnel.
    *
    * @param {Function} resolve - The resolution callback.
    * @param {Function} reject - The rejection callback.
-   * @param {?string} namespace - The WW-side namespace that will respond (or `null`, if not namespace-targeted).
    * @returns {number} The created tunnel's index.
    * @private
    */
-  #addTunnel(resolve, reject, namespace) {
-    return this.#tunnels.push(Validation.tunnelDescriptor(resolve, reject, namespace)) - 1;
+  #addTunnel(resolve, reject) {
+    return this.#tunnels.push(Validation.resolveRejectPair(resolve, reject)) - 1;
   }
 
   /**
@@ -964,23 +962,6 @@ class NomadVM extends EventCaster {
    */
   #rejectTunnel(tunnel, error) {
     this.#removeTunnel(tunnel).reject(error);
-  }
-
-  /**
-   * Reject all tunnels associated to any of the given WW-side namespaces with the given error object, removing these tunnels from the tunnels list.
-   *
-   * @param {Array<string>} namespaces - Namespaces to reject tunnels for.
-   * @param {Error} error - {@link Error} to pass on to the rejection callbacks.
-   * @returns {void}
-   * @private
-   * @see {@link NomadVM.#rejectTunnel} for additional exceptions thrown.
-   */
-  #rejectAllInNamespaces(namespaces, error) {
-    this.#tunnels.forEach(({ namespace }, tunnel) => {
-      if (namespaces.includes(namespace)) {
-        this.#rejectTunnel(tunnel, error);
-      }
-    });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -1141,7 +1122,6 @@ class NomadVM extends EventCaster {
                 () => reject(error),
               );
             },
-            'default',
           );
           bootTimeout = setTimeout(() => {
             this.#rejectTunnel(0, new Error('boot timed out'));
@@ -1241,7 +1221,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:create:error`, parent, error);
               reject(error);
             },
-            namespace,
           ),
         );
       } catch (e) {
@@ -1271,14 +1250,12 @@ class NomadVM extends EventCaster {
           this.#addTunnel(
             (deleted) => {
               this.#castEvent(`${namespace}:delete:ok`, deleted);
-              this.#rejectAllInNamespaces(deleted, new Error('deleting namespace'));
               resolve(deleted);
             },
             (error) => {
               this.#castEvent(`${namespace}:delete:error`, error);
               reject(error);
             },
-            namespace,
           ),
           namespace,
         );
@@ -1315,7 +1292,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:link:error`, target, error);
               reject(error);
             },
-            namespace,
           ),
           target,
         );
@@ -1352,7 +1328,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:unlink:error`, target, error);
               reject(error);
             },
-            namespace,
           ),
           target,
         );
@@ -1388,7 +1363,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:mute:error`, error);
               reject(error);
             },
-            namespace,
           ),
         );
       } catch (e) {
@@ -1423,7 +1397,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:unmute:error`, error);
               reject(error);
             },
-            namespace,
           ),
         );
       } catch (e) {
@@ -1445,7 +1418,7 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postListNamespacesMessage(this.#addTunnel(resolve, reject, null));
+        this.#postListNamespacesMessage(this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1465,7 +1438,7 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postListInstalledMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postListInstalledMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1478,14 +1451,14 @@ class NomadVM extends EventCaster {
    * @param {string} namespace - Namespace to list linked-to namespaces of.
    * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinkedTo(namespace) {
+  listLinksTo(namespace) {
     return new Promise((resolve, reject) => {
       try {
         if ('running' !== this.#state) {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postListLinkedToMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postListLinksToMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1505,7 +1478,7 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postListLinkedFromMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postListLinkedFromMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1525,7 +1498,7 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postIsMutedMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postIsMutedMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1535,7 +1508,7 @@ class NomadVM extends EventCaster {
   /**
    * List the given namespace's ancestors.
    *
-   * The resolved value will contain one entry per ancestry level, starting with the given namespace in position `0`, its parent in position `1`, etc.
+   * The resolved value will contain one entry per ancestry level, starting with the given namespace's parent in position `0`, its parent in position `1`, etc.
    *
    * @param {string} namespace - Namespace to list the ancestry of.
    * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of ancestors if successful, and rejects with an {@link Error} in case errors occur.
@@ -1547,7 +1520,27 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postGetAncestorsMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postGetAncestorsMessage(namespace, this.#addTunnel(resolve, reject));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  /**
+   * List the given namespace's descendants.
+   *
+   * @param {string} namespace - Namespace to list the children of.
+   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   */
+  getDescendants(namespace) {
+    return new Promise((resolve, reject) => {
+      try {
+        if ('running' !== this.#state) {
+          throw new Error("state mismatch --- should be 'running'");
+        }
+
+        this.#postGetDescendantsMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1567,27 +1560,7 @@ class NomadVM extends EventCaster {
           throw new Error("state mismatch --- should be 'running'");
         }
 
-        this.#postGetChildrenMessage(namespace, this.#addTunnel(resolve, reject, namespace));
-      } catch (e) {
-        reject(e);
-      }
-    });
-  }
-
-  /**
-   * Return the number of pending tunnels in the given namespace.
-   *
-   * @param {string} namespace - Namespace to return the number of pending tunnels of.
-   * @returns {Promise<number, Error>} A {@link Promise} that resolves with a number indicating the number of pending tunnels of the given namespace if successful, and rejects with an {@link Error} in case errors occur.
-   */
-  pendingTunnels(namespace) {
-    return new Promise((resolve, reject) => {
-      try {
-        if ('running' !== this.#state) {
-          throw new Error("state mismatch --- should be 'running'");
-        }
-
-        this.#postPendingTunnelsMessage(namespace, this.#addTunnel(resolve, reject, namespace));
+        this.#postGetChildrenMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e);
       }
@@ -1625,7 +1598,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, error);
               reject(error);
             },
-            namespace,
           ),
           idx,
           Validation.identifier(name),
@@ -1666,7 +1638,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:install:error`, dependency, error);
               reject(error);
             },
-            namespace,
           ),
           dependency.asObject(),
         );
@@ -1708,7 +1679,6 @@ class NomadVM extends EventCaster {
               this.#castEvent(`${namespace}:execute:error`, dependency, args, error);
               reject(error);
             },
-            namespace,
           ),
           dependency.asObject(),
           Validation.argumentsMap(args),
