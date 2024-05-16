@@ -85,6 +85,7 @@ class EventCaster {
    * @returns {string} The validated event name filter.
    * @throws {Error} If the given event name filter is not a `string`.
    * @throws {Error} If the given event name filter fails regular expression validation.
+   * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
    */
   static validateFilter(filter) {
     if ('string' !== typeof filter) {
