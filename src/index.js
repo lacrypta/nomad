@@ -3,10 +3,10 @@
 // TODO: ADD MISSING SHIMS
 // TODO: ANALYZE Iterator AND OTHER HIDDEN OBJECTS
 
-// TODO: in order to have children being assimilated into parents, we need to unify the EventCasters used and segregate them internally so that one namespace does not get another one's events
+// TODO: expose a new class "namespace" (or thereabouts) that will behave just like the namespace-oriented methods of NomadVM but be initialized with a specific namespace, so as to allow the end users to use a more comfortable interface.
 
 import { Dependency } from './dependency.js';
-import { NomadVM } from './nomadvm.js';
+import { NomadVM, NomadVMNamespace } from './nomadvm.js';
 
 /**
  * The type of a Dependency primitive object.
@@ -33,4 +33,4 @@ import { NomadVM } from './nomadvm.js';
 /* exported NomadVM */
 /* exported Validation */
 
-export { Dependency, NomadVM };
+export { Dependency, NomadVM, NomadVMNamespace };
