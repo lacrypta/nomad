@@ -22,12 +22,6 @@ import workerRunner from './worker.cjs';
  */
 class NomadVM extends EventCaster {
   /**
-   * The code the {@link Worker} will end up executing.
-   *
-   */
-  static #workerRunner: string = workerRunner;
-
-  /**
    * Generate a pseudo-random string.
    *
    * NOTE: this is NOT cryptographically-secure, it simply calls {@link Math.random}.
@@ -1135,7 +1129,7 @@ class NomadVM extends EventCaster {
             }, timeout);
 
             blobURL = URL.createObjectURL(
-              new Blob([`"use strict"; (${NomadVM.#workerRunner})(this);`], {
+              new Blob([`"use strict"; (${workerRunner})(this, addEventListener, postMessage, setTimeout);`], {
                 type: 'application/javascript',
               }),
             );
