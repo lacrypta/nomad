@@ -4,86 +4,86 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="data:," />
     <title>NomadVM</title>
-    <script referrerpolicy="no-referrer">
+    <script referrerpolicy="no-referrer" src="../dist/umd/index.js"></script>
+    <script type="module" referrerpolicy="no-referrer">
       'use strict';
-      import('./index.js').then(async ({ NomadVM, Dependency }) => {
-        const vm = new NomadVM();
-        vm.on('**', (...args) => console.log(args));
-        const dbl = Dependency.from(() => (x) => 2 * x, 'dbl');
-        const qpl = Dependency.from(
-          (duplicateA = dbl, duplicateB = dbl) =>
-            (x) =>
-              duplicateA(duplicateB(x)),
-          'qpl',
-        );
+      const { NomadVM, Dependency } = nomadvm;
+      const vm = new NomadVM();
+      vm.on('**', (...args) => console.log(args));
+      const dbl = Dependency.from(() => (x) => 2 * x, 'dbl');
+      const qpl = Dependency.from(
+        (duplicateA = dbl, duplicateB = dbl) =>
+          (x) =>
+            duplicateA(duplicateB(x)),
+        'qpl',
+      );
 
-        await vm.start().then(([internalStartTime, externalStartTime]) => {
-          console.log(`STARTUP: ${internalStartTime} / ${externalStartTime}`);
+      await vm.start().then(([internalStartTime, externalStartTime]) => {
+        console.log(`STARTUP: ${internalStartTime} / ${externalStartTime}`);
+      });
+
+      await vm.install('root', dbl);
+      await vm.install('root', qpl);
+      await vm.predefine('root', 'cacona', () => {});
+
+      await vm
+        .execute(
+          'root',
+          Dependency.from(function x(quad = qpl) {
+            return quad(42);
+          }),
+        )
+        .then((result) => {
+          console.log(`RESULT = ${result}`);
         });
 
-        await vm.install('root', dbl);
-        await vm.install('root', qpl);
-        await vm.predefine('root', 'cacona', () => {});
+      await vm
+        .execute(
+          'root',
+          Dependency.from(function x() {
+            return new Date(0).constructor === Date;
+          }),
+        )
+        .then((result) => {
+          console.log(`RESULT = ${result}`);
+        });
 
-        await vm
-          .execute(
-            'root',
-            Dependency.from(function x(quad = qpl) {
-              return quad(42);
-            }),
-          )
-          .then((result) => {
-            console.log(`RESULT = ${result}`);
-          });
+      await vm
+        .execute(
+          'root',
+          Dependency.from(function x() {
+            return [new Date(1714022362739).toDateString(), new Date(1714022362739).toTimeString()];
+          }),
+        )
+        .then((result) => {
+          console.log(`RESULT = ${result}`);
+          console.log(`typeof RESULT = ${typeof result}`);
+          console.log(`RESULT.constructor.name = ${result.constructor.name}`);
+          console.log(`[RESULT] = [${result.map((x) => `"${x}"`).join(', ')}]`);
+        });
 
-        await vm
-          .execute(
-            'root',
-            Dependency.from(function x() {
-              return new Date(0).constructor === Date;
-            }),
-          )
-          .then((result) => {
-            console.log(`RESULT = ${result}`);
-          });
+      await vm
+        .execute(
+          'root',
+          Dependency.from(function x() {
+            return new Error('hola').stack;
+          }),
+        )
+        .then((result) => console.log(`>>> ${result}`));
 
-        await vm
-          .execute(
-            'root',
-            Dependency.from(function x() {
-              return [new Date(1714022362739).toDateString(), new Date(1714022362739).toTimeString()];
-            }),
-          )
-          .then((result) => {
-            console.log(`RESULT = ${result}`);
-            console.log(`typeof RESULT = ${typeof result}`);
-            console.log(`RESULT.constructor.name = ${result.constructor.name}`);
-            console.log(`[RESULT] = [${result.map((x) => `"${x}"`).join(', ')}]`);
-          });
+      await vm
+        .execute(
+          'root',
+          Dependency.from(function x() {
+            return __events__.on.toString();
+          }),
+        )
+        .then((result) => console.log(`>>> ${result}`));
+      await vm.listInstalled('root').then((result) => console.log(`>>> INSTALLED: ${result}`));
 
-        await vm
-          .execute(
-            'root',
-            Dependency.from(function x() {
-              return new Error('hola').stack;
-            }),
-          )
-          .then((result) => console.log(`>>> ${result}`));
+      await vm.listOrphanNamespaces().then((result) => console.log(`>>> NAMESPACES: ${result}`));
 
-        await vm
-          .execute(
-            'root',
-            Dependency.from(function x() {
-              return __events__.on.toString();
-            }),
-          )
-          .then((result) => console.log(`>>> ${result}`));
-        await vm.listInstalled('root').then((result) => console.log(`>>> INSTALLED: ${result}`));
-
-        await vm.listOrphanNamespaces().then((result) => console.log(`>>> NAMESPACES: ${result}`));
-
-        console.dir(vm);
-      });
+      console.dir(vm);
     </script>
   </head>
   <body></body>
