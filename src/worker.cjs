@@ -9,7 +9,7 @@
  *
  * @returns {void}
  */
-module.exports = () => {
+module.exports = ((localThis) => {
   'use strict';
 
   /**
@@ -53,17 +53,17 @@ module.exports = () => {
   // -- Expose Standard Classes -------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
-  this.AsyncFunction = async function () {}.constructor;
-  this.GeneratorFunction = function* () {}.constructor;
-  this.AsyncGeneratorFunction = async function* () {}.constructor;
+  localThis.AsyncFunction = async function () {}.constructor;
+  localThis.GeneratorFunction = function* () {}.constructor;
+  localThis.AsyncGeneratorFunction = async function* () {}.constructor;
 
-  // this.ArrayIteratorPrototype = Object.getPrototypeOf(new Array()[Symbol.iterator]());
-  // this.StringIteratorPrototype = Object.getPrototypeOf(new String()[Symbol.iterator]());
-  // this.MapIteratorPrototype = Object.getPrototypeOf(new Map()[Symbol.iterator]());
-  // this.SetIteratorPrototype = Object.getPrototypeOf(new Set()[Symbol.iterator]());
-  // this.RegExpIteratorPrototype = Object.getPrototypeOf(new RegExp()[Symbol.matchAll]());
-  // this.GeneratorIteratorPrototype = Object.getPrototypeOf(this.GeneratorFunction()());
-  // this.AsyncGeneratorIteratorPrototype = Object.getPrototypeOf(this.AsyncGeneratorFunction()());
+  // localThis.ArrayIteratorPrototype = Object.getPrototypeOf(new Array()[Symbol.iterator]());
+  // localThis.StringIteratorPrototype = Object.getPrototypeOf(new String()[Symbol.iterator]());
+  // localThis.MapIteratorPrototype = Object.getPrototypeOf(new Map()[Symbol.iterator]());
+  // localThis.SetIteratorPrototype = Object.getPrototypeOf(new Set()[Symbol.iterator]());
+  // localThis.RegExpIteratorPrototype = Object.getPrototypeOf(new RegExp()[Symbol.matchAll]());
+  // localThis.GeneratorIteratorPrototype = Object.getPrototypeOf(localThis.GeneratorFunction()());
+  // localThis.AsyncGeneratorIteratorPrototype = Object.getPrototypeOf(localThis.AsyncGeneratorFunction()());
 
   // ----------------------------------------------------------------------------------------------
   // -- Back-Up global entities -------------------------------------------------------------------
@@ -103,9 +103,9 @@ module.exports = () => {
    * @returns {void}
    */
   const shimArrayFromAsync = () => {
-    if (undefined === this.Array.fromAsync) {
+    if (undefined === localThis.Array.fromAsync) {
       // ref: https://github.com/es-shims/array-from-async/blob/main/index.mjs
-      this.Array.fromAsync = async function (items, mapfn, thisArg) {
+      localThis.Array.fromAsync = async function (items, mapfn, thisArg) {
         const isConstructor = (obj) => {
           const prox = new Proxy(obj, {
             construct() {
@@ -350,8 +350,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimMapGroupBy = () => {
-    if (undefined === this.Map.groupBy) {
-      this.Map.groupBy = function (items, callbackFn) {
+    if (undefined === localThis.Map.groupBy) {
+      localThis.Map.groupBy = function (items, callbackFn) {
         const result = new Map();
         let i = 0;
         for (const item of items) {
@@ -375,9 +375,9 @@ module.exports = () => {
    * @returns {void}
    */
   const shimPromiseWithResolvers = () => {
-    if (undefined === this.Promise.withResolvers) {
+    if (undefined === localThis.Promise.withResolvers) {
       // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers#description
-      this.Promise.withResolvers = function () {
+      localThis.Promise.withResolvers = function () {
         let resolve, reject;
         return {
           promise: new Promise((res, rej) => {
@@ -399,8 +399,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeDifference = () => {
-    if (undefined === this.Set.prototype.difference) {
-      this.Set.prototype.difference = function (other) {
+    if (undefined === localThis.Set.prototype.difference) {
+      localThis.Set.prototype.difference = function (other) {
         const result = new Set();
         for (const element of this) {
           if (!other.has(element)) {
@@ -420,8 +420,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeIntersection = () => {
-    if (undefined === this.Set.prototype.intersection) {
-      this.Set.prototype.intersection = function (other) {
+    if (undefined === localThis.Set.prototype.intersection) {
+      localThis.Set.prototype.intersection = function (other) {
         const result = new Set();
         for (const element of this) {
           if (other.has(element)) {
@@ -441,8 +441,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeIsDisjointFrom = () => {
-    if (undefined === this.Set.prototype.isDisjointFrom) {
-      this.Set.prototype.isDisjointFrom = function (other) {
+    if (undefined === localThis.Set.prototype.isDisjointFrom) {
+      localThis.Set.prototype.isDisjointFrom = function (other) {
         for (const element of this) {
           if (other.has(element)) {
             return false;
@@ -461,8 +461,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeIsSubsetOf = () => {
-    if (undefined === this.Set.prototype.isSubsetOf) {
-      this.Set.prototype.isSubsetOf = function (other) {
+    if (undefined === localThis.Set.prototype.isSubsetOf) {
+      localThis.Set.prototype.isSubsetOf = function (other) {
         for (const element of this) {
           if (!other.has(element)) {
             return false;
@@ -481,8 +481,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeIsSupersetOf = () => {
-    if (undefined === this.Set.prototype.isSupersetOf) {
-      this.Set.prototype.isSupersetOf = function (other) {
+    if (undefined === localThis.Set.prototype.isSupersetOf) {
+      localThis.Set.prototype.isSupersetOf = function (other) {
         for (const element of other.keys()) {
           if (!this.has(element)) {
             return false;
@@ -501,8 +501,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeSymmetricDifference = () => {
-    if (undefined === this.Set.prototype.symmetricDifference) {
-      this.Set.prototype.symmetricDifference = function (other) {
+    if (undefined === localThis.Set.prototype.symmetricDifference) {
+      localThis.Set.prototype.symmetricDifference = function (other) {
         const result = new Set();
         for (const element of this) {
           if (!other.has(element)) {
@@ -527,8 +527,8 @@ module.exports = () => {
    * @returns {void}
    */
   const shimSetPrototypeUnion = () => {
-    if (undefined === this.Set.prototype.union) {
-      this.Set.prototype.union = function (other) {
+    if (undefined === localThis.Set.prototype.union) {
+      localThis.Set.prototype.union = function (other) {
         const result = new Set();
         for (const element of this) {
           result.add(element);
@@ -592,7 +592,7 @@ module.exports = () => {
      * @param {string} script - A String value that contains valid JavaScript code.
      * @returns The execution result.
      */
-    this.eval = (script) => _eval(`"use strict"; ${script.toString()}`);
+    localThis.eval = (script) => _eval(`"use strict"; ${script.toString()}`);
   };
 
   /**
@@ -603,7 +603,7 @@ module.exports = () => {
    * @returns {void}
    */
   const patchObject = () => {
-    this.Object.prototype.toLocaleString = this.Object.prototype.toString;
+    localThis.Object.prototype.toLocaleString = localThis.Object.prototype.toString;
   };
 
   /**
@@ -614,7 +614,7 @@ module.exports = () => {
    * @returns {void}
    */
   const patchNumber = () => {
-    this.Number.prototype.toLocaleString = this.Number.prototype.toString;
+    localThis.Number.prototype.toLocaleString = localThis.Number.prototype.toString;
   };
 
   /**
@@ -625,7 +625,7 @@ module.exports = () => {
    * @returns {void}
    */
   const patchBigInt = () => {
-    this.BigInt.prototype.toLocaleString = this.BigInt.prototype.toString;
+    localThis.BigInt.prototype.toLocaleString = localThis.BigInt.prototype.toString;
   };
 
   /**
@@ -636,7 +636,7 @@ module.exports = () => {
    * @returns {void}
    */
   const patchMath = () => {
-    this.Math.random = () => NaN;
+    localThis.Math.random = () => NaN;
   };
 
   /**
@@ -682,7 +682,7 @@ module.exports = () => {
      * @returns {string | Date} The {@link Date.toISOString} output (if called as a function), or the constructed {@link Date} instance (if used as a constructor).
      * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
      */
-    this.Date = function Date(...args) {
+    localThis.Date = function Date(...args) {
       const between = (left, mid, right) => left <= mid && mid <= right;
       const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
 
@@ -779,14 +779,14 @@ module.exports = () => {
       }
       return new.target ? _Reflect.construct(new.target === Date ? _Date : new.target, [ts]) : new _Date(ts).toString();
     };
-    _Object.defineProperty(this.Date, 'length', {
+    _Object.defineProperty(localThis.Date, 'length', {
       value: _Date.length,
       configurable: true,
     });
-    _Date.prototype.constructor = this.Date;
-    this.Date.prototype = _Date.prototype;
-    this.Date.parse = (str) => _Date.parse(str);
-    this.Date.UTC = (
+    _Date.prototype.constructor = localThis.Date;
+    localThis.Date.prototype = _Date.prototype;
+    localThis.Date.parse = (str) => _Date.parse(str);
+    localThis.Date.UTC = (
       year,
       monthIndex = undefined,
       date = undefined,
@@ -795,33 +795,33 @@ module.exports = () => {
       seconds = undefined,
       ms = undefined,
     ) => _Date.UTC(year, monthIndex, date, hours, minutes, seconds, ms);
-    this.Date.now = () => NaN;
-    this.Date.prototype.getDate = this.Date.prototype.getUTCDate;
-    this.Date.prototype.getDay = this.Date.prototype.getUTCDay;
-    this.Date.prototype.getFullYear = this.Date.prototype.getUTCFullYear;
-    this.Date.prototype.getHours = this.Date.prototype.getUTCHours;
-    this.Date.prototype.getMilliseconds = this.Date.prototype.getUTCMilliseconds;
-    this.Date.prototype.getMinutes = this.Date.prototype.getUTCMinutes;
-    this.Date.prototype.getMonth = this.Date.prototype.getUTCMonth;
-    this.Date.prototype.getSeconds = this.Date.prototype.getUTCSeconds;
-    this.Date.prototype.getTimezoneOffset = () => 0;
-    this.Date.prototype.setDate = this.Date.prototype.setUTCDate;
-    this.Date.prototype.setFullYear = this.Date.prototype.setUTCFullYear;
-    this.Date.prototype.setHours = this.Date.prototype.setUTCHours;
-    this.Date.prototype.setMilliseconds = this.Date.prototype.setUTCMilliseconds;
-    this.Date.prototype.setMinutes = this.Date.prototype.setUTCMinutes;
-    this.Date.prototype.setMonth = this.Date.prototype.setUTCMonth;
-    this.Date.prototype.setSeconds = this.Date.prototype.setUTCSeconds;
-    this.Date.prototype.toString = this.Date.prototype.toISOString;
-    this.Date.prototype.toDateString = function () {
+    localThis.Date.now = () => NaN;
+    localThis.Date.prototype.getDate = localThis.Date.prototype.getUTCDate;
+    localThis.Date.prototype.getDay = localThis.Date.prototype.getUTCDay;
+    localThis.Date.prototype.getFullYear = localThis.Date.prototype.getUTCFullYear;
+    localThis.Date.prototype.getHours = localThis.Date.prototype.getUTCHours;
+    localThis.Date.prototype.getMilliseconds = localThis.Date.prototype.getUTCMilliseconds;
+    localThis.Date.prototype.getMinutes = localThis.Date.prototype.getUTCMinutes;
+    localThis.Date.prototype.getMonth = localThis.Date.prototype.getUTCMonth;
+    localThis.Date.prototype.getSeconds = localThis.Date.prototype.getUTCSeconds;
+    localThis.Date.prototype.getTimezoneOffset = () => 0;
+    localThis.Date.prototype.setDate = localThis.Date.prototype.setUTCDate;
+    localThis.Date.prototype.setFullYear = localThis.Date.prototype.setUTCFullYear;
+    localThis.Date.prototype.setHours = localThis.Date.prototype.setUTCHours;
+    localThis.Date.prototype.setMilliseconds = localThis.Date.prototype.setUTCMilliseconds;
+    localThis.Date.prototype.setMinutes = localThis.Date.prototype.setUTCMinutes;
+    localThis.Date.prototype.setMonth = localThis.Date.prototype.setUTCMonth;
+    localThis.Date.prototype.setSeconds = localThis.Date.prototype.setUTCSeconds;
+    localThis.Date.prototype.toString = localThis.Date.prototype.toISOString;
+    localThis.Date.prototype.toDateString = function () {
       return this.toISOString().split('T')[0];
     };
-    this.Date.prototype.toTimeString = function () {
+    localThis.Date.prototype.toTimeString = function () {
       return this.toISOString().split('T')[1];
     };
-    this.Date.prototype.toLocaleDateString = this.Date.prototype.toDateString;
-    this.Date.prototype.toLocaleString = this.Date.prototype.toString;
-    this.Date.prototype.toLocaleTimeString = this.Date.prototype.toTimeString;
+    localThis.Date.prototype.toLocaleDateString = localThis.Date.prototype.toDateString;
+    localThis.Date.prototype.toLocaleString = localThis.Date.prototype.toString;
+    localThis.Date.prototype.toLocaleTimeString = localThis.Date.prototype.toTimeString;
   };
 
   /**
@@ -836,11 +836,11 @@ module.exports = () => {
    * @returns {void}
    */
   const patchString = () => {
-    this.String.prototype.localeCompare = function (compareString) {
+    localThis.String.prototype.localeCompare = function (compareString) {
       return this < compareString ? -1 : compareString < this ? 1 : 0;
     };
-    this.String.prototype.toLocaleLowerCase = this.String.prototype.toLowerCase;
-    this.String.prototype.toLocaleUpperCase = this.String.prototype.toUpperCase;
+    localThis.String.prototype.toLocaleLowerCase = localThis.String.prototype.toLowerCase;
+    localThis.String.prototype.toLocaleUpperCase = localThis.String.prototype.toUpperCase;
   };
 
   /**
@@ -851,7 +851,7 @@ module.exports = () => {
    * @returns {void}
    */
   const patchArray = () => {
-    this.Array.prototype.toLocaleString = this.Array.prototype.toString;
+    localThis.Array.prototype.toLocaleString = localThis.Array.prototype.toString;
   };
 
   /**
@@ -874,17 +874,17 @@ module.exports = () => {
    * @returns {void}
    */
   const patchTypedArray = () => {
-    this.Int8Array.prototype.toLocaleString = this.Int8Array.prototype.toString;
-    this.Uint8Array.prototype.toLocaleString = this.Uint8Array.prototype.toString;
-    this.Uint8ClampedArray.prototype.toLocaleString = this.Uint8ClampedArray.prototype.toString;
-    this.Int16Array.prototype.toLocaleString = this.Int16Array.prototype.toString;
-    this.Uint16Array.prototype.toLocaleString = this.Uint16Array.prototype.toString;
-    this.Int32Array.prototype.toLocaleString = this.Int32Array.prototype.toString;
-    this.Uint32Array.prototype.toLocaleString = this.Uint32Array.prototype.toString;
-    this.BigInt64Array.prototype.toLocaleString = this.BigInt64Array.prototype.toString;
-    this.BigUint64Array.prototype.toLocaleString = this.BigUint64Array.prototype.toString;
-    this.Float32Array.prototype.toLocaleString = this.Float32Array.prototype.toString;
-    this.Float64Array.prototype.toLocaleString = this.Float64Array.prototype.toString;
+    localThis.Int8Array.prototype.toLocaleString = localThis.Int8Array.prototype.toString;
+    localThis.Uint8Array.prototype.toLocaleString = localThis.Uint8Array.prototype.toString;
+    localThis.Uint8ClampedArray.prototype.toLocaleString = localThis.Uint8ClampedArray.prototype.toString;
+    localThis.Int16Array.prototype.toLocaleString = localThis.Int16Array.prototype.toString;
+    localThis.Uint16Array.prototype.toLocaleString = localThis.Uint16Array.prototype.toString;
+    localThis.Int32Array.prototype.toLocaleString = localThis.Int32Array.prototype.toString;
+    localThis.Uint32Array.prototype.toLocaleString = localThis.Uint32Array.prototype.toString;
+    localThis.BigInt64Array.prototype.toLocaleString = localThis.BigInt64Array.prototype.toString;
+    localThis.BigUint64Array.prototype.toLocaleString = localThis.BigUint64Array.prototype.toString;
+    localThis.Float32Array.prototype.toLocaleString = localThis.Float32Array.prototype.toString;
+    localThis.Float64Array.prototype.toLocaleString = localThis.Float64Array.prototype.toString;
   };
 
   /**
@@ -908,16 +908,16 @@ module.exports = () => {
      * @param {...any} args - Constructor arguments.
      * @returns {RegExp} The constructed {@link RegExp}.
      */
-    this.RegExp = function RegExp(...args) {
+    localThis.RegExp = function RegExp(...args) {
       return new.target ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, args) : _RegExp(...args);
     };
-    _Object.defineProperty(this.RegExp, 'length', {
+    _Object.defineProperty(localThis.RegExp, 'length', {
       value: _RegExp.length,
       configurable: true,
     });
-    _RegExp.prototype.constructor = this.RegExp;
-    this.RegExp.prototype = _RegExp.prototype;
-    this.RegExp[_Symbol.species] = _RegExp[_Symbol.species];
+    _RegExp.prototype.constructor = localThis.RegExp;
+    localThis.RegExp.prototype = _RegExp.prototype;
+    localThis.RegExp[_Symbol.species] = _RegExp[_Symbol.species];
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -968,7 +968,7 @@ module.exports = () => {
       } while (null !== current);
     };
 
-    deepFreeze(this);
+    deepFreeze(localThis);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -2494,112 +2494,112 @@ module.exports = () => {
         } while (null !== current);
       };
 
-      prune(this, 'this', 'this');
-      prune(this.Object, 'this.Object', 'Object');
-      prune(this.Object.prototype, 'this.Object.prototype', 'Object.prototype');
-      prune(this.Function.prototype, 'this.Function.prototype', 'Function.prototype');
-      prune(this.Boolean.prototype, 'this.Boolean.prototype', 'Boolean.prototype');
-      prune(this.Symbol, 'this.Symbol', 'Symbol');
-      prune(this.Symbol.prototype, 'this.Symbol.prototype', 'Symbol.prototype');
-      prune(this.Error, 'this.Error', 'Error');
-      prune(this.Error.prototype, 'this.Error.prototype', 'Error.prototype');
-      prune(this.AggregateError, 'this.AggregateError', 'AggregateError');
-      prune(this.AggregateError.prototype, 'this.AggregateError.prototype', 'AggregateError.prototype');
-      prune(this.EvalError, 'this.EvalError', 'EvalError');
-      prune(this.EvalError.prototype, 'this.EvalError.prototype', 'EvalError.prototype');
-      prune(this.RangeError, 'this.RangeError', 'RangeError');
-      prune(this.RangeError.prototype, 'this.RangeError.prototype', 'RangeError.prototype');
-      prune(this.ReferenceError, 'this.ReferenceError', 'ReferenceError');
-      prune(this.ReferenceError.prototype, 'this.ReferenceError.prototype', 'ReferenceError.prototype');
-      prune(this.SyntaxError, 'this.SyntaxError', 'SyntaxError');
-      prune(this.SyntaxError.prototype, 'this.SyntaxError.prototype', 'SyntaxError.prototype');
-      prune(this.TypeError, 'this.TypeError', 'TypeError');
-      prune(this.TypeError.prototype, 'this.TypeError.prototype', 'TypeError.prototype');
-      prune(this.URIError, 'this.URIError', 'URIError');
-      prune(this.URIError.prototype, 'this.URIError.prototype', 'URIError.prototype');
-      prune(this.Number, 'this.Number', 'Number');
-      prune(this.Number.prototype, 'this.Number.prototype', 'Number.prototype');
-      prune(this.BigInt, 'this.BigInt', 'BigInt');
-      prune(this.BigInt.prototype, 'this.BigInt.prototype', 'BigInt.prototype');
-      prune(this.Math, 'this.Math', 'Math');
-      prune(this.Date, 'this.Date', 'Date');
-      prune(this.Date.prototype, 'this.Date.prototype', 'Date.prototype');
-      prune(this.String, 'this.String', 'String');
-      prune(this.String.prototype, 'this.String.prototype', 'String.prototype');
-      prune(this.RegExp, 'this.RegExp', 'RegExp');
-      prune(this.RegExp.prototype, 'this.RegExp.prototype', 'RegExp.prototype');
-      prune(this.Array, 'this.Array', 'Array');
-      prune(this.Array.prototype, 'this.Array.prototype', 'Array.prototype');
-      prune(this.Int8Array, 'this.Int8Array', 'TypedArray');
-      prune(this.Int8Array.prototype, 'this.Int8Array.prototype', 'TypedArray.prototype');
-      prune(this.Uint8Array, 'this.Uint8Array', 'TypedArray');
-      prune(this.Uint8Array.prototype, 'this.Uint8Array.prototype', 'TypedArray.prototype');
-      prune(this.Uint8ClampedArray, 'this.Uint8ClampedArray', 'TypedArray');
-      prune(this.Uint8ClampedArray.prototype, 'this.Uint8ClampedArray.prototype', 'TypedArray.prototype');
-      prune(this.Int16Array, 'this.Int16Array', 'TypedArray');
-      prune(this.Int16Array.prototype, 'this.Int16Array.prototype', 'TypedArray.prototype');
-      prune(this.Uint16Array, 'this.Uint16Array', 'TypedArray');
-      prune(this.Uint16Array.prototype, 'this.Uint16Array.prototype', 'TypedArray.prototype');
-      prune(this.Int32Array, 'this.Int32Array', 'TypedArray');
-      prune(this.Int32Array.prototype, 'this.Int32Array.prototype', 'TypedArray.prototype');
-      prune(this.Uint32Array, 'this.Uint32Array', 'TypedArray');
-      prune(this.Uint32Array.prototype, 'this.Uint32Array.prototype', 'TypedArray.prototype');
-      prune(this.BigInt64Array, 'this.BigInt64Array', 'TypedArray');
-      prune(this.BigInt64Array.prototype, 'this.BigInt64Array.prototype', 'TypedArray.prototype');
-      prune(this.BigUint64Array, 'this.BigUint64Array', 'TypedArray');
-      prune(this.BigUint64Array.prototype, 'this.BigUint64Array.prototype', 'TypedArray.prototype');
-      prune(this.Float32Array, 'this.Float32Array', 'TypedArray');
-      prune(this.Float32Array.prototype, 'this.Float32Array.prototype', 'TypedArray.prototype');
-      prune(this.Float64Array, 'this.Float64Array', 'TypedArray');
-      prune(this.Float64Array.prototype, 'this.Float64Array.prototype', 'TypedArray.prototype');
-      prune(this.Map, 'this.Map', 'Map');
-      prune(this.Map.prototype, 'this.Map.prototype', 'Map.prototype');
-      prune(this.Set, 'this.Set', 'Set');
-      prune(this.Set.prototype, 'this.Set.prototype', 'Set.prototype');
-      prune(this.WeakMap, 'this.WeakMap', 'WeakMap');
-      prune(this.WeakMap.prototype, 'this.WeakMap.prototype', 'WeakMap.prototype');
-      prune(this.WeakSet, 'this.WeakSet', 'WeakSet');
-      prune(this.WeakSet.prototype, 'this.WeakSet.prototype', 'WeakSet.prototype');
-      prune(this.ArrayBuffer, 'this.ArrayBuffer', 'ArrayBuffer');
-      prune(this.ArrayBuffer.prototype, 'this.ArrayBuffer.prototype', 'ArrayBuffer.prototype');
-      prune(this.DataView, 'this.DataView', 'DataView');
-      prune(this.DataView.prototype, 'this.DataView.prototype', 'DataView.prototype');
-      prune(this.Atomics, 'this.Atomics', 'Atomics');
-      prune(this.JSON, 'this.JSON', 'JSON');
-      prune(this.WeakRef, 'this.WeakRef', 'WeakRef');
-      prune(this.WeakRef.prototype, 'this.WeakRef.prototype', 'WeakRef.prototype');
-      prune(this.FinalizationRegistry, 'this.FinalizationRegistry', 'FinalizationRegistry');
+      prune(localThis, 'this', 'this');
+      prune(localThis.Object, 'this.Object', 'Object');
+      prune(localThis.Object.prototype, 'this.Object.prototype', 'Object.prototype');
+      prune(localThis.Function.prototype, 'this.Function.prototype', 'Function.prototype');
+      prune(localThis.Boolean.prototype, 'this.Boolean.prototype', 'Boolean.prototype');
+      prune(localThis.Symbol, 'this.Symbol', 'Symbol');
+      prune(localThis.Symbol.prototype, 'this.Symbol.prototype', 'Symbol.prototype');
+      prune(localThis.Error, 'this.Error', 'Error');
+      prune(localThis.Error.prototype, 'this.Error.prototype', 'Error.prototype');
+      prune(localThis.AggregateError, 'this.AggregateError', 'AggregateError');
+      prune(localThis.AggregateError.prototype, 'this.AggregateError.prototype', 'AggregateError.prototype');
+      prune(localThis.EvalError, 'this.EvalError', 'EvalError');
+      prune(localThis.EvalError.prototype, 'this.EvalError.prototype', 'EvalError.prototype');
+      prune(localThis.RangeError, 'this.RangeError', 'RangeError');
+      prune(localThis.RangeError.prototype, 'this.RangeError.prototype', 'RangeError.prototype');
+      prune(localThis.ReferenceError, 'this.ReferenceError', 'ReferenceError');
+      prune(localThis.ReferenceError.prototype, 'this.ReferenceError.prototype', 'ReferenceError.prototype');
+      prune(localThis.SyntaxError, 'this.SyntaxError', 'SyntaxError');
+      prune(localThis.SyntaxError.prototype, 'this.SyntaxError.prototype', 'SyntaxError.prototype');
+      prune(localThis.TypeError, 'this.TypeError', 'TypeError');
+      prune(localThis.TypeError.prototype, 'this.TypeError.prototype', 'TypeError.prototype');
+      prune(localThis.URIError, 'this.URIError', 'URIError');
+      prune(localThis.URIError.prototype, 'this.URIError.prototype', 'URIError.prototype');
+      prune(localThis.Number, 'this.Number', 'Number');
+      prune(localThis.Number.prototype, 'this.Number.prototype', 'Number.prototype');
+      prune(localThis.BigInt, 'this.BigInt', 'BigInt');
+      prune(localThis.BigInt.prototype, 'this.BigInt.prototype', 'BigInt.prototype');
+      prune(localThis.Math, 'this.Math', 'Math');
+      prune(localThis.Date, 'this.Date', 'Date');
+      prune(localThis.Date.prototype, 'this.Date.prototype', 'Date.prototype');
+      prune(localThis.String, 'this.String', 'String');
+      prune(localThis.String.prototype, 'this.String.prototype', 'String.prototype');
+      prune(localThis.RegExp, 'this.RegExp', 'RegExp');
+      prune(localThis.RegExp.prototype, 'this.RegExp.prototype', 'RegExp.prototype');
+      prune(localThis.Array, 'this.Array', 'Array');
+      prune(localThis.Array.prototype, 'this.Array.prototype', 'Array.prototype');
+      prune(localThis.Int8Array, 'this.Int8Array', 'TypedArray');
+      prune(localThis.Int8Array.prototype, 'this.Int8Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Uint8Array, 'this.Uint8Array', 'TypedArray');
+      prune(localThis.Uint8Array.prototype, 'this.Uint8Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Uint8ClampedArray, 'this.Uint8ClampedArray', 'TypedArray');
+      prune(localThis.Uint8ClampedArray.prototype, 'this.Uint8ClampedArray.prototype', 'TypedArray.prototype');
+      prune(localThis.Int16Array, 'this.Int16Array', 'TypedArray');
+      prune(localThis.Int16Array.prototype, 'this.Int16Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Uint16Array, 'this.Uint16Array', 'TypedArray');
+      prune(localThis.Uint16Array.prototype, 'this.Uint16Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Int32Array, 'this.Int32Array', 'TypedArray');
+      prune(localThis.Int32Array.prototype, 'this.Int32Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Uint32Array, 'this.Uint32Array', 'TypedArray');
+      prune(localThis.Uint32Array.prototype, 'this.Uint32Array.prototype', 'TypedArray.prototype');
+      prune(localThis.BigInt64Array, 'this.BigInt64Array', 'TypedArray');
+      prune(localThis.BigInt64Array.prototype, 'this.BigInt64Array.prototype', 'TypedArray.prototype');
+      prune(localThis.BigUint64Array, 'this.BigUint64Array', 'TypedArray');
+      prune(localThis.BigUint64Array.prototype, 'this.BigUint64Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Float32Array, 'this.Float32Array', 'TypedArray');
+      prune(localThis.Float32Array.prototype, 'this.Float32Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Float64Array, 'this.Float64Array', 'TypedArray');
+      prune(localThis.Float64Array.prototype, 'this.Float64Array.prototype', 'TypedArray.prototype');
+      prune(localThis.Map, 'this.Map', 'Map');
+      prune(localThis.Map.prototype, 'this.Map.prototype', 'Map.prototype');
+      prune(localThis.Set, 'this.Set', 'Set');
+      prune(localThis.Set.prototype, 'this.Set.prototype', 'Set.prototype');
+      prune(localThis.WeakMap, 'this.WeakMap', 'WeakMap');
+      prune(localThis.WeakMap.prototype, 'this.WeakMap.prototype', 'WeakMap.prototype');
+      prune(localThis.WeakSet, 'this.WeakSet', 'WeakSet');
+      prune(localThis.WeakSet.prototype, 'this.WeakSet.prototype', 'WeakSet.prototype');
+      prune(localThis.ArrayBuffer, 'this.ArrayBuffer', 'ArrayBuffer');
+      prune(localThis.ArrayBuffer.prototype, 'this.ArrayBuffer.prototype', 'ArrayBuffer.prototype');
+      prune(localThis.DataView, 'this.DataView', 'DataView');
+      prune(localThis.DataView.prototype, 'this.DataView.prototype', 'DataView.prototype');
+      prune(localThis.Atomics, 'this.Atomics', 'Atomics');
+      prune(localThis.JSON, 'this.JSON', 'JSON');
+      prune(localThis.WeakRef, 'this.WeakRef', 'WeakRef');
+      prune(localThis.WeakRef.prototype, 'this.WeakRef.prototype', 'WeakRef.prototype');
+      prune(localThis.FinalizationRegistry, 'this.FinalizationRegistry', 'FinalizationRegistry');
       prune(
-        this.FinalizationRegistry.prototype,
+        localThis.FinalizationRegistry.prototype,
         'this.FinalizationRegistry.prototype',
         'FinalizationRegistry.prototype',
       );
-      prune(this.Promise, 'this.Promise', 'Promise');
-      prune(this.Promise.prototype, 'this.Promise.prototype', 'Promise.prototype');
-      prune(this.GeneratorFunction.constructor, 'this.GeneratorFunction.constructor', 'GeneratorFunction');
+      prune(localThis.Promise, 'this.Promise', 'Promise');
+      prune(localThis.Promise.prototype, 'this.Promise.prototype', 'Promise.prototype');
+      prune(localThis.GeneratorFunction.constructor, 'this.GeneratorFunction.constructor', 'GeneratorFunction');
       prune(
-        this.GeneratorFunction.constructor.prototype,
+        localThis.GeneratorFunction.constructor.prototype,
         'this.GeneratorFunction.constructor.prototype',
         'GeneratorFunction.prototype',
       );
       prune(
-        this.AsyncGeneratorFunction.constructor,
+        localThis.AsyncGeneratorFunction.constructor,
         'this.AsyncGeneratorFunction.constructor',
         'AsyncGeneratorFunction',
       );
       prune(
-        this.AsyncGeneratorFunction.constructor.prototype,
+        localThis.AsyncGeneratorFunction.constructor.prototype,
         'this.AsyncGeneratorFunction.constructor.prototype',
         'AsyncGeneratorFunction.prototype',
       );
-      prune(this.AsyncFunction.constructor, 'this.AsyncFunction.constructor', 'AsyncFunction');
+      prune(localThis.AsyncFunction.constructor, 'this.AsyncFunction.constructor', 'AsyncFunction');
       prune(
-        this.AsyncFunction.constructor.prototype,
+        localThis.AsyncFunction.constructor.prototype,
         'this.AsyncFunction.constructor.prototype',
         'AsyncFunction.prototype',
       );
-      prune(this.Proxy, 'this.Proxy', 'Proxy');
-      prune(this.Reflect, 'this.Reflect', 'Reflect');
+      prune(localThis.Proxy, 'this.Proxy', 'Proxy');
+      prune(localThis.Reflect, 'this.Reflect', 'Reflect');
 
       if (0 < failed.length) {
         postEmitMessage(`worker:warning`, `failed to prune [${failed.join(', ')}]`);
@@ -2840,4 +2840,4 @@ module.exports = () => {
   } catch (e) {
     postRejectMessage(BOOT_TUNNEL, e instanceof _Error ? e.message : 'unknown error');
   }
-};
+}).toString();

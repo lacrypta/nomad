@@ -25,7 +25,7 @@ class NomadVM extends EventCaster {
    * The code the {@link Worker} will end up executing.
    *
    */
-  static #workerRunner: () => void = workerRunner;
+  static #workerRunner: string = workerRunner;
 
   /**
    * Generate a pseudo-random string.
@@ -1135,7 +1135,7 @@ class NomadVM extends EventCaster {
             }, timeout);
 
             blobURL = URL.createObjectURL(
-              new Blob([`"use strict"; (${NomadVM.#workerRunner.toString()})();`], {
+              new Blob([`"use strict"; (${NomadVM.#workerRunner})(this);`], {
                 type: 'application/javascript',
               }),
             );
