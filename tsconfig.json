@@ -28,7 +28,7 @@
     "removeComments": false,
     "sourceMap": true,
     "allowJs": true,
-    "allowSyntheticDefaultImports": false,
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,

@@ -9,7 +9,7 @@
  *
  * @returns {void}
  */
-const workerRunner = () => {
+module.exports = () => {
   'use strict';
 
   /**
@@ -2841,5 +2841,3 @@ const workerRunner = () => {
     postRejectMessage(BOOT_TUNNEL, e instanceof _Error ? e.message : 'unknown error');
   }
 };
-
-export { workerRunner };
