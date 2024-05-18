@@ -24,7 +24,7 @@
       ]
     }
   },
-  "keywords": ["OpenTimestamps", "library"],
+  "keywords": ["NOSTR", "library", "Nomad"],
   "markedOptions": {
     "gfm": true
   },
