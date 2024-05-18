@@ -1,7 +1,6 @@
 'use strict';
 
-/* global NomadVM */
-/* global DependencyObject */
+/* eslint-disable */
 
 /**
  * The code the {@link Worker} will end up executing.
@@ -48,7 +47,7 @@ const workerRunner = () => {
    *
    * @type {string}
    */
-  const DEFAULT_NAMESPACE_NAME = 'main';
+  const DEFAULT_NAMESPACE_NAME = 'root';
 
   // ----------------------------------------------------------------------------------------------
   // -- Expose Standard Classes -------------------------------------------------------------------
@@ -587,7 +586,13 @@ const workerRunner = () => {
    * @returns {void}
    */
   const patchEval = () => {
-    this.eval = (script) => _eval?.(`"use strict"; ${script}`);
+    /**
+     * Evaluates JavaScript code and executes it.
+     *
+     * @param {string} script - A String value that contains valid JavaScript code.
+     * @returns The execution result.
+     */
+    this.eval = (script) => _eval(`"use strict"; ${script.toString()}`);
   };
 
   /**
@@ -694,7 +699,7 @@ const workerRunner = () => {
             {
               const parse = (str, def) => {
                 const num = Number.parseInt(str, 10);
-                Number.isNaN(num) ? def : num;
+                return Number.isNaN(num) ? def : num;
               };
               const toPaddedDecimal = (num, padding, withSign = false) =>
                 (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
@@ -714,7 +719,7 @@ const workerRunner = () => {
                 const tzMinutes = parse(match.groups.tzMinutes, 0);
                 const daysInMonth = [
                   31,
-                  28 + (0 === year % 400 || (0 !== year % 100 && 0 === year % 4)),
+                  28 + (0 === year % 400 || (0 !== year % 100 && 0 === year % 4) ? 1 : 0),
                   31,
                   30,
                   31,
@@ -780,8 +785,16 @@ const workerRunner = () => {
     });
     _Date.prototype.constructor = this.Date;
     this.Date.prototype = _Date.prototype;
-    this.Date.parse = _Date.parse;
-    this.Date.UTC = _Date.UTC;
+    this.Date.parse = (str) => _Date.parse(str);
+    this.Date.UTC = (
+      year,
+      monthIndex = undefined,
+      date = undefined,
+      hours = undefined,
+      minutes = undefined,
+      seconds = undefined,
+      ms = undefined,
+    ) => _Date.UTC(year, monthIndex, date, hours, minutes, seconds, ms);
     this.Date.now = () => NaN;
     this.Date.prototype.getDate = this.Date.prototype.getUTCDate;
     this.Date.prototype.getDay = this.Date.prototype.getUTCDay;
@@ -1208,7 +1221,7 @@ const workerRunner = () => {
    * @returns {Array<string>} An array with the namespace's descendants.
    */
   const namespaceDescendants = (namespace, depth = 0) => {
-    const limit = 0 < depth ? depth + namespaces.split('.').length : Infinity;
+    const limit = 0 < depth ? depth + namespace.split('.').length : Infinity;
     return [...namespaces.keys()].filter(
       (candidate) => candidate.startsWith(`${namespace}.`) && candidate.split('.').length <= limit,
     );
@@ -1236,7 +1249,9 @@ const workerRunner = () => {
     });
 
     const error = new _Error('deleting namespace');
-    toReject.sort().forEach((tunnel) => rejectTunnel(tunnel, error));
+    toReject.sort().forEach((tunnel) => {
+      rejectTunnel(tunnel, error);
+    });
 
     return removed;
   };
@@ -1380,11 +1395,11 @@ const workerRunner = () => {
   };
 
   /**
-   * Retrieve a list of root namespaces.
+   * Retrieve a list of orphan namespaces.
    *
-   * @returns {Array<string>} A list of namespaces created at the root level.
+   * @returns {Array<string>} A list of orphan namespaces.
    */
-  const listRootNamespaces = () => {
+  const listOrphanNamespaces = () => {
     return [...namespaces.keys()].filter((namespace) => -1 === namespace.indexOf('.')).sort();
   };
 
@@ -1413,7 +1428,7 @@ const workerRunner = () => {
    */
   const removeTunnel = (tunnel) => {
     if (!(tunnel in tunnels)) {
-      throw new _Error(`tunnel ${tunnel} does not exist`);
+      throw new _Error(`tunnel ${tunnel.toString()} does not exist`);
     }
 
     const { resolve, reject, port } = tunnels[tunnel];
@@ -1461,14 +1476,14 @@ const workerRunner = () => {
     if ('string' !== typeof event) {
       throw new _Error('event name must be a string');
     } else if (!eventRegex.test(event)) {
-      throw new _Error(`event name must adhere to ${eventRegex}`);
+      throw new _Error(`event name must adhere to ${eventRegex.toString()}`);
     }
 
     const { linked } = getNamespace(namespace);
 
     const callbacks = new _Set();
     [namespace, ...namespaceAncestors(namespace), ...namespaceDescendants(namespace), ...linked].forEach((target) => {
-      for (let [callback, filters] of getNamespace(target).listeners.entries()) {
+      for (const [callback, filters] of getNamespace(target).listeners.entries()) {
         if ([...filters.values()].some((filter) => filter.test(event))) {
           callbacks.add(callback);
         }
@@ -1542,7 +1557,7 @@ const workerRunner = () => {
     } else if ('string' !== typeof filter) {
       throw new _Error('event name filter must be a string');
     } else if (!filterRegex.test(filter)) {
-      throw new _Error(`event name filter must adhere to ${filterRegex}`);
+      throw new _Error(`event name filter must adhere to ${filterRegex.toString()}`);
     } else if (-1 != filter.indexOf('**:**')) {
       throw new _Error('event name filter must not contain consecutive ** wildcards');
     }
@@ -1691,7 +1706,7 @@ const workerRunner = () => {
     const importedNames = _Object.keys(dependency.dependencies);
     {
       if (IMPORT_LIMIT < importedNames.length) {
-        throw new _Error(`too many imports 1024 < ${importedNames.length}`);
+        throw new _Error(`too many imports 1024 < ${importedNames.length.toString()}`);
       }
       const missing = importedNames.filter((name) => !(dependency.dependencies[name] in dependencies));
       if (0 !== missing.length) {
@@ -1703,7 +1718,7 @@ const workerRunner = () => {
     const argumentNames = [...args.keys()];
     {
       if (ARGUMENTS_LIMIT < argumentNames.length) {
-        throw new _Error(`too many arguments 1024 < ${argumentNames.length}`);
+        throw new _Error(`too many arguments 1024 < ${argumentNames.length.toString()}`);
       }
       const shadowed = argumentNames.filter((name) => name in dependency.dependencies);
       if (0 < shadowed.length) {
@@ -1717,7 +1732,7 @@ const workerRunner = () => {
       ...importedNames,
       ...argumentNames,
       //
-      `"use strict"; if (true) { ${dependency.code}; } return null;
+      `"use strict"; if (true) { ${dependency.code.toString()}; } return null;
     `,
     ).call(
       undefined,
@@ -1739,7 +1754,7 @@ const workerRunner = () => {
   const installDependency = (namespace, dependency) => {
     const { dependencies } = getNamespace(namespace);
     if (dependency.name in dependencies) {
-      throw new _Error(`duplicate dependency ${dependency.name}`);
+      throw new _Error(`duplicate dependency ${dependency.name.toString()}`);
     }
     const result = executeDependency(namespace, dependency, new _Map());
     dependencies[dependency.name] = 'object' === typeof result ? _Object.freeze(result) : result;
@@ -2746,11 +2761,11 @@ const workerRunner = () => {
             }
           }
           break;
-        case 'listRootNamespaces':
+        case 'listOrphanNamespaces':
           {
             const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listRootNamespaces());
+              postResolveMessage(tunnel, listOrphanNamespaces());
             } catch (e) {
               postRejectMessage(tunnel, e.message);
             }
@@ -2809,9 +2824,9 @@ const workerRunner = () => {
         default: {
           const { tunnel } = parsedData;
           if (undefined !== tunnel) {
-            postRejectMessage(tunnel, `unknown event name ${name}`);
+            postRejectMessage(tunnel, `unknown event name ${name.toString()}`);
           } else {
-            throw new _Error(`unknown event name ${name}`);
+            throw new _Error(`unknown event name ${name.toString()}`);
           }
         }
       }

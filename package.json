@@ -20,10 +20,32 @@
     "email": "info@lacrypta.ar"
   },
   "contributors": [],
-  "main": "index.js",
+  "files": [
+    "dist/types",
+    "dist/esm",
+    "dist/umd"
+  ],
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "browser": "./dist/esm/index.js",
+  "esnext": "./dist/esm/index.js",
+  "es2015": "./dist/esm/index.js",
+  "esm": "./dist/esm/index.js",
+  "module-browser": "./dist/esm/index.js",
+  "source": "./dist/esm/index.js",
+  "unpkg": "./dist/umd/index.min.js",
+  "jsdelivr": "./dist/umd/index.min.js",
+  "exports": {
+    "types": "./dist/types/index.d.ts",
+    "default": "./dist/esm/index.js",
+    "require": "./dist/cjs/index.cjs",
+    "umd": "./dist/umd/index.js"
+  },
   "sideEffects": false,
   "type": "module",
   "scripts": {
+    "postinstall": "mkdir -p ./dist/cjs && ln -sf ../umd/index.min.js ./dist/cjs/index.min.cjs && ln -sf ../umd/index.js ./dist/cjs/index.cjs",
     "mdlint": "markdownlint . .github -i node_modules -c ./etc/.markdownlint.jsonc",
     "mdlint:fix": "pnpm run mdlint --fix",
     "lint": "eslint src test --config ./etc/eslint.config.js --no-error-on-unmatched-pattern",
@@ -31,7 +53,13 @@
     "prettier": "prettier etc src test --config ./etc/.prettierrc.json --no-error-on-unmatched-pattern --check",
     "prettier:fix": "pnpm run prettier --write",
     "format": "pnpm run prettier:fix && pnpm run lint:fix && pnpm run mdlint:fix",
-    "doc": "jsdoc -c ./etc/jsdoc.json ./src",
+    "build": "pnpm run build:code && pnpm run build:types",
+    "build:code": "node ./etc/build && pnpm run postinstall",
+    "build:types": "tsc --build --verbose ./etc/tsconfig.build.json",
+    "analyze": "node ./etc/analyze",
+    "doc": "pnpm doc:api && pnpm run doc:internal",
+    "doc:api": "typedoc --options ./etc/typedoc.api.json",
+    "doc:internal": "typedoc --options ./etc/typedoc.internal.json",
     "clean": "rm -rf dist",
     "test": "jest --runInBand --config=./etc/jest.unit.config.cjs",
     "test:meta": "jest --runInBand --config=./etc/jest.meta.config.cjs",
@@ -39,15 +67,33 @@
     "reset": "pnpm clean && rm -rf node_modules && rm -f pnpm-lock.yaml"
   },
   "devDependencies": {
-    "@eslint/js": "^9.2.0",
+    "@eslint/js": "^9.3.0",
     "@lacrypta/nomadvm": "link:",
-    "eslint": "^9.2.0",
+    "@types/eslint-config-prettier": "^6.11.3",
+    "@types/eslint__js": "^8.42.3",
+    "@types/jest": "^29.5.12",
+    "esbuild": "^0.21.3",
+    "esbuild-plugin-umd-wrapper": "^2.0.0",
+    "eslint": "^9.3.0",
     "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-jsdoc": "^48.2.5",
+    "husky": "^9.0.11",
     "jest": "^29.7.0",
-    "jsdoc": "^4.0.3",
     "markdownlint-cli": "^0.40.0",
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.2",
+    "tsx": "^4.10.4",
+    "typedoc": "^0.25.13",
+    "typedoc-plugin-katex": "^0.1.2",
+    "typedoc-plugin-keywords": "^1.6.0",
+    "typedoc-plugin-mdn-links": "^3.1.25",
+    "typedoc-plugin-mermaid": "^1.10.0",
+    "typedoc-plugin-remove-references": "^0.0.6",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.9.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
   }
 }
