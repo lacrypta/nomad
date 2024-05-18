@@ -18,6 +18,7 @@ const buildOptions = {
   platform: 'neutral',
   sourcemap: 'linked',
   sourcesContent: false,
+  treeShaking: true,
   tsconfig: './etc/tsconfig.build.json',
 };
 
