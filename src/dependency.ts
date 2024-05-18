@@ -28,7 +28,7 @@ type DependencyObject = {
    * Dependency's dependencies, as a mapping from imported name to dependency name.
    *
    */
-  dependencies: Map<string, string>;
+  dependencies: Record<string, string>;
 };
 
 /**
@@ -231,7 +231,7 @@ class Dependency {
     return {
       name: func.name,
       code: body,
-      dependencies: new Map(argsResult),
+      dependencies: Object.setPrototypeOf(Object.fromEntries(argsResult), null) as Record<string, string>,
     };
   }
 
@@ -331,7 +331,11 @@ class Dependency {
    * @param dependencies - The dependency's dependencies map to use.
    * @see {@link Dependency.validate} for exceptions thrown.
    */
-  constructor(name: string = '', code: string = '', dependencies: Map<string, string> = new Map()) {
+  constructor(
+    name: string = '',
+    code: string = '',
+    dependencies: Record<string, string> = Object.create(null) as Record<string, string>,
+  ) {
     const dependency: DependencyObject = Dependency.validate({
       name,
       code,
@@ -340,7 +344,7 @@ class Dependency {
 
     this.#name = dependency.name;
     this.#code = dependency.code;
-    this.#dependencies = dependency.dependencies;
+    this.#dependencies = new Map(Object.entries(dependency.dependencies));
   }
 
   /**
@@ -481,7 +485,10 @@ class Dependency {
     return {
       name: this.name,
       code: this.code,
-      dependencies: new Map<string, string>(this.#dependencies.entries()),
+      dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
+        string,
+        string
+      >,
     };
   }
 

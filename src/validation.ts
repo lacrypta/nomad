@@ -252,7 +252,15 @@ const dependencyObject = (dependency: DependencyObject): DependencyObject => {
   return {
     name: identifier(dependency.name),
     code: functionCode(dependency.code),
-    dependencies: dependencyMap(dependency.dependencies),
+    dependencies: Object.setPrototypeOf(
+      Object.fromEntries(
+        Object.entries(dependency.dependencies).map(([key, value]: [string, string]): [string, string] => [
+          identifier(key),
+          identifier(value),
+        ]),
+      ),
+      null,
+    ) as Record<string, string>,
   };
 };
 
