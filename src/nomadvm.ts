@@ -3,7 +3,14 @@
 import type { DependencyObject } from './dependency';
 import type { Cast, EventCallback, ProtectedMethods } from './eventCaster';
 
-import * as Validation from './validation';
+import {
+  namespace as validateNamespace,
+  timeout as validateTimeout,
+  nonNegativeInteger as validateNonNegativeInteger,
+  identifier as validateIdentifier,
+  argumentsMap as validateArgumentsMap,
+} from './validation';
+
 import { EventCaster } from './eventCaster';
 import { Dependency } from './dependency';
 
@@ -1095,7 +1102,7 @@ class NomadVM extends EventCaster {
         this.#castEvent('start');
         try {
           this.#assertCreated();
-          timeout = Validation.timeout(timeout);
+          timeout = validateTimeout(timeout);
           this.#state = 'booting';
           let blobURL: string = '';
           try {
@@ -1212,7 +1219,7 @@ class NomadVM extends EventCaster {
       (resolve: (nomadVmNamespace: NomadVMNamespace) => void, reject: (error: Error) => void): void => {
         this.#castEvent(`${namespace}:create`);
         try {
-          Validation.namespace(namespace);
+          validateNamespace(namespace);
 
           this.#assertRunning();
 
@@ -1249,7 +1256,7 @@ class NomadVM extends EventCaster {
     return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:delete`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1283,7 +1290,7 @@ class NomadVM extends EventCaster {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:assimilate`, namespace);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1318,8 +1325,8 @@ class NomadVM extends EventCaster {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:link`, target);
       try {
-        Validation.namespace(namespace);
-        Validation.namespace(target);
+        validateNamespace(namespace);
+        validateNamespace(target);
 
         this.#assertRunning();
 
@@ -1353,8 +1360,8 @@ class NomadVM extends EventCaster {
    */
   unlinkNamespaces(namespace: string, target: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (unlinked: boolean) => void, reject: (error: Error) => void): void => {
-      Validation.namespace(namespace);
-      Validation.namespace(target);
+      validateNamespace(namespace);
+      validateNamespace(target);
 
       this.#castEvent(`${namespace}:unlink`, target);
       try {
@@ -1391,7 +1398,7 @@ class NomadVM extends EventCaster {
     return new Promise<boolean>((resolve: (previous: boolean) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:muteNamespace`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1425,7 +1432,7 @@ class NomadVM extends EventCaster {
     return new Promise<boolean>((resolve: (prev: boolean) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:unmute`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1477,7 +1484,7 @@ class NomadVM extends EventCaster {
   listInstalled(namespace: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (installed: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1497,7 +1504,7 @@ class NomadVM extends EventCaster {
   listLinksTo(namespace: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linksTo: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1517,7 +1524,7 @@ class NomadVM extends EventCaster {
   listLinkedFrom(namespace: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linkedFrom: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1537,7 +1544,7 @@ class NomadVM extends EventCaster {
   isMuted(namespace: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (muted: boolean) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
@@ -1558,13 +1565,13 @@ class NomadVM extends EventCaster {
   getDescendants(namespace: string, depth: number | null = null): Promise<string[]> {
     return new Promise<string[]>((resolve: (descendants: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postGetDescendantsMessage(
           namespace,
-          Validation.nonNegativeInteger(depth ?? 0),
+          validateNonNegativeInteger(depth ?? 0),
           this.#addTunnel(resolve, reject),
         );
       } catch (e) {
@@ -1591,7 +1598,7 @@ class NomadVM extends EventCaster {
         }) - 1;
       this.#castEvent(`${namespace}:predefined:add`, name, callback, idx);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
         this.#postPredefineMessage(
@@ -1610,7 +1617,7 @@ class NomadVM extends EventCaster {
             },
           ),
           idx,
-          Validation.identifier(name),
+          validateIdentifier(name),
         );
       } catch (e) {
         this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, e);
@@ -1630,7 +1637,7 @@ class NomadVM extends EventCaster {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:install`, dependency);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only install Dependency');
@@ -1669,7 +1676,7 @@ class NomadVM extends EventCaster {
   execute(namespace: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#castEvent(`${namespace}:execute`, dependency, args);
 
@@ -1691,7 +1698,7 @@ class NomadVM extends EventCaster {
             },
           ),
           dependency.asObject(),
-          Validation.argumentsMap(args),
+          validateArgumentsMap(args),
         );
       } catch (e) {
         this.#castEvent(`${namespace}:execute:error`, dependency, args, e);
@@ -1779,7 +1786,7 @@ class NomadVM extends EventCaster {
    * @returns `this`, for chaining.
    */
   emit(namespace: string, event: string, ...args: unknown[]): this {
-    this.#postEmitMessage(Validation.namespace(namespace), EventCaster.validateEvent(event), args);
+    this.#postEmitMessage(validateNamespace(namespace), EventCaster.validateEvent(event), args);
     return this;
   }
 }

@@ -262,8 +262,8 @@ class Dependency {
    * @throws {Error} If unresolved dependencies found.
    */
   static sort(dependencies: Iterable<Dependency>, installed: Iterable<string> | null = null): Dependency[] {
-    const existing: Set<string> = new Set<string>(Validation.iterable(installed ?? []));
-    const pending: Set<Dependency> = new Set<Dependency>(Validation.iterable(dependencies));
+    const existing: Set<string> = new Set<string>(installed ?? []);
+    const pending: Set<Dependency> = new Set<Dependency>(dependencies);
     const newOnes: Set<Dependency> = new Set<Dependency>();
     const result: Dependency[] = [];
 
@@ -301,7 +301,7 @@ class Dependency {
    * @throws {Error} If the given dependency does not contain a `dependencies` property.
    * @see {@link Validation.dependencyObject} for additional exceptions thrown.
    */
-  static validate(dependency: unknown): DependencyObject {
+  static validate(dependency: DependencyObject): DependencyObject {
     return Validation.dependencyObject(dependency);
   }
 

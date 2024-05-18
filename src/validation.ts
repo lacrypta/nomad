@@ -3,15 +3,6 @@
 import type { DependencyObject } from './dependency';
 
 /**
- * @see {@link https://stackoverflow.com/a/69413070}
- */
-type NonNegativeInteger<T extends number> = number extends T
-  ? never
-  : `${T}` extends `-${string}` | `${string}.${string}`
-    ? never
-    : T;
-
-/**
  * Regular expression all identifiers must adhere to.
  *
  * Only 7-bit ASCII alphanumeric characters and underscores are allowed, underscores may not start an identifier name.
@@ -192,26 +183,6 @@ const identifier = (name: unknown): string => {
 };
 
 /**
- * Validate the given datum is a non-negative integer number and return it if valid.
- *
- * @param datum - The datum to validate.
- * @returns The validated non-negative integer.
- * @throws {Error} If the given datum is not a `number`.
- * @throws {Error} If the given datum is not a safe integer (cf. {@link Number.isSafeInteger}).
- * @throws {Error} If the given datum is negative.
- */
-const nonNegativeInteger = (datum: unknown): NonNegativeInteger<number> => {
-  if ('number' !== typeof datum) {
-    throw new Error('expected datum to be a number');
-  } else if (!Number.isSafeInteger(datum)) {
-    throw new Error('expected datum to be a safe integer');
-  } else if (datum < 0) {
-    throw new Error('expected datum to be non-negative');
-  }
-  return datum as NonNegativeInteger<number>;
-};
-
-/**
  * ASCII codes of all allowed characters in function source code.
  *
  * No Unicode characters are allowed, only a subset of 7-bit ASCII characters are allowed:
@@ -263,10 +234,7 @@ const functionCode = (code: unknown): string => {
  * @throws {Error} If the given dependency map values are not `string`s.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const dependencyMap = (dependencies: unknown): Map<string, string> => {
-  if (null === dependencies || 'object' !== typeof dependencies || !(dependencies instanceof Map)) {
-    throw new Error('expected dependency map to be a Map instance');
-  }
+const dependencyMap = (dependencies: Map<string, string>): Map<string, string> => {
   [...dependencies.entries()].forEach(([key, value]: [string, unknown]): void => {
     identifier(key);
     identifier(value);
@@ -288,16 +256,7 @@ const dependencyMap = (dependencies: unknown): Map<string, string> => {
  * @see {@link functionCode} for additional exceptions thrown.
  * @see {@link dependencyMap} for additional exceptions thrown.
  */
-const dependencyObject = (dependency: unknown): DependencyObject => {
-  if (null === dependency || 'object' !== typeof dependency) {
-    throw new Error('expected dependency object to be an non-null object');
-  } else if (!('name' in dependency)) {
-    throw new Error("required property 'name' missing");
-  } else if (!('code' in dependency)) {
-    throw new Error("required property 'code' missing");
-  } else if (!('dependencies' in dependency)) {
-    throw new Error("required property 'dependencies' missing");
-  }
+const dependencyObject = (dependency: DependencyObject): DependencyObject => {
   return {
     name: identifier(dependency.name),
     code: functionCode(dependency.code),
@@ -306,30 +265,20 @@ const dependencyObject = (dependency: unknown): DependencyObject => {
 };
 
 /**
- * Validate the given resolve / reject pair and return it if valid.
+ * Validate the given value is non-negative.
  *
- * @param resolve - The resolve value to validate.
- * @param reject - The reject value to validate.
- * @returns The validated reject / resolve pair.
- * @throws {Error} If the given resolve value is not a `Function` instance.
- * @throws {Error} If the given reject value is not a `Function` instance.
+ * @param datum - The value to validate.
+ * @returns The validated value.
+ * @throws {Error} If the given value is not a safe integer (cf. {@link Number.isSafeInteger}).
+ * @throws {Error} If the given value value is negative.
  */
-const resolveRejectPair = (
-  resolve: unknown,
-  reject: (error: Error) => void,
-): {
-  resolve: (...args: unknown[]) => void;
-  reject: (error: Error) => void;
-} => {
-  if (!(resolve instanceof Function)) {
-    throw new Error('expected resolve to be a function');
-  } else if (!(reject instanceof Function)) {
-    throw new Error('expected reject to be a function');
+const nonNegativeInteger = (datum: number): number => {
+  if (!Number.isSafeInteger(datum)) {
+    throw new Error('expected datum to be a safe integer');
+  } else if (datum < 0) {
+    throw new Error('expected datum to be non-negative');
   }
-  return { resolve, reject } as {
-    resolve: (...args: unknown[]) => void;
-    reject: (error: Error) => void;
-  }; // TODO: fix this
+  return datum;
 };
 
 /**
@@ -343,20 +292,12 @@ const timeoutLimit: number = 1 << 30;
  *
  * @param timeout - The boot timeout value to validate.
  * @returns The validated boot timeout value.
- * @throws {Error} If the given timeout value is not a `number`.
- * @throws {Error} If the given timeout value is not an integer.
- * @throws {Error} If the given timeout value is negative.
  * @throws {Error} If the given timeout value is larger than the maximum boot timeout value allowed.
+ * @see {@link nonNegativeInteger} for additional exceptions thrown.
  */
-const timeout = (timeout: unknown): number => {
-  if ('number' !== typeof timeout) {
-    throw new Error('expected timeout to be a number');
-  } else if (!Number.isInteger(timeout)) {
-    throw new Error('timeout must be an integer');
-  } else if (timeout < 0) {
-    throw new Error('timeout must be non-negative');
-  } else if (timeoutLimit < timeout) {
-    throw new Error(`timeout must be at most ${timeoutLimit.toString()}`);
+const timeout = (timeout: number): number => {
+  if (timeoutLimit < nonNegativeInteger(timeout)) {
+    throw new Error(`expected timeout to be at most ${timeoutLimit.toString()}`);
   }
   return timeout;
 };
@@ -369,34 +310,10 @@ const timeout = (timeout: unknown): number => {
  * @throws {Error} If the given arguments map is not an object.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const argumentsMap = (args: unknown): Map<string, unknown> => {
-  if (null === args || 'object' !== typeof args || !(args instanceof Map)) {
-    throw new Error('expected arguments map to be a Map instance');
-  }
-
+const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
   [...args.keys()].forEach(identifier);
 
-  return new Map(args.entries()) as Map<string, unknown>;
-};
-
-/**
- * Validate the given argument is an {@link Iterable} and return it if valid.
- *
- * @param iter - The argument to validate.
- * @returns The validated iterable.
- * @throws {Error} If the given argument is not an {@link Iterable}.
- */
-const iterable = <T>(iter: unknown): Iterable<T> => {
-  if (
-    null === iter ||
-    'object' !== typeof iter ||
-    !(Symbol.iterator in iter) ||
-    'function' !== typeof iter[Symbol.iterator]
-  ) {
-    throw new Error('expected Iterable');
-  }
-
-  return iter as Iterable<T>;
+  return args;
 };
 
 /**
@@ -409,11 +326,7 @@ const iterable = <T>(iter: unknown): Iterable<T> => {
  * @throws {Error} If the given argument is not a valid namespace identifier.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const namespace = (ns: unknown): string => {
-  if ('string' !== typeof ns) {
-    throw new Error('expected namespace to be a string');
-  }
-
+const namespace = (ns: string): string => {
   return ns
     .split('.')
     .map((part: string): string => identifier(part))
@@ -422,13 +335,11 @@ const namespace = (ns: unknown): string => {
 
 export {
   identifier,
-  nonNegativeInteger,
   functionCode,
   dependencyMap,
   dependencyObject,
-  resolveRejectPair,
   timeout,
   argumentsMap,
-  iterable,
   namespace,
+  nonNegativeInteger,
 };
