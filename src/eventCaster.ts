@@ -56,13 +56,10 @@ class EventCaster {
    *
    * @param name - The event name to validate.
    * @returns The validated event name.
-   * @throws {Error} If the given event name is not a `string`.
    * @throws {Error} If the given event name fails regular expression validation.
    */
-  static validateEvent(name: unknown): string {
-    if ('string' !== typeof name) {
-      throw new Error('event name must be a string');
-    } else if (!EventCaster.#eventRegex.test(name)) {
+  static validateEvent(name: string): string {
+    if (!EventCaster.#eventRegex.test(name)) {
       throw new Error(`event name must adhere to ${EventCaster.#eventRegex.toString()}`);
     }
 
@@ -87,14 +84,11 @@ class EventCaster {
    *
    * @param filter - The event name filter to validate.
    * @returns The validated event name filter.
-   * @throws {Error} If the given event name filter is not a `string`.
    * @throws {Error} If the given event name filter fails regular expression validation.
    * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
    */
-  static validateFilter(filter: unknown): string {
-    if ('string' !== typeof filter) {
-      throw new Error('event name filter must be a string');
-    } else if (!EventCaster.#filterRegex.test(filter)) {
+  static validateFilter(filter: string): string {
+    if (!EventCaster.#filterRegex.test(filter)) {
       throw new Error(`event name filter must adhere to ${EventCaster.#filterRegex.toString()}`);
     } else if (-1 != filter.indexOf('**:**')) {
       throw new Error('event name filter must not contain consecutive ** wildcards');
@@ -110,7 +104,7 @@ class EventCaster {
    * @returns The transformed event name filter.
    * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
    */
-  static #filterToRegExp(filter: unknown): RegExp {
+  static #filterToRegExp(filter: string): RegExp {
     return new RegExp(
       '^' +
         EventCaster.validateFilter(filter)

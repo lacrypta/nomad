@@ -167,14 +167,11 @@ const forbiddenWords: string[] = [
  *
  * @param name - The identifier to validate.
  * @returns The validated identifier.
- * @throws {Error} If the given identifier is not a `string`.
  * @throws {Error} If the given identifier fails regular expression validation.
  * @throws {Error} If the given identifier is forbidden.
  */
-const identifier = (name: unknown): string => {
-  if ('string' !== typeof name) {
-    throw new Error('expected identifier to be a string');
-  } else if (!identifierRegExp.test(name)) {
+const identifier = (name: string): string => {
+  if (!identifierRegExp.test(name)) {
     throw new Error(`identifier must adhere to '${identifierRegExp.toString()}'`);
   } else if (forbiddenWords.includes(name)) {
     throw new Error('identifier must not be a forbidden word');
@@ -206,14 +203,11 @@ const codeAscii: number[] = [
  *
  * @param code - The function source code to validate.
  * @returns The validated function source code.
- * @throws {Error} If the given function source code is not a `string`.
  * @throws {Error} If the given function source code contains disallowed characters.
  * @throws {Error} If the given function source code is not a valid strict mode function body.
  */
-const functionCode = (code: unknown): string => {
-  if ('string' !== typeof code) {
-    throw new Error('expected function code to be a string');
-  } else if (code.split('').some((c: string): boolean => !codeAscii.includes(c.codePointAt(0) ?? 0))) {
+const functionCode = (code: string): string => {
+  if (code.split('').some((c: string): boolean => !codeAscii.includes(c.codePointAt(0) ?? 0))) {
     throw new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR');
   }
   try {
@@ -228,14 +222,12 @@ const functionCode = (code: unknown): string => {
 /**
  * Validate the given dependency map and return them if valid.
  *
- * @param {unknown} dependencies - The dependency map to validate.
- * @returns {Map<string, string>} The validated dependency map (as a new object).
- * @throws {Error} If the given dependency map is not an object.
- * @throws {Error} If the given dependency map values are not `string`s.
+ * @param dependencies - The dependency map to validate.
+ * @returns The validated dependency map (as a new object).
  * @see {@link identifier} for additional exceptions thrown.
  */
 const dependencyMap = (dependencies: Map<string, string>): Map<string, string> => {
-  [...dependencies.entries()].forEach(([key, value]: [string, unknown]): void => {
+  [...dependencies.entries()].forEach(([key, value]: [string, string]): void => {
     identifier(key);
     identifier(value);
   });

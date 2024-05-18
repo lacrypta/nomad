@@ -467,7 +467,7 @@ class Dependency {
    */
   removeDependency(dependencyName: string): this {
     this.#dependencies = new Map<string, string>(
-      [...this.#dependencies.entries()].filter(([, dName]: [unknown, string]): boolean => dName !== dependencyName),
+      [...this.#dependencies.entries()].filter(([, dName]: [string, string]): boolean => dName !== dependencyName),
     );
     return this;
   }
@@ -491,7 +491,8 @@ class Dependency {
    * @returns The newly created {@link Dependency}.
    */
   clone(): Dependency {
-    return new Dependency(this.name, this.code, this.dependencies);
+    const obj: DependencyObject = this.asObject();
+    return new Dependency(obj.name, obj.code, obj.dependencies);
   }
 }
 
