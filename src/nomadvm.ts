@@ -53,6 +53,7 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
    * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link Worker} encounters a non-fatal, yet reportable, error `error`.
    * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link Worker} encounters a fatal error `error`.
+   * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link Worker} fails to respond to ping / pong messages for `delta` milliseconds.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
@@ -136,6 +137,18 @@ class NomadVM extends EventCaster {
   static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
 
   /**
+   * The number of milliseconds to wait between `ping` messages to the {@link Worker}.
+   *
+   */
+  static #pingInterval: number = 100;
+
+  /**
+   * The number of milliseconds that must elapse between `pong` messages in order to consider a {@link Worker} "unresponsive".
+   *
+   */
+  static #pongLimit: number = 1000;
+
+  /**
    * Retrieve the VM registered under the given name.
    *
    * @param name - VM name to retrieve.
@@ -200,6 +213,18 @@ class NomadVM extends EventCaster {
     resolve: (arg: unknown) => void;
     reject: (error: Error) => void;
   }[] = [];
+
+  /**
+   * The interval ID for the pinger, or `null` if not yet set up.
+   *
+   */
+  #pinger: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * The timestamp when the last `pong` message was received.
+   *
+   */
+  #lastPong: number = Date.now();
 
   /**
    * Construct a new {@link NomadVM} instance, using the given name.
@@ -318,6 +343,23 @@ class NomadVM extends EventCaster {
    */
   #postJsonMessage(data: object): void {
     this.#worker?.postMessage(JSON.stringify(data));
+  }
+
+  /**
+   * Post a `ping` message to the {@link Worker}.
+   *
+   * A `ping` message has the form:
+   *
+   * ```json
+   * {
+   *   name: "ping"
+   * }
+   * ```
+   *
+   * @returns
+   */
+  #postPingMessage(): void {
+    this.#postJsonMessage({ name: 'ping' });
   }
 
   /**
@@ -986,6 +1028,9 @@ class NomadVM extends EventCaster {
         [_: string]: unknown;
       };
       switch (parsedData.name) {
+        case 'pong':
+          this.#lastPong = Date.now();
+          break;
         case 'resolve':
           {
             const { tunnel, payload }: { tunnel: number; payload: unknown } = parsedData as {
@@ -1079,6 +1124,54 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
+   * Shut down the {@link Worker} and reject all pending tunnels.
+   *
+   * Stopping a Vm instance entails:
+   *
+   * 1. Clearing the pinger.
+   * 2. Calling {@link Worker.terminate} on the VM's {@link Worker}.
+   * 3. Rejecting all existing tunnels.
+   *
+   * NOTE: this method does NOT return a {@link Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link Promise}.
+   *
+   * @param resolve - Resolution callback: called if shutting down completed successfully.
+   * @param reject - Rejection callback: called if anything went wrong with shutting down.
+   * @returns
+   */
+  #shutdown(resolve: () => void, reject: (error: Error) => void): void {
+    this.#castEvent('stop');
+    try {
+      if ('stopped' !== this.#state) {
+        this.#state = 'stopped';
+
+        if (null !== this.#pinger) {
+          clearTimeout(this.#pinger);
+          this.#pinger = null;
+        }
+        if (null !== this.#worker) {
+          this.#worker.terminate();
+          this.#worker = null;
+        }
+
+        this.#tunnels.forEach((_: unknown, idx: number): void => {
+          try {
+            this.#rejectTunnel(idx, new Error('stopped'));
+          } catch (e) {
+            this.#castEvent('stop:error:ignored', e);
+          }
+        });
+        this.#tunnels = [];
+
+        this.#castEvent('stop:ok');
+      }
+    } catch (e) {
+      this.#castEvent('stop:error', e);
+      reject(e instanceof Error ? e : new Error('unknown error'));
+    }
+    resolve();
+  }
+
+  /**
    * Start the {@link Worker} and wait for its boot-up sequence to complete.
    *
    * Starting a VM instance consists of the following:
@@ -1106,6 +1199,17 @@ class NomadVM extends EventCaster {
               (internalBootTime: number): void => {
                 clearTimeout(bootTimeout);
                 URL.revokeObjectURL(blobURL);
+                this.#pinger = setInterval(() => {
+                  const delta: number = Date.now() - this.#lastPong;
+                  if (NomadVM.#pongLimit < delta) {
+                    this.#castEvent('worker:unresponsive', delta);
+                    this.#shutdown(
+                      () => null,
+                      () => null,
+                    );
+                  }
+                  this.#postPingMessage();
+                }, NomadVM.#pingInterval);
                 this.#state = 'running';
                 this.#castEvent('start:ok');
                 resolve([internalBootTime, Date.now() - externalBootTime]);
@@ -1183,39 +1287,12 @@ class NomadVM extends EventCaster {
   /**
    * Stop the {@link Worker} and reject all pending tunnels.
    *
-   * Stopping a Vm instance entails:
-   *
-   * 1. Calling {@link Worker.terminate} on the VM's {@link Worker}.
-   * 2. Rejecting all existing tunnels.
-   *
    * @returns A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.#shutdown} for the actual shutdown process
    */
   stop(): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent('stop');
-      try {
-        if ('stopped' !== this.#state) {
-          this.#state = 'stopped';
-
-          this.#worker?.terminate();
-          this.#worker = null;
-
-          this.#tunnels.forEach((_: unknown, idx: number): void => {
-            try {
-              this.#rejectTunnel(idx, new Error('stopped'));
-            } catch (e) {
-              this.#castEvent('stop:error:ignored', e);
-            }
-          });
-          this.#tunnels = [];
-
-          this.#castEvent('stop:ok');
-          resolve();
-        }
-      } catch (e) {
-        this.#castEvent('stop:error', e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
-      }
+      this.#shutdown(resolve, reject);
     });
   }
 

@@ -1024,6 +1024,23 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
   };
 
   /**
+   * Post a `pong` message to the host {@link NomadVM}.
+   *
+   * A `pong` message has the following form:
+   *
+   * ```json
+   * {
+   *   name: "pong"
+   * }
+   * ```
+   *
+   * @returns {void}
+   */
+  const postPongMessage = () => {
+    postJsonMessage({ name: 'pong' });
+  };
+
+  /**
    * Post a `resolve` message to the host {@link NomadVM}.
    *
    * A `resolve` message has the following form:
@@ -2676,6 +2693,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
       const parsedData = _JSON.parse(data);
       const { name } = parsedData;
       switch (name) {
+        case 'ping':
+          postPongMessage();
+          break;
         case 'resolve':
           {
             const { tunnel, payload } = parsedData;
