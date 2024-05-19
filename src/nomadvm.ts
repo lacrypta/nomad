@@ -1236,7 +1236,7 @@ class NomadVM extends EventCaster {
               new Blob(
                 [
                   `'use strict';
-                  (${workerRunner})(
+                  (${workerRunner.toString()})(
                     this,
                     ((_addEventListener) => (listener) => {
                       _addEventListener('message', ({ data }) => {

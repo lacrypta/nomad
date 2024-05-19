@@ -2899,4 +2899,4 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
   }
 };
 
-module.exports = workerRunner.toString();
+module.exports = workerRunner;
