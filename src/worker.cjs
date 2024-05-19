@@ -43,7 +43,7 @@
 /**
  * The code the {@link Worker} will end up executing.
  *
- * @param {object} _this - The `this` value to use (injected by the caller).
+ * @param {Record<string, any>} _this - The `this` value to use (injected by the caller).
  * @param {Listener} _listen - The `addEventListener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `postMessage` value to use (injected by the caller).
  * @param {Scheduler} _schedule - The `setTimeout` value to use (injected by the caller).
@@ -735,7 +735,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
           case 'string':
             {
               const parse = (str, def) => {
-                const num = Number.parseInt(str, 10);
+                const num = Number.parseInt(str ?? '', 10);
                 return Number.isNaN(num) ? def : num;
               };
               const toPaddedDecimal = (num, padding, withSign = false) =>
@@ -744,16 +744,16 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
               const match = arg.match(
                 /^(?<year>\d{4}|[+-]\d{6})(?:-(?<month>\d\d)(?:-(?<day>\d\d))?)?(?:T(?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d)(?:\.(?<milliseconds>\d{1,3}))?)?)?(?:Z|(?<tzHours>[+-]\d\d):(?<tzMinutes>\d\d))?$/,
               );
-              if (null !== match && '-000000' !== match.groups.year) {
-                const year = parse(match.groups.year, NaN);
-                const month = parse(match.groups.month, 1);
-                const day = parse(match.groups.day, 1);
-                const hours = parse(match.groups.hours, 0);
-                const minutes = parse(match.groups.minutes, 0);
-                const seconds = parse(match.groups.seconds, 0);
-                const milliseconds = parse(match.groups.milliseconds, 0);
-                const tzHours = parse(match.groups.tzHours, 0);
-                const tzMinutes = parse(match.groups.tzMinutes, 0);
+              if (null !== match && '-000000' !== match.groups?.year) {
+                const year = parse(match.groups?.year, NaN);
+                const month = parse(match.groups?.month, 1);
+                const day = parse(match.groups?.day, 1);
+                const hours = parse(match.groups?.hours, 0);
+                const minutes = parse(match.groups?.minutes, 0);
+                const seconds = parse(match.groups?.seconds, 0);
+                const milliseconds = parse(match.groups?.milliseconds, 0);
+                const tzHours = parse(match.groups?.tzHours, 0);
+                const tzMinutes = parse(match.groups?.tzMinutes, 0);
                 const daysInMonth = [
                   31,
                   28 + (0 === year % 400 || (0 !== year % 100 && 0 === year % 4) ? 1 : 0),
@@ -771,7 +771,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
                 if (
                   !Number.isNaN(year) &&
                   between(1, month, 12) &&
-                  between(1, day, daysInMonth[month - 1]) &&
+                  between(1, day, daysInMonth[month - 1] ?? 0) &&
                   between(0, hours, 24) &&
                   between(0, minutes, 59) &&
                   between(0, seconds, 59) &&
@@ -974,7 +974,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
      * Additionally, it will freeze all non-computed properties, as well as the getter / setters themselves found.
      *
      * @param {any} subject - Object to freeze.
-     * @param {WeakSet} processed - Set of objects already frozen so as to prevent infinite recursion and speed the process up.
+     * @param {WeakSet<any>} processed - Set of objects already frozen so as to prevent infinite recursion and speed the process up.
      * @returns {void}
      */
     const deepFreeze = (subject, processed = new _WeakSet()) => {
@@ -1211,7 +1211,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
    * Retrieve a list of ancestor namespaces of the given one.
    *
    * @param {string} namespace - Namespace to retrieve the ancestors list of.
-   * @returns {Array<string>} An array of namespace names.
+   * @returns {string[]} An array of namespace names.
    */
   const namespaceAncestors = (namespace) => {
     return getNamespaceBase(namespace)
@@ -1684,10 +1684,10 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
       castUser(namespacePorts[port], event, ...args);
       return eventCaster;
     };
-    eventCaster.on = _Object.freeze((...args) => __on(...args));
-    eventCaster.once = _Object.freeze((...args) => __once(...args));
-    eventCaster.off = _Object.freeze((...args) => __off(...args));
-    eventCaster.cast = _Object.freeze((...args) => __cast(...args));
+    eventCaster.on = _Object.freeze((filter, callback) => __on(filter, callback));
+    eventCaster.once = _Object.freeze((filter, callback) => __once(filter, callback));
+    eventCaster.off = _Object.freeze((callback) => __off(callback));
+    eventCaster.cast = _Object.freeze((event, ...args) => __cast(event, ...args));
 
     return _Object.freeze(eventCaster);
   };
@@ -1841,6 +1841,14 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
   // -- Boot Sequence -----------------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
+  /**
+   * Retrieve the error message associated to the given argument.
+   *
+   * @param {any} e - Error to retrieve the message of.
+   * @returns {string}
+   */
+  const getErrorMessage = (e) => e instanceof _Error ? e.message : 'unknown error';
+
   try {
     // --------------------------------------------------------------------------------------------
     // -- Worker Steps ----------------------------------------------------------------------------
@@ -1886,7 +1894,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
       /**
        * Whitelist of properties to keep in the global context.
        *
-       * @type {Array<Object<string, string | symbol>>}
+       * @type {Object<string, Array<string | symbol>>}
        */
       const keep = _Object.create(null);
       keep['this'] = [
@@ -2524,14 +2532,14 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
        *
        * @param {object} start - Object to start the pruning from.
        * @param {string} name - Name to use for failure reporting.
-       * @param {Array<string | symbol>} toKeep - Properties to keep.
+       * @param {string} toKeep - Label of properties to keep.
        * @returns {void}
        */
       const prune = (start, name, toKeep) => {
         let current = start;
         do {
           [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)].forEach((key) => {
-            if (!keep[toKeep].includes(key)) {
+            if (!keep[toKeep]?.includes(key)) {
               try {
                 delete current[key];
               } catch {
@@ -2683,7 +2691,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
     // -- Create Default Namespace ----------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    addNamespace(DEFAULT_NAMESPACE_NAME, null);
+    addNamespace(DEFAULT_NAMESPACE_NAME);
 
     // --------------------------------------------------------------------------------------------
     // -- Worker Event Listeners ------------------------------------------------------------------
@@ -2719,9 +2727,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             const { namespace, tunnel, dependency } = parsedData;
             try {
               installDependency(namespace, dependency);
-              postResolveMessage(tunnel);
+              postResolveMessage(tunnel, undefined);
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2731,7 +2739,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, executeDependency(namespace, dependency, new _Map(_Object.entries(args))));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2740,9 +2748,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             const { namespace, tunnel, idx, function: fName } = parsedData;
             try {
               addPredefined(namespace, idx, fName);
-              postResolveMessage(tunnel);
+              postResolveMessage(tunnel, undefined);
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2751,9 +2759,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             const { namespace, tunnel } = parsedData;
             try {
               addNamespace(namespace);
-              postResolveMessage(tunnel);
+              postResolveMessage(tunnel, undefined);
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2763,7 +2771,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, removeNamespace(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2772,9 +2780,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             const { namespace, tunnel } = parsedData;
             try {
               assimilateNamespace(namespace);
-              postResolveMessage(tunnel);
+              postResolveMessage(tunnel, undefined);
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2784,7 +2792,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, linkNamespace(namespace, target));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2794,7 +2802,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, unlinkNamespace(namespace, target));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2804,7 +2812,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, muteNamespace(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2814,7 +2822,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, unmuteNamespace(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2824,7 +2832,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, listOrphanNamespaces());
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2834,7 +2842,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, listInstalled(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2844,7 +2852,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, listLinksTo(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2854,7 +2862,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, listLinkedFrom(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2864,7 +2872,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, isMuted(namespace));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2874,7 +2882,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
             try {
               postResolveMessage(tunnel, namespaceDescendants(namespace, depth));
             } catch (e) {
-              postRejectMessage(tunnel, e.message);
+              postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
@@ -2895,7 +2903,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
 
     postResolveMessage(BOOT_TUNNEL, _Date_now() - STARTUP);
   } catch (e) {
-    postRejectMessage(BOOT_TUNNEL, e instanceof _Error ? e.message : 'unknown error');
+    postRejectMessage(BOOT_TUNNEL, getErrorMessage(e));
   }
 };
 
