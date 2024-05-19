@@ -5,15 +5,13 @@
 /**
  * The code the {@link Worker} will end up executing.
  *
- * NOTE: it is IMPERATIVE that this be an arrow function, so that it may be executed in the global scope with access to the {@link Worker}'s `this`.
- *
  * @param {object} _this - The `this` value to use (injected by the caller).
- * @param {Function} _addEventListener - The `addEventListener` value to use (injected by the caller).
- * @param {Function} _postMessage - The `postMessage` value to use (injected by the caller).
- * @param {Function} _setTimeout - The `setTimeout` value to use (injected by the caller).
+ * @param {Function} _listen - The `addEventListener` value to use (injected by the caller).
+ * @param {Function} _shout - The `postMessage` value to use (injected by the caller).
+ * @param {Function} _schedule - The `setTimeout` value to use (injected by the caller).
  * @returns {void}
  */
-module.exports = ((_this, _addEventListener, _postMessage, _setTimeout) => {
+const workerRunner = (_this, _listen, _shout, _schedule) => {
   'use strict';
 
   /**
@@ -984,7 +982,7 @@ module.exports = ((_this, _addEventListener, _postMessage, _setTimeout) => {
    * @see {@link NomadVM.#postJsonMessage} for a more comprehensive treatment.
    */
   const postJsonMessage = (data) => {
-    _postMessage(_JSON.stringify(data));
+    _shout(_JSON.stringify(data));
   };
 
   /**
@@ -1491,7 +1489,7 @@ module.exports = ((_this, _addEventListener, _postMessage, _setTimeout) => {
       }
     });
 
-    [...callbacks].forEach((callback) => _setTimeout(callback.apply(undefined, [event, ...args]), 0));
+    [...callbacks].forEach((callback) => _schedule(callback.apply(undefined, [event, ...args])));
   };
 
   /**
@@ -2636,7 +2634,7 @@ module.exports = ((_this, _addEventListener, _postMessage, _setTimeout) => {
     // -- Worker Event Listeners ------------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    _addEventListener('message', ({ data }) => {
+    _listen((data) => {
       const parsedData = _JSON.parse(data);
       const { name } = parsedData;
       switch (name) {
@@ -2841,4 +2839,6 @@ module.exports = ((_this, _addEventListener, _postMessage, _setTimeout) => {
   } catch (e) {
     postRejectMessage(BOOT_TUNNEL, e instanceof _Error ? e.message : 'unknown error');
   }
-}).toString();
+};
+
+module.exports = workerRunner.toString();

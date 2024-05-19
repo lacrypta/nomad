@@ -1129,9 +1129,28 @@ class NomadVM extends EventCaster {
             }, timeout);
 
             blobURL = URL.createObjectURL(
-              new Blob([`"use strict"; (${workerRunner})(this, addEventListener, postMessage, setTimeout);`], {
-                type: 'application/javascript',
-              }),
+              new Blob(
+                [
+                  `'use strict';
+                  (${workerRunner})(
+                    this,
+                    ((_addEventListener) => (listener) => {
+                      _addEventListener('message', ({ data }) => {
+                        listener(data);
+                      });
+                    })(addEventListener),
+                    ((_postMessage) => (message) => {
+                      _postMessage(message);
+                    })(postMessage),
+                    ((_setTimeout) => (callback) => {
+                      _setTimeout(callback, 0);
+                    })(setTimeout),
+                  );`,
+                ],
+                {
+                  type: 'application/javascript',
+                },
+              ),
             );
 
             this.#worker = new Worker(blobURL, {
