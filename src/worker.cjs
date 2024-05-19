@@ -3,12 +3,50 @@
 /* eslint-disable */
 
 /**
+ * Callback used for {@link Listener}s, accepting the data string sent from the host side.
+ *
+ * @callback ListenerCallback
+ * @param {string} data - Data the host sent.
+ * @return {void}
+ */
+
+/**
+ * The type of a listener that will convey messages from the host.
+ *
+ * @callback Listener
+ * @param {ListenerCallback} callback - The callback to use to parsed data coming from the host.
+ * @return {void}
+ */
+
+/**
+ * The type of a shouter that will convey messages to the host.
+ *
+ * @callback Shouter
+ * @param {string} message - Message to shout to the host.
+ * @return {void}
+ */
+
+/**
+ * Callback used for {@link Scheduler}s, simply scheduled for execution within this event loop iteration.
+ *
+ * @callback SchedulerCallback
+ * @return {void}
+ */
+
+/**
+ * The type of a scheduler, that will schedule the given callback for execution within this event loop iteration.
+ *
+ * @callback Scheduler
+ * @param {SchedulerCallback} callback - The callback to schedule for execution.
+ */
+
+/**
  * The code the {@link Worker} will end up executing.
  *
  * @param {object} _this - The `this` value to use (injected by the caller).
- * @param {Function} _listen - The `addEventListener` value to use (injected by the caller).
- * @param {Function} _shout - The `postMessage` value to use (injected by the caller).
- * @param {Function} _schedule - The `setTimeout` value to use (injected by the caller).
+ * @param {Listener} _listen - The `addEventListener` value to use (injected by the caller).
+ * @param {Shouter} _shout - The `postMessage` value to use (injected by the caller).
+ * @param {Scheduler} _schedule - The `setTimeout` value to use (injected by the caller).
  * @returns {void}
  */
 const workerRunner = (_this, _listen, _shout, _schedule) => {
