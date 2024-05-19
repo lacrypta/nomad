@@ -1,8 +1,35 @@
 'use strict';
 
-import { Validation } from './validation.js';
+import * as Validation from './validation';
 
-/* global DependencyObject */
+/**
+ * @see {@link https://stackoverflow.com/a/75645622}
+ */
+type AnyFunction = (...args: never) => unknown;
+
+/**
+ * The type of a Dependency primitive object.
+ *
+ */
+type DependencyObject = {
+  /**
+   * Dependency name.
+   *
+   */
+  name: string;
+
+  /**
+   * Dependency function source code.
+   *
+   */
+  code: string;
+
+  /**
+   * Dependency's dependencies, as a mapping from imported name to dependency name.
+   *
+   */
+  dependencies: Record<string, string>;
+};
 
 /**
  * Class representing an atomic dependency the NomadVM will work with.
@@ -12,30 +39,26 @@ class Dependency {
   /**
    * The prefix all builtin functions exhibit on their string representation.
    *
-   * @type {string}
-   * @private
    */
-  static #builtinPrefix;
+  static #builtinPrefix: string;
 
   /**
    * The suffix all builtin functions exhibit on their string representation.
    *
-   * @type {string}
-   * @private
    */
-  static #builtinSuffix;
+  static #builtinSuffix: string;
 
   static {
     /**
      * Determine the longest common prefix of the given strings.
      *
-     * @param {...string} args - Strings to get the longest common prefix of.
-     * @returns {string} The longest common prefix of the given strings.
+     * @param args - Strings to get the longest common prefix of.
+     * @returns The longest common prefix of the given strings.
      */
-    const lcp = (...args) => {
-      return args.reduce((a, b) => {
-        const l = Math.min(a.length, b.length);
-        for (let i = 0; i < l; i++) {
+    const lcp = (...args: string[]): string => {
+      return args.reduce((a: string, b: string): string => {
+        const l: number = Math.min(a.length, b.length);
+        for (let i: number = 0; i < l; i++) {
           if (!a.startsWith(b.substring(0, i + 1))) {
             return b.substring(0, i);
           }
@@ -50,8 +73,8 @@ class Dependency {
      * @param {...string} args - Strings to get the longest common suffix of.
      * @returns {string} The longest common suffix of the given strings.
      */
-    const lcs = (...args) =>
-      lcp(...args.map((x) => x.split('').reverse().join('')))
+    const lcs = (...args: string[]): string =>
+      lcp(...args.map((x: string): string => x.split('').reverse().join('')))
         .split('')
         .reverse()
         .join('');
@@ -59,9 +82,8 @@ class Dependency {
     /**
      * List of builtin functions to analyze for prefix / suffix behavior.
      *
-     * @type {Array<string>}
      */
-    const builtin = [
+    const builtin: string[] = [
       eval.toString(),
       isFinite.toString(),
       isNaN.toString(),
@@ -80,11 +102,10 @@ class Dependency {
   /**
    * Test whether the given instance is a "defined" function (in contrast to a built-in or bound function).
    *
-   * @param {unknown} func - Instance to test.
-   * @returns {boolean} True if the given argument is a defined function, false otherwise.
-   * @private
+   * @param func - Instance to test.
+   * @returns True if the given argument is a defined function, false otherwise.
    */
-  static #isDefinedFunction(func) {
+  static #isPlainFunction(func: AnyFunction): func is AnyFunction {
     // https://stackoverflow.com/a/38830947
     return (
       Function === func.constructor &&
@@ -95,21 +116,20 @@ class Dependency {
   /**
    * Remove comments from the given JavaScript code.
    *
-   * @param {string} code - Code to remove comments from.
-   * @returns {string} The given code with all its comments removed.
-   * @private
+   * @param code - Code to remove comments from.
+   * @returns The given code with all its comments removed.
    */
-  static #removeComments(code) {
+  static #removeComments(code: string): string {
     // ref: https://stackoverflow.com/a/52630274
-    let inQuoteChar = null;
-    let inBlockComment = false;
-    let inLineComment = false;
-    let inRegexLiteral = false;
-    let newCode = '';
-    for (let i = 0; i < code.length; i++) {
+    let inQuoteChar: string | null = null;
+    let inBlockComment: boolean = false;
+    let inLineComment: boolean = false;
+    let inRegexLiteral: boolean = false;
+    let newCode: string = '';
+    for (let i: number = 0; i < code.length; i++) {
       if (!(inQuoteChar || inBlockComment || inLineComment || inRegexLiteral)) {
-        if ('"\'`'.includes(code[i])) {
-          inQuoteChar = code[i];
+        if ('"\'`'.includes(code[i] ?? '')) {
+          inQuoteChar = code[i] ?? '';
         } else if ('/' === code[i]) {
           if ('*' === code[i + 1]) {
             inBlockComment = true;
@@ -137,7 +157,7 @@ class Dependency {
         }
       }
       if (!inBlockComment && !inLineComment) {
-        newCode += code[i];
+        newCode += code[i] ?? '';
       }
     }
     return newCode;
@@ -148,19 +168,20 @@ class Dependency {
    *
    * NOTE: this is a strictly SYNTACTICAL operation, it will parse the actual code of the given {@link Function}, but it will not execute it in any way nor follow references therein.
    *
-   * @param {Function} func - {@link Function} instance to extract parameters for.
-   * @returns {DependencyObject} A {@link DependencyObject} extracted from the given instance.
-   * @private
+   * @param func - {@link Function} instance to extract parameters for.
+   * @returns A {@link DependencyObject} extracted from the given instance.
+   * @throws {Error} If the function body cannot be determined.
    */
-  static #getDependencyPrimitive(func) {
-    const str = Dependency.#removeComments(func.toString()).replace(/^\s+|\s+$/g, '');
-    let body = null;
-    let code = '';
+  static #getDependencyPrimitive(func: AnyFunction): DependencyObject {
+    const str: string = Dependency.#removeComments(func.toString()).replace(/^\s+|\s+$/g, '');
+    let body: string | null = null;
+    let code: string = '';
     if (str.endsWith('}')) {
-      for (let i = str.indexOf('{'); 0 < i; i = str.indexOf('{', i + 1)) {
+      for (let i: number = str.indexOf('{'); 0 < i; i = str.indexOf('{', i + 1)) {
         try {
           code = str.substring(i + 1, str.length - 1);
-          new Function(code);
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          void new Function(code);
           body = code.replace(/^\s+|\s+$/g, '');
           code = `{${code}}`;
           break;
@@ -169,10 +190,11 @@ class Dependency {
         }
       }
     } else {
-      for (let i = str.indexOf('=>'); 0 < i; i = str.indexOf('=>', i + 1)) {
+      for (let i: number = str.indexOf('=>'); 0 < i; i = str.indexOf('=>', i + 1)) {
         try {
           code = str.substring(i + 2);
-          new Function(`return ${code.replace(/^\s+|\s+$/g, '')};`);
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          void new Function(`return ${code.replace(/^\s+|\s+$/g, '')};`);
           body = `return ${code.replace(/^\s+|\s+$/g, '')};`;
           break;
         } catch {
@@ -181,19 +203,20 @@ class Dependency {
       }
     }
 
-    const head = str.substring(0, str.length - code.length).replace(/^\s+|\s+$/g, '');
-    const args = head.substring(head.indexOf('(') + 1, head.lastIndexOf(')'));
-    const argsResult = [];
-    let currentArg = [];
+    const head: string = str.substring(0, str.length - code.length).replace(/^\s+|\s+$/g, '');
+    const args: string = head.substring(head.indexOf('(') + 1, head.lastIndexOf(')'));
+    const argsResult: [string, string][] = [];
+    let currentArg: string[] = [];
     args.split(',').forEach((part) => {
       currentArg.push(part);
       try {
-        new Function(currentArg.join(','), '');
-        let [name, ...defs] = currentArg.join(',').split('=');
-        name = name.replace(/^\s+|\s+$/g, '');
-        defs = defs.join('=').replace(/^\s+|\s+$/g, '');
-        if (name.length && defs.length) {
-          argsResult.push([name, defs]);
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        void new Function(currentArg.join(','), '');
+        const [name, ...defs]: string[] = currentArg.join(',').split('=');
+        const nameS: string = (name ?? '').replace(/^\s+|\s+$/g, '');
+        const defsS: string = defs.join('=').replace(/^\s+|\s+$/g, '');
+        if (nameS.length && defs.length) {
+          argsResult.push([nameS, defsS]);
         }
         currentArg = [];
       } catch {
@@ -201,54 +224,58 @@ class Dependency {
       }
     });
 
+    if (null === body) {
+      throw new Error('could not determine function body');
+    }
+
     return {
       name: func.name,
       code: body,
-      dependencies: new Map(argsResult),
+      dependencies: Object.setPrototypeOf(Object.fromEntries(argsResult), null) as Record<string, string>,
     };
   }
 
   /**
    * Construct a new {@link Dependency} from the given {@link Function} instance.
    *
-   * @param {Function} func - Function to use for constructing the {@link Dependency}.
-   * @param {?string} fName - Name to use instead if given.
-   * @returns {Dependency} The constructed {@link Dependency}.
+   * @param func - Function to use for constructing the {@link Dependency}.
+   * @param fName - Name to use instead if given.
+   * @returns The constructed {@link Dependency}.
    * @throws {Error} If the given argument is not a {@link Function}.
    * @throws {Error} If the given argument is an arrow function.
    */
-  static from(func, fName = null) {
-    if (!Dependency.#isDefinedFunction(func)) {
+  static from(func: AnyFunction, fName: string | null = null): Dependency {
+    if (!Dependency.#isPlainFunction(func)) {
       throw new Error('Expected defined function');
     }
 
-    const { name, code, dependencies } = Dependency.#getDependencyPrimitive(func);
+    const { name, code, dependencies }: DependencyObject = Dependency.#getDependencyPrimitive(func);
     return new Dependency(fName || name, code, dependencies);
   }
 
   /**
    * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
    *
-   * @param {Iterable<Dependency>} dependencies - Dependencies to sort.
-   * @param {?Iterable<string>} installed - Installed {@link Dependency} names to assume existing (defaults to `null`, meaning none).
-   * @returns {Array<Dependency>} Sorted {@link Dependency} list.
+   * @param dependencies - Dependencies to sort.
+   * @param installed - Installed {@link Dependency} names to assume existing (defaults to `null`, meaning none).
+   * @returns Sorted {@link Dependency} list.
    * @throws {Error} If unresolved dependencies found.
    */
-  static sort(dependencies, installed = null) {
-    const existing = new Set(Validation.iterable(installed ?? []));
-    const pending = new Set(Validation.iterable(dependencies));
-    const newOnes = new Set();
-    const result = [];
+  static sort(dependencies: Iterable<Dependency>, installed: Iterable<string> | null = null): Dependency[] {
+    const existing: Set<string> = new Set<string>(installed ?? []);
+    const pending: Set<Dependency> = new Set<Dependency>(dependencies);
+    const newOnes: Set<Dependency> = new Set<Dependency>();
+    const result: Dependency[] = [];
 
     do {
-      newOnes.forEach((element) => {
+      newOnes.forEach((element: Dependency): void => {
         pending.delete(element);
         existing.add(element.name);
         result.push(element);
       });
       newOnes.clear();
-      pending.forEach((element) => {
-        if (Object.keys(element.dependencies).every((dep) => existing.has(dep))) {
+      pending.forEach((element: Dependency): void => {
+        if (Object.keys(element.dependencies).every((dep: string): boolean => existing.has(dep))) {
           newOnes.add(element);
         }
       });
@@ -256,10 +283,7 @@ class Dependency {
 
     if (0 < pending.size) {
       throw new Error(
-        `unresolved dependencies: [${pending
-          .values()
-          .map((value) => value.toString())
-          .join(', ')}]`,
+        `unresolved dependencies: [${[...pending.values()].map((dep: Dependency): string => dep.name).join(', ')}]`,
       );
     }
 
@@ -269,123 +293,122 @@ class Dependency {
   /**
    * Validate the given dependency and return it if valid.
    *
-   * @param {unknown} dependency - The dependency to validate.
-   * @returns {DependencyObject} The validated dependency.
+   * @param dependency - The dependency to validate.
+   * @returns The validated dependency.
    * @throws {Error} If the given dependency is not a non-`null` `object`.
    * @throws {Error} If the given dependency does not contain a `name` property.
    * @throws {Error} If the given dependency does not contain a `code` property.
    * @throws {Error} If the given dependency does not contain a `dependencies` property.
    * @see {@link Validation.dependencyObject} for additional exceptions thrown.
    */
-  static validate(dependency) {
+  static validate(dependency: DependencyObject): DependencyObject {
     return Validation.dependencyObject(dependency);
   }
 
   /**
    * The {@link Dependency}'s name.
    *
-   * @type {string}
-   * @private
    */
-  #name;
+  #name: string;
 
   /**
    * The {@link Dependency}'s function source code.
    *
-   * @type {string}
-   * @private
    */
-  #code;
+  #code: string;
 
   /**
    * The {@link Dependency}'s dependency map, as a mapping from imported name to dependency name.
    *
-   * @type {Map<string, string>}
-   * @private
    */
-  #dependencies;
+  #dependencies: Map<string, string>;
 
   /**
    * Build a new {@link Dependency}.
    *
-   * @param {string} name - The dependency name to use.
-   * @param {string} code - The dependency code to use.
-   * @param {Map<string, string>} dependencies - The dependency's dependencies map to use.
+   * @param name - The dependency name to use.
+   * @param code - The dependency code to use.
+   * @param dependencies - The dependency's dependencies map to use.
    * @see {@link Dependency.validate} for exceptions thrown.
    */
-  constructor(name = '', code = '', dependencies = new Map()) {
-    const dependency = Dependency.validate({ name, code, dependencies });
+  constructor(
+    name: string = '',
+    code: string = '',
+    dependencies: Record<string, string> = Object.create(null) as Record<string, string>,
+  ) {
+    const dependency: DependencyObject = Dependency.validate({
+      name,
+      code,
+      dependencies,
+    });
 
     this.#name = dependency.name;
     this.#code = dependency.code;
-    this.#dependencies = dependency.dependencies;
+    this.#dependencies = new Map(Object.entries(dependency.dependencies));
   }
 
   /**
    * Get the {@link Dependency} name.
    *
-   * @type {string}
    */
-  get name() {
+  get name(): string {
     return this.#name;
   }
 
   /**
    * Get the {@link Dependency} source code.
    *
-   * @type {string}
    */
-  get code() {
+  get code(): string {
     return this.#code;
   }
 
   /**
    * Get the {@link Dependency} dependencies.
    *
-   * @type {Map<string, string>}
    */
-  get dependencies() {
-    return new Map(Object.entries(this.#dependencies));
+  get dependencies(): Map<string, string> {
+    return new Map<string, string>(Object.entries(this.#dependencies));
   }
 
   /**
    * Set the {@link Dependency} name.
    *
-   * @param {string} name - The name to set.
+   * @param name - The name to set.
    * @see {@link Dependency.setName} for exceptions thrown.
    */
-  set name(name) {
+  set name(name: string) {
     this.setName(name);
   }
 
   /**
    * Set the {@link Dependency} source code.
    *
-   * @param {string} code - The function source code to set.
+   * @param code - The function source code to set.
    * @see {@link Dependency.setCode} for exceptions thrown.
    */
-  set code(code) {
+  set code(code: string) {
     this.setCode(code);
   }
 
   /**
    * Set the {@link Dependency} dependencies.
    *
-   * @param {Map<string, string>} dependencies - The dependencies to set.
+   * @param dependencies - The dependencies to set.
    * @see {@link Dependency.setDependencies} for exceptions thrown.
    */
-  set dependencies(dependencies) {
+  set dependencies(dependencies: Map<string, string>) {
     this.setDependencies(dependencies);
   }
 
   /**
    * Set the {@link Dependency} name (chainable).
    *
-   * @param {string} name - The name to set.
-   * @returns {this} `this`, for chaining.
+   * @param name - The name to set.
+   * @returns `this`, for chaining.
    * @see {@link Validation.identifier} for exceptions thrown.
    */
-  setName(name) {
+  setName(name: string): this {
     this.#name = Validation.identifier(name);
     return this;
   }
@@ -393,11 +416,11 @@ class Dependency {
   /**
    * Set the {@link Dependency} source code (chainable).
    *
-   * @param {string} code - The function source code to set.
-   * @returns {this} `this`, for chaining.
+   * @param code - The function source code to set.
+   * @returns `this`, for chaining.
    * @see {@link Validation.functionCode} for exceptions thrown.
    */
-  setCode(code) {
+  setCode(code: string): this {
     this.#code = Validation.functionCode(code);
     return this;
   }
@@ -405,11 +428,11 @@ class Dependency {
   /**
    * Set the {@link Dependency} dependencies (chainable).
    *
-   * @param {Map<string, string>} dependencies - The dependencies to set.
-   * @returns {this} `this`, for chaining.
+   * @param dependencies - The dependencies to set.
+   * @returns `this`, for chaining.
    * @see {@link Validation.dependencyMap} for exceptions thrown.
    */
-  setDependencies(dependencies) {
+  setDependencies(dependencies: Map<string, string>): this {
     this.#dependencies = Validation.dependencyMap(dependencies);
     return this;
   }
@@ -417,12 +440,12 @@ class Dependency {
   /**
    * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
    *
-   * @param {string} importedName - Dependency name to use for importing.
-   * @param {string} dependencyName - Dependency being depended on.
-   * @returns {this} `this`, for chaining.
+   * @param importedName - Dependency name to use for importing.
+   * @param dependencyName - Dependency being depended on.
+   * @returns `this`, for chaining.
    * @see {@link Validation.identifier} for exceptions thrown.
    */
-  addDependency(importedName, dependencyName) {
+  addDependency(importedName: string, dependencyName: string): this {
     this.#dependencies.set(Validation.identifier(importedName), Validation.identifier(dependencyName));
     return this;
   }
@@ -430,10 +453,10 @@ class Dependency {
   /**
    * Remove the given import name from this {@link Dependency}'s dependencies.
    *
-   * @param {string} importName - Import name to remove from the dependencies.
-   * @returns {this} `this`, for chaining.
+   * @param importName - Import name to remove from the dependencies.
+   * @returns `this`, for chaining.
    */
-  removeImport(importName) {
+  removeImport(importName: string): this {
     this.#dependencies.delete(importName);
     return this;
   }
@@ -443,35 +466,42 @@ class Dependency {
    *
    * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
    *
-   * @param {string} dependencyName - Dependency name to remove from the dependencies.
-   * @returns {this} `this`, for chaining.
+   * @param dependencyName - Dependency name to remove from the dependencies.
+   * @returns `this`, for chaining.
    */
-  removeDependency(dependencyName) {
-    this.#dependencies = new Map([...this.#dependencies.entries()].filter(([, dName]) => dName !== dependencyName));
+  removeDependency(dependencyName: string): this {
+    this.#dependencies = new Map<string, string>(
+      [...this.#dependencies.entries()].filter(([, dName]: [string, string]): boolean => dName !== dependencyName),
+    );
     return this;
   }
 
   /**
    * Return the plain object representation of the {@link Dependency}.
    *
-   * @returns {DependencyObject} The {@link Dependency}, as an independent object.
+   * @returns The {@link Dependency}, as an independent object.
    */
-  asObject() {
+  asObject(): DependencyObject {
     return {
       name: this.name,
       code: this.code,
-      dependencies: Object.fromEntries(this.#dependencies.entries()),
+      dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
+        string,
+        string
+      >,
     };
   }
 
   /**
    * Clone the {@link Dependency} into a completely new one.
    *
-   * @returns {Dependency} The newly created {@link Dependency}.
+   * @returns The newly created {@link Dependency}.
    */
-  clone() {
-    return new Dependency(this.name, this.code, this.dependencies);
+  clone(): Dependency {
+    const obj: DependencyObject = this.asObject();
+    return new Dependency(obj.name, obj.code, obj.dependencies);
   }
 }
 
 export { Dependency };
+export type { DependencyObject, AnyFunction };

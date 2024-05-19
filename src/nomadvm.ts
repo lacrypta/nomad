@@ -1,12 +1,20 @@
 'use strict';
 
-import { Validation } from './validation.js';
-import { EventCaster } from './eventCaster.js';
-import { Dependency } from './dependency.js';
+import type { DependencyObject } from './dependency';
+import type { Cast, EventCallback, ProtectedMethods } from './eventCaster';
 
-import { workerRunner } from './worker.js';
+import {
+  namespace as validateNamespace,
+  timeout as validateTimeout,
+  nonNegativeInteger as validateNonNegativeInteger,
+  identifier as validateIdentifier,
+  argumentsMap as validateArgumentsMap,
+} from './validation';
 
-/* global DependencyObject */
+import { EventCaster } from './eventCaster';
+import { Dependency } from './dependency';
+
+import workerRunner from './worker.cjs';
 
 /**
  * A safe execution environment for NOMAD code execution.
@@ -14,22 +22,13 @@ import { workerRunner } from './worker.js';
  */
 class NomadVM extends EventCaster {
   /**
-   * The code the {@link Worker} will end up executing.
-   *
-   * @type {Function}
-   * @private
-   */
-  static #workerRunner = workerRunner;
-
-  /**
    * Generate a pseudo-random string.
    *
    * NOTE: this is NOT cryptographically-secure, it simply calls {@link Math.random}.
    *
-   * @returns {string} - A pseudo-random string.
-   * @private
+   * @returns A pseudo-random string.
    */
-  static #pseudoRandomString() {
+  static #pseudoRandomString(): string {
     return Math.trunc(Math.random() * 4294967296)
       .toString(16)
       .padStart(8, '0');
@@ -54,6 +53,7 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
    * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link Worker} encounters a non-fatal, yet reportable, error `error`.
    * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link Worker} encounters a fatal error `error`.
+   * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link Worker} fails to respond to ping / pong messages for `delta` milliseconds.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
@@ -93,40 +93,33 @@ class NomadVM extends EventCaster {
    *
    * - `nomadvm:{NAME}:{NAMESPACE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link Worker} with name `EVENT` and arguments `args`.
    *
-   * @type {EventCaster}
-   * @private
    */
-  static #events;
+  static #events: Readonly<EventCaster>;
 
   /**
    * Getter used to retrieve the VM's static event caster.
    *
-   * @type {EventCaster}
    */
-  static get events() {
+  static get events(): Readonly<EventCaster> {
     return NomadVM.#events;
   }
 
   /**
    * Prefix to use for all events emitted.
    *
-   * @type {string}
-   * @private
    */
-  static #eventPrefix = 'nomadvm';
+  static #eventPrefix: string = 'nomadvm';
 
   /**
    * The {@link EventCaster} casting function for all he VMs.
    *
-   * @type {Function}
-   * @private
    */
-  static #castGlobal;
+  static #castGlobal: Cast;
 
   static {
     this.#events = Object.freeze(
-      new EventCaster((protectedMethods) => {
-        this.#castGlobal = protectedMethods.get('cast');
+      new EventCaster((protectedMethods: ProtectedMethods): void => {
+        this.#castGlobal = protectedMethods.cast;
       }),
     );
   }
@@ -134,44 +127,48 @@ class NomadVM extends EventCaster {
   /**
    * Prefix to use for all names generated.
    *
-   * @type {string}
-   * @private
    */
-  static #namesPrefix = 'nomadvm';
+  static #namesPrefix: string = 'nomadvm';
 
   /**
    * Global mapping of VM names to VM {@link WeakRef}s.
    *
-   * @type {Map<string, WeakRef>}
-   * @private
    */
-  static #names = new Map();
+  static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
+
+  /**
+   * The number of milliseconds to wait between `ping` messages to the {@link Worker}.
+   *
+   */
+  static #pingInterval: number = 100;
+
+  /**
+   * The number of milliseconds that must elapse between `pong` messages in order to consider a {@link Worker} "unresponsive".
+   *
+   */
+  static #pongLimit: number = 1000;
 
   /**
    * Retrieve the VM registered under the given name.
    *
-   * @param {string} name - VM name to retrieve.
-   * @returns {NomadVM | undefined} The VM registered under the given name, or `undefined` if none found.
+   * @param name - VM name to retrieve.
+   * @returns The VM registered under the given name, or `undefined` if none found.
    */
-  static get(name) {
+  static get(name: string): WeakRef<NomadVM> | undefined {
     return this.#names.get(name);
   }
 
   /**
    * The {@link EventCaster} casting function for the current VM.
    *
-   * @type {Function}
-   * @private
    */
-  #castLocal;
+  #castLocal: Cast;
 
   /**
    * The VM name to use.
    *
-   * @type {string}
-   * @private
    */
-  #name;
+  #name: string;
 
   /**
    * The VM's state.
@@ -191,44 +188,51 @@ class NomadVM extends EventCaster {
    * - `booting --> stopped`: upon calling {@link NomadVM.stop} after {@link NomadVM.start} but before the boot-up sequence has finished in the {@link Worker}.
    * - `running --> stopped`: upon calling {@link NomadVM.stop} after successful boot-up sequence termination in the {@link Worker}.
    *
-   * @type {string}
-   * @private
    */
-  #state;
+  #state: 'created' | 'booting' | 'running' | 'stopped';
 
   /**
    * The {@link Worker} instance this VM is using for secure execution.
    *
-   * @type {Worker}
-   * @private
    */
-  #worker;
+  #worker: Worker | null;
 
   /**
    * A list of predefined functions.
    *
-   * @type {Array<Function>}
-   * @private
    */
-  #predefined = [];
+  #predefined: ((...args: unknown[]) => unknown)[] = [];
 
   /**
    * A list of inter-process tunnels being used.
    *
    * Tunnels are a way of holding on to `resolve` / `reject` {@link Promise} callbacks under a specific index number, so that both the {@link Worker} and the {@link NomadVM} can interact through these.
    *
-   * @type {Array<{ resolve: Function, reject: Function }>}
-   * @private
    */
-  #tunnels = [];
+  #tunnels: {
+    resolve: (arg: unknown) => void;
+    reject: (error: Error) => void;
+  }[] = [];
+
+  /**
+   * The interval ID for the pinger, or `null` if not yet set up.
+   *
+   */
+  #pinger: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * The timestamp when the last `pong` message was received.
+   *
+   */
+  #lastPong: number = Date.now();
 
   /**
    * Construct a new {@link NomadVM} instance, using the given name.
    *
-   * @param {?string} name - The VM's name to use, or `null` to have one generated randomly.
+   * @param name - The VM's name to use, or `null` to have one generated randomly.
    * @throws {Error} If the given name already exists.
    */
-  constructor(name = null) {
+  constructor(name: string | null = null) {
     if (null === name) {
       do {
         name = `${NomadVM.#namesPrefix}-${NomadVM.#pseudoRandomString()}`;
@@ -238,16 +242,18 @@ class NomadVM extends EventCaster {
     }
 
     {
-      let castLocal;
-      super((protectedMethods) => {
-        castLocal = protectedMethods.get('cast');
+      let castLocal: Cast;
+      super((protectedMethods: { cast: Cast }): void => {
+        castLocal = protectedMethods.cast;
       });
+      // @ts-expect-error: Variable 'castLocal' is used before being assigned.
       this.#castLocal = castLocal;
     }
 
     this.#name = name;
-    NomadVM.#names.set(this.#name, new WeakRef(this));
+    NomadVM.#names.set(this.#name, new WeakRef<NomadVM>(this));
     this.#state = 'created';
+    this.#worker = null;
 
     NomadVM.#castGlobal(`${NomadVM.#eventPrefix}:${this.#name}:new`, this);
   }
@@ -255,9 +261,8 @@ class NomadVM extends EventCaster {
   /**
    * Getter used to retrieve the VM's name.
    *
-   * @type {string}
    */
-  get name() {
+  get name(): string {
     return this.#name;
   }
 
@@ -266,10 +271,10 @@ class NomadVM extends EventCaster {
   /**
    * Assert that the VM is currently in the "created" state.
    *
-   * @returns {void}
+   * @returns
    * @throws {Error} If the VM is in any state other than "created".
    */
-  #assertCreated() {
+  #assertCreated(): void {
     if ('created' !== this.#state) {
       throw new Error("expected state to be 'created'");
     }
@@ -278,10 +283,10 @@ class NomadVM extends EventCaster {
   /**
    * Assert that the VM is currently in the "running" state.
    *
-   * @returns {void}
+   * @returns
    * @throws {Error} If the VM is in any state other than "running".
    */
-  #assertRunning() {
+  #assertRunning(): void {
     if ('running' !== this.#state) {
       throw new Error("expected state to be 'running'");
     }
@@ -292,14 +297,13 @@ class NomadVM extends EventCaster {
   /**
    * Cast an event both from the static {@link EventCaster} at {@link NomadVM.events}, and from the current instance.
    *
-   * @param {string} name - Event name to cast.
-   * @param {...unknown} args - Arguments to associate to the event in question.
-   * @returns {void}
-   * @private
+   * @param name - Event name to cast.
+   * @param args - Arguments to associate to the event in question.
+   * @returns
    * @see {@link EventCaster.cast} for additional exceptions thrown.
    */
-  #castEvent(name, ...args) {
-    const event = `${NomadVM.#eventPrefix}:${this.#name}:${name}`;
+  #castEvent(name: string, ...args: unknown[]): void {
+    const event: string = `${NomadVM.#eventPrefix}:${this.#name}:${name}`;
     this.#castLocal(event, this, ...args);
     NomadVM.#castGlobal(event, this, ...args);
   }
@@ -307,25 +311,25 @@ class NomadVM extends EventCaster {
   /**
    * Attach the given callback to this particular VM's event caster, triggered on events matching the given filter.
    *
-   * @param {unknown} filter - Event name filter to assign the listener to.
-   * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {this} `this`, for chaining.
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
    * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
    * @see {@link Validation.callback} for additional exceptions thrown.
    */
-  onThis(filter, callback) {
+  onThis(filter: string, callback: EventCallback): this {
     return this.on(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
   }
 
   /**
    * Attach the given callback to this particular VM's caster, triggered on events matching the given filter, and removed upon being called once.
    *
-   * @param {unknown} filter - Event name filter to assign the listener to.
-   * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {this} `this`, for chaining.
-   * @see {@link EventCaster.on} for additional exceptions thrown.
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   * @see {@link EventCaster.once} for additional exceptions thrown.
    */
-  onceThis(filter, callback) {
+  onceThis(filter: string, callback: EventCallback): this {
     return this.once(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
   }
 
@@ -334,12 +338,28 @@ class NomadVM extends EventCaster {
   /**
    * Post the JSON string associated to the given data to the VM's {@link Worker}.
    *
-   * @param {object} data - Data to post to the {@link Worker}.
-   * @returns {void}
-   * @private
+   * @param data - Data to post to the {@link Worker}.
+   * @returns
    */
-  #postJsonMessage(data) {
-    this.#worker.postMessage(JSON.stringify(data));
+  #postJsonMessage(data: object): void {
+    this.#worker?.postMessage(JSON.stringify(data));
+  }
+
+  /**
+   * Post a `ping` message to the {@link Worker}.
+   *
+   * A `ping` message has the form:
+   *
+   * ```json
+   * {
+   *   name: "ping"
+   * }
+   * ```
+   *
+   * @returns
+   */
+  #postPingMessage(): void {
+    this.#postJsonMessage({ name: 'ping' });
   }
 
   /**
@@ -350,7 +370,6 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "resolve",
-   *   namespace: <string>,
    *   tunnel: <int>,
    *   payload: <unknown>
    * }
@@ -362,14 +381,12 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the WW-side tunnel index awaiting a response.
    * - `payload` is any resolution result being returned.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel to resolve.
-   * @param {unknown} payload - The payload to use for resolution.
-   * @returns {void}
-   * @private
+   * @param tunnel - The tunnel to resolve.
+   * @param payload - The payload to use for resolution.
+   * @returns
    */
-  #postResolveMessage(namespace, tunnel, payload) {
-    this.#postJsonMessage({ name: 'resolve', namespace, tunnel, payload });
+  #postResolveMessage(tunnel: number, payload: unknown): void {
+    this.#postJsonMessage({ name: 'resolve', tunnel, payload });
   }
 
   /**
@@ -380,7 +397,6 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "reject",
-   *   namespace: <string>,
    *   tunnel: <int>,
    *   error: <string>
    * }
@@ -392,14 +408,12 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the WW-side tunnel index awaiting a response.
    * - `error` is the rejection's error string.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel to reject.
-   * @param {string} error - The error message to use for {@link Error} construction in the {@link Worker}.
-   * @returns {void}
-   * @private
+   * @param tunnel - The tunnel to reject.
+   * @param error - The error message to use for {@link Error} construction in the {@link Worker}.
+   * @returns
    */
-  #postRejectMessage(namespace, tunnel, error) {
-    this.#postJsonMessage({ name: 'reject', namespace, tunnel, error });
+  #postRejectMessage(tunnel: number, error: string): void {
+    this.#postJsonMessage({ name: 'reject', tunnel, error });
   }
 
   /**
@@ -422,20 +436,19 @@ class NomadVM extends EventCaster {
    * - `event` is the event name being emitted on the WW.
    * - `args` is an array of optional event arguments.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {string} event - The event name to emit.
-   * @param {Array<unknown>} args - The arguments to associate to the given event.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use.
+   * @param event - The event name to emit.
+   * @param args - The arguments to associate to the given event.
+   * @returns
    */
-  #postEmitMessage = (namespace, event, args) => {
+  #postEmitMessage(namespace: string, event: string, args: unknown[]): void {
     this.#postJsonMessage({
       name: 'emit',
       namespace,
       event: event,
       args,
     });
-  };
+  }
 
   /**
    * Post an `install` message to the {@link Worker}.
@@ -457,15 +470,14 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `dependency` is the {@link DependencyObject} describing the dependency to install.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {DependencyObject} dependency - The dependency being installed.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param dependency - The dependency being installed.
+   * @returns
    */
-  #postInstallMessage = (namespace, tunnel, dependency) => {
+  #postInstallMessage(namespace: string, tunnel: number, dependency: DependencyObject): void {
     this.#postJsonMessage({ name: 'install', namespace, tunnel, dependency });
-  };
+  }
 
   /**
    * Post an `execute` message to the {@link Worker}.
@@ -491,14 +503,18 @@ class NomadVM extends EventCaster {
    * - `dependency` is the {@link DependencyObject} describing the dependency to install.
    * - `args` is an array of optional execution arguments.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {DependencyObject} dependency - The dependency being executed.
-   * @param {Map<string, unknown>} args - The arguments to execute the dependency with.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param dependency - The dependency being executed.
+   * @param args - The arguments to execute the dependency with.
+   * @returns
    */
-  #postExecuteMessage = (namespace, tunnel, dependency, args) => {
+  #postExecuteMessage(
+    namespace: string,
+    tunnel: number,
+    dependency: DependencyObject,
+    args: Map<string, unknown>,
+  ): void {
     this.#postJsonMessage({
       name: 'execute',
       namespace,
@@ -506,7 +522,7 @@ class NomadVM extends EventCaster {
       dependency,
       args: Object.fromEntries(args.entries()),
     });
-  };
+  }
 
   /**
    * Post a `predefine` message to the {@link Worker}.
@@ -530,14 +546,13 @@ class NomadVM extends EventCaster {
    * - `idx` is the function index being predefined.
    * - `function` is the predefined function name to use.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {number} idx - The predefined function index to use.
-   * @param {string} funcName - The function name to use.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param idx - The predefined function index to use.
+   * @param funcName - The function name to use.
+   * @returns
    */
-  #postPredefineMessage = (namespace, tunnel, idx, funcName) => {
+  #postPredefineMessage(namespace: string, tunnel: number, idx: number, funcName: string): void {
     this.#postJsonMessage({
       name: 'predefine',
       namespace,
@@ -545,7 +560,7 @@ class NomadVM extends EventCaster {
       idx,
       function: funcName,
     });
-  };
+  }
 
   /**
    * Post a `create` message to the {@link Worker}.
@@ -565,18 +580,17 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to create.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to create.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to create.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postCreateMessage = (namespace, tunnel) => {
+  #postCreateMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({
       name: 'create',
       namespace,
       tunnel,
     });
-  };
+  }
 
   /**
    * Post a `delete` message to the {@link Worker}.
@@ -596,14 +610,13 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `namespace` is the WW-side namespace to delete.
    *
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {string} namespace - The namespace to delete.
-   * @returns {void}
-   * @private
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param namespace - The namespace to delete.
+   * @returns
    */
-  #postDeleteMessage = (tunnel, namespace) => {
+  #postDeleteMessage(tunnel: number, namespace: string): void {
     this.#postJsonMessage({ name: 'delete', tunnel, namespace });
-  };
+  }
 
   /**
    * Post an `assimilate` message to the {@link Worker}.
@@ -623,14 +636,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to assimilate.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to assimilate.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to assimilate.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postAssimilateMessage = (namespace, tunnel) => {
+  #postAssimilateMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'assimilate', namespace, tunnel });
-  };
+  }
 
   /**
    * Post a `link` message to the {@link Worker}.
@@ -652,15 +664,14 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `target` is the WW-side namespace to use as link target.
    *
-   * @param {string} namespace - The namespace to use as link source.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {string} target - The namespace to use as link target.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use as link source.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param target - The namespace to use as link target.
+   * @returns
    */
-  #postLinkMessage = (namespace, tunnel, target) => {
+  #postLinkMessage(namespace: string, tunnel: number, target: string): void {
     this.#postJsonMessage({ name: 'link', namespace, tunnel, target });
-  };
+  }
 
   /**
    * Post an `unlink` message to the {@link Worker}.
@@ -682,15 +693,14 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `target` is the WW-side namespace to use as unlink target.
    *
-   * @param {string} namespace - The namespace to use as unlink source.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @param {string} target - The namespace to use as unlink target.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to use as unlink source.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @param target - The namespace to use as unlink target.
+   * @returns
    */
-  #postUnlinkMessage = (namespace, tunnel, target) => {
+  #postUnlinkMessage(namespace: string, tunnel: number, target: string): void {
     this.#postJsonMessage({ name: 'unlink', namespace, tunnel, target });
-  };
+  }
 
   /**
    * Post a `mute` message to the {@link Worker}.
@@ -710,14 +720,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to mute.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to mute.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to mute.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postMuteMessage = (namespace, tunnel) => {
+  #postMuteMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'mute', namespace, tunnel });
-  };
+  }
 
   /**
    * Post an `unmute` message to the {@link Worker}.
@@ -737,23 +746,22 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to unmute.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to unmute.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to unmute.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postUnmuteMessage = (namespace, tunnel) => {
+  #postUnmuteMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'unmute', namespace, tunnel });
-  };
+  }
 
   /**
-   * Post a `listRootNamespaces` message to the {@link Worker}.
+   * Post a `listOrphanNamespaces` message to the {@link Worker}.
    *
-   * A `listRootNamespaces` message has the form:
+   * A `listOrphanNamespaces` message has the form:
    *
    * ```json
    * {
-   *   name: "listRootNamespaces",
+   *   name: "listOrphanNamespaces",
    *   tunnel: <int>
    * }
    * ```
@@ -762,13 +770,12 @@ class NomadVM extends EventCaster {
    *
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postListRootNamespacesMessage = (tunnel) => {
-    this.#postJsonMessage({ name: 'listRootNamespaces', tunnel });
-  };
+  #postListOrphanNamespacesMessage(tunnel: number): void {
+    this.#postJsonMessage({ name: 'listOrphanNamespaces', tunnel });
+  }
 
   /**
    * Post a `listInstalled` message to the {@link Worker}.
@@ -788,14 +795,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to list installed dependencies of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to list installed dependencies of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to list installed dependencies of.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postListInstalledMessage = (namespace, tunnel) => {
+  #postListInstalledMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'listInstalled', namespace, tunnel });
-  };
+  }
 
   /**
    * Post a `listLinksTo` message to the {@link Worker}.
@@ -815,14 +821,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to list linked-to namespaces of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to list linked-to namespaces of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to list linked-to namespaces of.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postListLinksToMessage = (namespace, tunnel) => {
+  #postListLinksToMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'listLinksTo', namespace, tunnel });
-  };
+  }
 
   /**
    * Post a `listLinkedFrom` message to the {@link Worker}.
@@ -842,14 +847,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to list linked-from namespaces of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to list linked-from namespaces of.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to list linked-from namespaces of.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postListLinkedFromMessage = (namespace, tunnel) => {
+  #postListLinkedFromMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'listLinkedFrom', namespace, tunnel });
-  };
+  }
 
   /**
    * Post a `isMuted` message to the {@link Worker}.
@@ -869,14 +873,13 @@ class NomadVM extends EventCaster {
    * - `namespace` is the WW-side namespace to determine mute status.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to determine mute status.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to determine mute status.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postIsMutedMessage = (namespace, tunnel) => {
+  #postIsMutedMessage(namespace: string, tunnel: number): void {
     this.#postJsonMessage({ name: 'isMuted', namespace, tunnel });
-  };
+  }
 
   /**
    * Post a `getDescendants` message to the {@link Worker}.
@@ -898,43 +901,51 @@ class NomadVM extends EventCaster {
    * - `depth` is the maximum namespace depth to retrieve, `0` meaning unlimited.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param {string} namespace - The namespace to determine the descendants of.
-   * @param {number} depth - The maximum namespace depth to retrieve, or `0` for unlimited.
-   * @param {number} tunnel - The tunnel index to expect a response on.
-   * @returns {void}
-   * @private
+   * @param namespace - The namespace to determine the descendants of.
+   * @param depth - The maximum namespace depth to retrieve, or `0` for unlimited.
+   * @param tunnel - The tunnel index to expect a response on.
+   * @returns
    */
-  #postGetDescendantsMessage = (namespace, depth, tunnel) => {
+  #postGetDescendantsMessage(namespace: string, depth: number, tunnel: number): void {
     this.#postJsonMessage({ name: 'getDescendants', namespace, depth, tunnel });
-  };
+  }
 
   // ----------------------------------------------------------------------------------------------
 
   /**
    * Create a new tunnel (cf. {@link NomadVM.#tunnels}) with the given resolution and rejection callbacks, returning the index of the created tunnel.
    *
-   * @param {Function} resolve - The resolution callback.
-   * @param {Function} reject - The rejection callback.
-   * @returns {number} The created tunnel's index.
-   * @private
+   * @param resolve - The resolution callback.
+   * @param reject - The rejection callback.
+   * @returns The created tunnel's index.
    */
-  #addTunnel(resolve, reject) {
-    return this.#tunnels.push(Validation.resolveRejectPair(resolve, reject)) - 1;
+  #addTunnel(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolve: (arg: any) => void,
+    reject: (error: Error) => void,
+  ): number {
+    return this.#tunnels.push({ resolve, reject }) - 1;
   }
 
   /**
    * Remove the given tunnel and return its former resolution / rejection callbacks.
    *
-   * @param {number} tunnel - The tunnel to remove.
-   * @returns {{reject: Function, resolve: Function}} The resolution / rejection callbacks that used to be at the given index.
+   * @param tunnel - The tunnel to remove.
+   * @returns The resolution / rejection callbacks that used to be at the given index.
    * @throws {Error} If the given tunnel index does not exist.
-   * @private
    */
-  #removeTunnel(tunnel) {
+  #removeTunnel(tunnel: number): {
+    resolve: (arg: unknown) => void;
+    reject: (error: Error) => void;
+  } {
     if (!(tunnel in this.#tunnels)) {
-      throw new Error(`tunnel ${tunnel} does not exist`);
+      throw new Error(`tunnel ${tunnel.toString()} does not exist`);
     }
-    const result = this.#tunnels[tunnel];
+    const result: {
+      resolve: (arg: unknown) => void;
+      reject: (error: Error) => void;
+    } = this.#tunnels[tunnel] || { resolve: () => {}, reject: () => {} };
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete
     delete this.#tunnels[tunnel];
     return result;
   }
@@ -942,26 +953,24 @@ class NomadVM extends EventCaster {
   /**
    * Resolve the given tunnel with the given arguments, removing the tunnel from the tunnels list.
    *
-   * @param {number} tunnel - Tunnel to resolve.
-   * @param {unknown} arg - Argument to pass on to the resolution callback.
-   * @returns {void}
-   * @private
+   * @param tunnel - Tunnel to resolve.
+   * @param arg - Argument to pass on to the resolution callback.
+   * @returns
    * @see {@link NomadVM.#removeTunnel} for additional exceptions thrown.
    */
-  #resolveTunnel(tunnel, arg) {
+  #resolveTunnel(tunnel: number, arg: unknown): void {
     this.#removeTunnel(tunnel).resolve(arg);
   }
 
   /**
    * Reject the given tunnel with the given error object, removing the tunnel from the tunnels list.
    *
-   * @param {number} tunnel - Tunnel to reject.
-   * @param {Error} error - {@link Error} to pass on to the rejection callback.
-   * @returns {void}
-   * @private
+   * @param tunnel - Tunnel to reject.
+   * @param error - {@link Error} to pass on to the rejection callback.
+   * @returns
    * @see {@link NomadVM.#removeTunnel} for additional exceptions thrown.
    */
-  #rejectTunnel(tunnel, error) {
+  #rejectTunnel(tunnel: number, error: Error): void {
     this.#removeTunnel(tunnel).reject(error);
   }
 
@@ -970,26 +979,30 @@ class NomadVM extends EventCaster {
   /**
    * Call the given predefined function ID with the given arguments, resolving or rejecting the given tunnel ID with the result or error.
    *
-   * @param {string} namespace - Namespace to use.
-   * @param {number} tunnel - Tunnel to use for resolution / rejection signalling.
-   * @param {number} idx - The predefined function index to call.
-   * @param {Array<unknown>} args - The arguments to forward to the predefined function called.
-   * @returns {void}
-   * @private
+   * @param namespace - Namespace to use.
+   * @param tunnel - Tunnel to use for resolution / rejection signalling.
+   * @param idx - The predefined function index to call.
+   * @param args - The arguments to forward to the predefined function called.
+   * @returns
    */
-  #callPredefined(namespace, tunnel, idx, args) {
+  #callPredefined(namespace: string, tunnel: number, idx: number, args: unknown[]): void {
     this.#castEvent(`${namespace}:predefined:call`, idx, args);
     if (idx in this.#predefined) {
       try {
-        this.#postResolveMessage(namespace, tunnel, this.#predefined[idx].apply(undefined, args));
+        this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
         this.#castEvent(`${namespace}:predefined:call:ok`, idx, args);
       } catch (e) {
-        this.#postRejectMessage(namespace, tunnel, e.message);
+        this.#postRejectMessage(tunnel, e instanceof Error ? e.message : 'unknown error');
         this.#castEvent(`${namespace}:predefined:call:error`, idx, args, e);
       }
     } else {
-      this.#postRejectMessage(namespace, tunnel, `unknown function index ${idx}`);
-      this.#castEvent(`${namespace}:predefined:call:error`, idx, args, new Error(`unknown function index ${idx}`));
+      this.#postRejectMessage(tunnel, `unknown function index ${idx.toString()}`);
+      this.#castEvent(
+        `${namespace}:predefined:call:error`,
+        idx,
+        args,
+        new Error(`unknown function index ${idx.toString()}`),
+      );
     }
   }
 
@@ -1005,45 +1018,76 @@ class NomadVM extends EventCaster {
    * 3. executing the corresponding sub-handler.
    * 4. if the `name` is not supported, try to signal  rejection to the tunnel index if existing, or simply emit an error message otherwise.
    *
-   * @param {object} event - The message event itself.
-   * @param {string} event.data - The message's `data` field, a JSON-encoded string.
-   * @returns {void}
-   * @private
+   * @param event - The message event itself.
+   * @param event.data - The message's `data` field, a JSON-encoded string.
+   * @returns
    */
-  #messageHandler({ data }) {
+  #messageHandler({ data }: { data: string }): void {
     try {
-      const parsedData = JSON.parse(data);
+      const parsedData: { [_: string]: unknown } = JSON.parse(data) as {
+        [_: string]: unknown;
+      };
       switch (parsedData.name) {
+        case 'pong':
+          this.#lastPong = Date.now();
+          break;
         case 'resolve':
           {
-            const { tunnel, payload } = parsedData;
+            const { tunnel, payload }: { tunnel: number; payload: unknown } = parsedData as {
+              tunnel: number;
+              payload: unknown;
+            };
             this.#resolveTunnel(tunnel, payload);
           }
           break;
         case 'reject':
           {
-            const { tunnel, error } = parsedData;
+            const { tunnel, error }: { tunnel: number; error: string } = parsedData as {
+              tunnel: number;
+              error: string;
+            };
             this.#rejectTunnel(tunnel, new Error(error));
           }
           break;
         case 'call':
           {
-            const { namespace, tunnel, idx, args } = parsedData;
+            const {
+              namespace,
+              tunnel,
+              idx,
+              args,
+            }: {
+              namespace: string;
+              tunnel: number;
+              idx: number;
+              args: unknown[];
+            } = parsedData as {
+              namespace: string;
+              tunnel: number;
+              idx: number;
+              args: unknown[];
+            };
             this.#callPredefined(namespace, tunnel, idx, args);
           }
           break;
         case 'emit':
           {
-            const { event, args } = parsedData;
+            const { event, args }: { event: string; args: unknown[] } = parsedData as {
+              event: string;
+              args: unknown[];
+            };
             this.#castEvent(event, args);
           }
           break;
         default: {
-          const { tunnel } = parsedData;
-          if (undefined !== tunnel) {
-            this.#postRejectMessage(tunnel, `unknown event name ${parsedData.name}`);
+          if ('string' === typeof parsedData.name) {
+            if ('tunnel' in parsedData) {
+              this.#postRejectMessage(parsedData.tunnel as number, `unknown event name ${parsedData.name}`);
+            }
+            throw new Error(`unknown event name ${parsedData.name}`);
+          } else {
+            throw new Error('malformed event');
           }
-          throw new Error(`unknown event name ${parsedData.name}`);
         }
       }
     } catch (e) {
@@ -1056,11 +1100,10 @@ class NomadVM extends EventCaster {
    *
    * Handling a {@link Worker}'s `error` event simply entails casting a `worker:error` event.
    *
-   * @param {unknown} error - Error to handle.
-   * @returns {void}
-   * @private
+   * @param error - Error to handle.
+   * @returns
    */
-  #errorHandler(error) {
+  #errorHandler(error: Event): void {
     error.preventDefault();
     this.#castEvent('worker:error', error);
   }
@@ -1070,16 +1113,63 @@ class NomadVM extends EventCaster {
    *
    * Handling a {@link Worker}'s `messageerror` event simply entails casting a `worker:error` event.
    *
-   * @param {object} event - The message event itself.
-   * @param {unknown} event.data - The message's `data` field.
-   * @returns {void}
-   * @private
+   * @param event - The message event itself.
+   * @param event.data - The message's `data` field.
+   * @returns
    */
-  #messageErrorHandler({ data }) {
+  #messageErrorHandler({ data }: { data: string }): void {
     this.#castEvent('worker:error', data);
   }
 
   // ----------------------------------------------------------------------------------------------
+
+  /**
+   * Shut down the {@link Worker} and reject all pending tunnels.
+   *
+   * Stopping a Vm instance entails:
+   *
+   * 1. Clearing the pinger.
+   * 2. Calling {@link Worker.terminate} on the VM's {@link Worker}.
+   * 3. Rejecting all existing tunnels.
+   *
+   * NOTE: this method does NOT return a {@link Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link Promise}.
+   *
+   * @param resolve - Resolution callback: called if shutting down completed successfully.
+   * @param reject - Rejection callback: called if anything went wrong with shutting down.
+   * @returns
+   */
+  #shutdown(resolve: () => void, reject: (error: Error) => void): void {
+    this.#castEvent('stop');
+    try {
+      if ('stopped' !== this.#state) {
+        this.#state = 'stopped';
+
+        if (null !== this.#pinger) {
+          clearTimeout(this.#pinger);
+          this.#pinger = null;
+        }
+        if (null !== this.#worker) {
+          this.#worker.terminate();
+          this.#worker = null;
+        }
+
+        this.#tunnels.forEach((_: unknown, idx: number): void => {
+          try {
+            this.#rejectTunnel(idx, new Error('stopped'));
+          } catch (e) {
+            this.#castEvent('stop:error:ignored', e);
+          }
+        });
+        this.#tunnels = [];
+
+        this.#castEvent('stop:ok');
+      }
+    } catch (e) {
+      this.#castEvent('stop:error', e);
+      reject(e instanceof Error ? e : new Error('unknown error'));
+    }
+    resolve();
+  }
 
   /**
    * Start the {@link Worker} and wait for its boot-up sequence to complete.
@@ -1090,104 +1180,119 @@ class NomadVM extends EventCaster {
    * 2. Setting up the boot timeout callback (in case the {@link Worker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param {number} timeout - Milliseconds to wait for the {@link Worker} to complete its boot-up sequence.
-   * @returns {Promise<Array<number>, Error>} A {@link Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link Worker} respectively) if the {@link Worker} was successfully booted up, and rejects with an {@link Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link Worker} to complete its boot-up sequence.
+   * @returns A {@link Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link Worker} respectively) if the {@link Worker} was successfully booted up, and rejects with an {@link Error} in case errors are found.
    */
-  start(timeout = 100) {
-    return new Promise((resolve, reject) => {
-      this.#castEvent('start');
-      try {
-        this.#assertCreated();
-        timeout = Validation.timeout(timeout);
-        this.#state = 'booting';
-        let blobURL;
+  start(timeout: number = 100): Promise<[number, number]> {
+    return new Promise<[number, number]>(
+      (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
+        this.#castEvent('start');
         try {
-          let externalBootTime = Date.now();
-          let bootTimeout;
-          this.#addTunnel(
-            (internalBootTime) => {
-              clearTimeout(bootTimeout);
-              URL.revokeObjectURL(blobURL);
-              this.#state = 'running';
-              this.#castEvent('start:ok');
-              resolve([internalBootTime, Date.now() - externalBootTime]);
-            },
-            (error) => {
-              clearTimeout(bootTimeout);
-              URL.revokeObjectURL(blobURL);
-              this.#castEvent('start:error', error);
-              this.stop().then(
-                () => reject(error),
-                () => reject(error),
-              );
-            },
-          );
-          bootTimeout = setTimeout(() => {
-            this.#rejectTunnel(0, new Error('boot timed out'));
-          }, timeout);
+          this.#assertCreated();
+          timeout = validateTimeout(timeout);
+          this.#state = 'booting';
+          let blobURL: string = '';
+          try {
+            const externalBootTime: number = Date.now();
+            let bootTimeout: ReturnType<typeof setTimeout>;
+            this.#addTunnel(
+              (internalBootTime: number): void => {
+                clearTimeout(bootTimeout);
+                URL.revokeObjectURL(blobURL);
+                this.#pinger = setInterval(() => {
+                  const delta: number = Date.now() - this.#lastPong;
+                  if (NomadVM.#pongLimit < delta) {
+                    this.#castEvent('worker:unresponsive', delta);
+                    this.#shutdown(
+                      () => null,
+                      () => null,
+                    );
+                  }
+                  this.#postPingMessage();
+                }, NomadVM.#pingInterval);
+                this.#state = 'running';
+                this.#castEvent('start:ok');
+                resolve([internalBootTime, Date.now() - externalBootTime]);
+              },
+              (error: Error): void => {
+                clearTimeout(bootTimeout);
+                URL.revokeObjectURL(blobURL);
+                this.#castEvent('start:error', error);
+                this.stop().then(
+                  (): void => {
+                    reject(error);
+                  },
+                  (): void => {
+                    reject(error);
+                  },
+                );
+              },
+            );
+            bootTimeout = setTimeout((): void => {
+              this.#rejectTunnel(0, new Error('boot timed out'));
+            }, timeout);
 
-          blobURL = URL.createObjectURL(
-            new Blob([`"use strict"; (${NomadVM.#workerRunner})();`], {
-              type: 'application/javascript',
-            }),
-          );
+            blobURL = URL.createObjectURL(
+              new Blob(
+                [
+                  `'use strict';
+                  (${workerRunner.toString()})(
+                    this,
+                    ((_addEventListener) => (listener) => {
+                      _addEventListener('message', ({ data }) => {
+                        listener(data);
+                      });
+                    })(addEventListener),
+                    ((_postMessage) => (message) => {
+                      _postMessage(message);
+                    })(postMessage),
+                    ((_setTimeout) => (callback) => {
+                      _setTimeout(callback, 0);
+                    })(setTimeout),
+                  );`,
+                ],
+                {
+                  type: 'application/javascript',
+                },
+              ),
+            );
 
-          this.#worker = new Worker(blobURL, {
-            name: this.#name,
-            type: 'classic',
-            credentials: 'omit',
-          });
+            this.#worker = new Worker(blobURL, {
+              name: this.#name,
+              type: 'classic',
+              credentials: 'omit',
+            });
 
-          this.#worker.addEventListener('message', (...args) => this.#messageHandler(...args));
-          this.#worker.addEventListener('error', (...args) => this.#errorHandler(...args));
-          this.#worker.addEventListener('messageerror', (...args) => this.#messageErrorHandler(...args));
+            this.#worker.addEventListener('message', (args: MessageEvent): void => {
+              this.#messageHandler(args);
+            });
+            this.#worker.addEventListener('error', (args: Event): void => {
+              this.#errorHandler(args);
+            });
+            this.#worker.addEventListener('messageerror', (args: MessageEvent): void => {
+              this.#messageErrorHandler(args);
+            });
+          } catch (e) {
+            URL.revokeObjectURL(blobURL);
+            throw e;
+          }
         } catch (e) {
-          URL.revokeObjectURL(blobURL);
-          throw e;
+          this.#castEvent('start:error', e);
+          reject(e instanceof Error ? e : new Error('unknown error'));
         }
-      } catch (e) {
-        this.#castEvent('start:error', e);
-        reject(e);
-      }
-    });
+      },
+    );
   }
 
   /**
    * Stop the {@link Worker} and reject all pending tunnels.
    *
-   * Stopping a Vm instance entails:
-   *
-   * 1. Calling {@link Worker.terminate} on the VM's {@link Worker}.
-   * 2. Rejecting all existing tunnels.
-   *
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.#shutdown} for the actual shutdown process
    */
-  stop() {
-    return new Promise((resolve, reject) => {
-      this.#castEvent('stop');
-      try {
-        if ('stopped' !== this.#state) {
-          this.#state = 'stopped';
-
-          this.#worker.terminate();
-          this.#worker = null;
-
-          this.#tunnels.forEach((_, idx) => {
-            try {
-              this.#rejectTunnel(idx, new Error('stopped'));
-            } catch (e) {
-              this.#castEvent('stop:error:ignored', e);
-            }
-          });
-          this.#tunnels = null;
-
-          this.#castEvent('stop:ok');
-          resolve();
-        }
-      } catch (e) {
-        this.#castEvent('stop:error', e);
-        reject(e);
-      }
+  stop(): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+      this.#shutdown(resolve, reject);
     });
   }
 
@@ -1196,35 +1301,37 @@ class NomadVM extends EventCaster {
   /**
    * Create a new namespace with the given name.
    *
-   * @param {string} namespace - Namespace to create.
-   * @returns {Promise<NomadVMNamespace, Error>} A {@link Promise} that resolves with a {@link NomadVMNamespace} wrapper if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to create.
+   * @returns A {@link Promise} that resolves with a {@link NomadVMNamespace} wrapper if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  createNamespace(namespace) {
-    return new Promise((resolve, reject) => {
-      this.#castEvent(`${namespace}:create`);
-      try {
-        Validation.namespace(namespace);
+  createNamespace(namespace: string): Promise<NomadVMNamespace> {
+    return new Promise<NomadVMNamespace>(
+      (resolve: (nomadVmNamespace: NomadVMNamespace) => void, reject: (error: Error) => void): void => {
+        this.#castEvent(`${namespace}:create`);
+        try {
+          validateNamespace(namespace);
 
-        this.#assertRunning();
+          this.#assertRunning();
 
-        this.#postCreateMessage(
-          namespace,
-          this.#addTunnel(
-            () => {
-              this.#castEvent(`${namespace}:create:ok`);
-              resolve(new NomadVMNamespace(this, namespace));
-            },
-            (error) => {
-              this.#castEvent(`${namespace}:create:error`, error);
-              reject(error);
-            },
-          ),
-        );
-      } catch (e) {
-        this.#castEvent(`${namespace}:create:error`, e);
-        reject(e);
-      }
-    });
+          this.#postCreateMessage(
+            namespace,
+            this.#addTunnel(
+              (): void => {
+                this.#castEvent(`${namespace}:create:ok`);
+                resolve(new NomadVMNamespace(this, namespace));
+              },
+              (error: Error): void => {
+                this.#castEvent(`${namespace}:create:error`, error);
+                reject(error);
+              },
+            ),
+          );
+        } catch (e) {
+          this.#castEvent(`${namespace}:create:error`, e);
+          reject(e instanceof Error ? e : new Error('unknown error'));
+        }
+      },
+    );
   }
 
   /**
@@ -1232,24 +1339,24 @@ class NomadVM extends EventCaster {
    *
    * This method will reject all tunnels awaiting responses on the given namespace.
    *
-   * @param {string} namespace - Namespace to delete.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of deleted namespaces (the one given and any descendant of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to delete.
+   * @returns A {@link Promise} that resolves with a list of deleted namespaces (the one given and any descendant of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  deleteNamespace(namespace) {
-    return new Promise((resolve, reject) => {
+  deleteNamespace(namespace: string): Promise<string[]> {
+    return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:delete`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postDeleteMessage(
           this.#addTunnel(
-            (deleted) => {
+            (deleted: string[]): void => {
               this.#castEvent(`${namespace}:delete:ok`, deleted);
               resolve(deleted);
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:delete:error`, error);
               reject(error);
             },
@@ -1258,7 +1365,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:delete:error`, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1266,25 +1373,25 @@ class NomadVM extends EventCaster {
   /**
    * Assimilate the given namespace to its parent.
    *
-   * @param {string} namespace - Namespace to assimilate.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to assimilate.
+   * @returns A {@link Promise} that resolves with `void` if namespace assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  assimilateNamespace(namespace) {
-    return new Promise((resolve, reject) => {
+  assimilateNamespace(namespace: string): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:assimilate`, namespace);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postAssimilateMessage(
           namespace,
           this.#addTunnel(
-            () => {
+            (): void => {
               this.#castEvent(`${namespace}:assimilate:ok`, namespace);
               resolve();
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:assimilate:error`, namespace, error);
               reject(error);
             },
@@ -1292,7 +1399,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`"${namespace}:assimilate:error`, namespace, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1300,27 +1407,27 @@ class NomadVM extends EventCaster {
   /**
    * Link one namespace to another, so that events cast on the first are also handled in the second.
    *
-   * @param {string} namespace - "Source" namespace to use.
-   * @param {string} target - "Destination" namespace to use.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - "Source" namespace to use.
+   * @param target - "Destination" namespace to use.
+   * @returns A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  linkNamespaces(namespace, target) {
-    return new Promise((resolve, reject) => {
+  linkNamespaces(namespace: string, target: string): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:link`, target);
       try {
-        Validation.namespace(namespace);
-        Validation.namespace(target);
+        validateNamespace(namespace);
+        validateNamespace(target);
 
         this.#assertRunning();
 
         this.#postLinkMessage(
           namespace,
           this.#addTunnel(
-            () => {
+            (): void => {
               this.#castEvent(`${namespace}:link:ok`, target);
               resolve();
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:link:error`, target, error);
               reject(error);
             },
@@ -1329,7 +1436,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`"${namespace}:link:error`, target, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1337,14 +1444,14 @@ class NomadVM extends EventCaster {
   /**
    * Unlink one namespace from another, so that events cast on the first are no longer handled in the second.
    *
-   * @param {string} namespace - "Source" namespace to use.
-   * @param {string} target - "Destination" namespace to use.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - "Source" namespace to use.
+   * @param target - "Destination" namespace to use.
+   * @returns A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unlinkNamespaces(namespace, target) {
-    return new Promise((resolve, reject) => {
-      Validation.namespace(namespace);
-      Validation.namespace(target);
+  unlinkNamespaces(namespace: string, target: string): Promise<boolean> {
+    return new Promise<boolean>((resolve: (unlinked: boolean) => void, reject: (error: Error) => void): void => {
+      validateNamespace(namespace);
+      validateNamespace(target);
 
       this.#castEvent(`${namespace}:unlink`, target);
       try {
@@ -1353,11 +1460,11 @@ class NomadVM extends EventCaster {
         this.#postUnlinkMessage(
           namespace,
           this.#addTunnel(
-            (unlinked) => {
+            (unlinked: boolean): void => {
               this.#castEvent(`${namespace}:unlink:ok`, target, unlinked);
               resolve(unlinked);
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:unlink:error`, target, error);
               reject(error);
             },
@@ -1366,7 +1473,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:unlink:error`, target, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1374,25 +1481,25 @@ class NomadVM extends EventCaster {
   /**
    * Mute the given namespace, so that events cast on it are no longer propagated to this VM.
    *
-   * @param {string} namespace - Namespace to mute.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to mute.
+   * @returns A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  muteNamespace(namespace) {
-    return new Promise((resolve, reject) => {
+  muteNamespace(namespace: string): Promise<boolean> {
+    return new Promise<boolean>((resolve: (previous: boolean) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:muteNamespace`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postMuteMessage(
           namespace,
           this.#addTunnel(
-            (previous) => {
+            (previous: boolean): void => {
               this.#castEvent(`${namespace}:mute:ok`, previous);
               resolve(previous);
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:mute:error`, error);
               reject(error);
             },
@@ -1400,7 +1507,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:mute:error`, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1408,25 +1515,25 @@ class NomadVM extends EventCaster {
   /**
    * Unmute the given namespace, so that events cast on it are propagated to this VM.
    *
-   * @param {string} namespace - Namespace to unmute.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to unmute.
+   * @returns A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unmuteNamespace(namespace) {
-    return new Promise((resolve, reject) => {
+  unmuteNamespace(namespace: string): Promise<boolean> {
+    return new Promise<boolean>((resolve: (prev: boolean) => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:unmute`);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postUnmuteMessage(
           namespace,
           this.#addTunnel(
-            (prev) => {
+            (prev: boolean): void => {
               this.#castEvent(`${namespace}:unmute:ok`, prev);
               resolve(prev);
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:unmute:error`, error);
               reject(error);
             },
@@ -1434,44 +1541,46 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:unmute:error`, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * List the root namespaces created.
+   * List the orphaned namespaces created.
    *
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of root namespaces created if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of orphan namespaces created if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listRootNamespaces() {
-    return new Promise((resolve, reject) => {
-      try {
-        this.#assertRunning();
+  listOrphanNamespaces(): Promise<string[]> {
+    return new Promise<string[]>(
+      (resolve: (orphanNamespaces: string[]) => void, reject: (error: Error) => void): void => {
+        try {
+          this.#assertRunning();
 
-        this.#postListRootNamespacesMessage(this.#addTunnel(resolve, reject));
-      } catch (e) {
-        reject(e);
-      }
-    });
+          this.#postListOrphanNamespacesMessage(this.#addTunnel(resolve, reject));
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error('unknown error'));
+        }
+      },
+    );
   }
 
   /**
    * List the dependencies (user-level and predefined) installed on the given namespace or its ancestors.
    *
-   * @param {string} namespace - Namespace to list installed dependencies of.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to list installed dependencies of.
+   * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listInstalled(namespace) {
-    return new Promise((resolve, reject) => {
+  listInstalled(namespace: string): Promise<string[]> {
+    return new Promise<string[]>((resolve: (installed: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postListInstalledMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1479,19 +1588,19 @@ class NomadVM extends EventCaster {
   /**
    * List the namespaces the given one is linked to.
    *
-   * @param {string} namespace - Namespace to list linked-to namespaces of.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to list linked-to namespaces of.
+   * @returns A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinksTo(namespace) {
-    return new Promise((resolve, reject) => {
+  listLinksTo(namespace: string): Promise<string[]> {
+    return new Promise<string[]>((resolve: (linksTo: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postListLinksToMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1499,19 +1608,19 @@ class NomadVM extends EventCaster {
   /**
    * List the namespaces that link to the given one.
    *
-   * @param {string} namespace - Namespace to list linked-from namespaces of.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to list linked-from namespaces of.
+   * @returns A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinkedFrom(namespace) {
-    return new Promise((resolve, reject) => {
+  listLinkedFrom(namespace: string): Promise<string[]> {
+    return new Promise<string[]>((resolve: (linkedFrom: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postListLinkedFromMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1519,19 +1628,19 @@ class NomadVM extends EventCaster {
   /**
    * Determine whether the given namespace is muted.
    *
-   * @param {string} namespace - Namespace to determine mute status of.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean value indicating whether the namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to determine mute status of.
+   * @returns A {@link Promise} that resolves with a boolean value indicating whether the namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
    */
-  isMuted(namespace) {
-    return new Promise((resolve, reject) => {
+  isMuted(namespace: string): Promise<boolean> {
+    return new Promise<boolean>((resolve: (muted: boolean) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postIsMutedMessage(namespace, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1539,24 +1648,24 @@ class NomadVM extends EventCaster {
   /**
    * List the given namespace's descendants.
    *
-   * @param {string} namespace - Namespace to list the descendants of.
-   * @param {number} depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param namespace - Namespace to list the descendants of.
+   * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getDescendants(namespace, depth = null) {
-    return new Promise((resolve, reject) => {
+  getDescendants(namespace: string, depth: number | null = null): Promise<string[]> {
+    return new Promise<string[]>((resolve: (descendants: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
 
         this.#postGetDescendantsMessage(
           namespace,
-          Validation.nonNegativeInteger(depth ?? 0),
+          validateNonNegativeInteger(depth ?? 0),
           this.#addTunnel(resolve, reject),
         );
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1566,39 +1675,43 @@ class NomadVM extends EventCaster {
   /**
    * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}) under the given namespace.
    *
-   * @param {string} namespace - Namespace to use.
-   * @param {string} name - Function name to add.
-   * @param {Function} callback - {@link Function} callback to use.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   * @param namespace - Namespace to use.
+   * @param name - Function name to add.
+   * @param callback - {@link Function} callback to use.
+   * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
    */
-  predefine(namespace, name, callback) {
-    return new Promise((resolve, reject) => {
-      const idx = this.#predefined.push(null) - 1;
+  predefine(namespace: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+      const idx: number =
+        this.#predefined.push(() => {
+          throw new Error('SHOULD NEVER HAPPEN');
+        }) - 1;
       this.#castEvent(`${namespace}:predefined:add`, name, callback, idx);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#assertRunning();
         this.#postPredefineMessage(
           namespace,
           this.#addTunnel(
-            () => {
+            (): void => {
               this.#predefined[idx] = callback;
               this.#castEvent(`${namespace}:predefined:add:ok`, name, callback, idx);
               resolve();
             },
-            (error) => {
+            (error: Error): void => {
+              // eslint-disable-next-line @typescript-eslint/no-array-delete, @typescript-eslint/no-dynamic-delete
               delete this.#predefined[idx];
               this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, error);
               reject(error);
             },
           ),
           idx,
-          Validation.identifier(name),
+          validateIdentifier(name),
         );
       } catch (e) {
         this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1606,15 +1719,15 @@ class NomadVM extends EventCaster {
   /**
    * Install the given {@link Dependency} on the {@link Worker}.
    *
-   * @param {string} namespace - Namespace to use.
-   * @param {Dependency} dependency - The {@link Dependency} to install.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @param namespace - Namespace to use.
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  install(namespace, dependency) {
-    return new Promise((resolve, reject) => {
+  install(namespace: string, dependency: Dependency): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${namespace}:install`, dependency);
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only install Dependency');
@@ -1624,11 +1737,11 @@ class NomadVM extends EventCaster {
         this.#postInstallMessage(
           namespace,
           this.#addTunnel(
-            () => {
+            (): void => {
               this.#castEvent(`${namespace}:install:ok`, dependency);
               resolve();
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:install:error`, dependency, error);
               reject(error);
             },
@@ -1637,7 +1750,7 @@ class NomadVM extends EventCaster {
         );
       } catch (e) {
         this.#castEvent(`${namespace}:install:error`, dependency, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1645,15 +1758,15 @@ class NomadVM extends EventCaster {
   /**
    * Execute the given {@link Dependency} with the given arguments map in the {@link Worker}.
    *
-   * @param {string} namespace - The namespace to use.
-   * @param {Dependency} dependency - The {@link Dependency} to execute.
-   * @param {Map<string, unknown>} args - The arguments map to execute with.
-   * @returns {Promise<unknown, Error>} A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   * @param namespace - The namespace to use.
+   * @param dependency - The {@link Dependency} to execute.
+   * @param args - The arguments map to execute with.
+   * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
    */
-  execute(namespace, dependency, args = new Map()) {
-    return new Promise((resolve, reject) => {
+  execute(namespace: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
+    return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
-        Validation.namespace(namespace);
+        validateNamespace(namespace);
 
         this.#castEvent(`${namespace}:execute`, dependency, args);
 
@@ -1665,21 +1778,21 @@ class NomadVM extends EventCaster {
         this.#postExecuteMessage(
           namespace,
           this.#addTunnel(
-            (result) => {
+            (result: unknown): void => {
               this.#castEvent(`${namespace}:execute:ok`, dependency, args, result);
               resolve(result);
             },
-            (error) => {
+            (error: Error): void => {
               this.#castEvent(`${namespace}:execute:error`, dependency, args, error);
               reject(error);
             },
           ),
           dependency.asObject(),
-          Validation.argumentsMap(args),
+          validateArgumentsMap(args),
         );
       } catch (e) {
         this.#castEvent(`${namespace}:execute:error`, dependency, args, e);
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1687,37 +1800,67 @@ class NomadVM extends EventCaster {
   /**
    * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
-   * @param {string} namespace - Namespace to use.
-   * @param {Iterable<Dependency>} dependencies - Dependencies to install.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @param namespace - Namespace to use.
+   * @param dependencies - Dependencies to install.
+   * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  installAll(namespace, dependencies) {
-    return new Promise((resolve, reject) => {
+  installAll(namespace: string, dependencies: Iterable<Dependency>): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       try {
-        this.createNamespace(`${namespace}.tmp_${NomadVM.#pseudoRandomString()}`).then((wrapper) => {
-          wrapper.listInstalled().then(
-            (installed) => {
-              Promise.all(Dependency.sort(dependencies, Object.keys(installed)).map(wrapper.install)).then(
-                () => {
-                  this.assimilateNamespace(wrapper.namespace).then(resolve, (error) => {
-                    this.deleteNamespace(wrapper.namespace);
+        this.createNamespace(`${namespace}.tmp_${NomadVM.#pseudoRandomString()}`).then(
+          (wrapper: NomadVMNamespace): void => {
+            wrapper.listInstalled().then(
+              (installed: string[]): void => {
+                Promise.all(
+                  Dependency.sort(dependencies, installed).map((dependency: Dependency) => wrapper.install(dependency)),
+                ).then(
+                  (): void => {
+                    this.assimilateNamespace(wrapper.namespace).then(
+                      (): void => {
+                        resolve();
+                      },
+                      (error: Error): void => {
+                        this.deleteNamespace(wrapper.namespace).then(
+                          () => {
+                            reject(error);
+                          },
+                          () => {
+                            reject(error);
+                          },
+                        );
+                      },
+                    );
+                  },
+                  (error: Error): void => {
+                    this.deleteNamespace(wrapper.namespace).then(
+                      () => {
+                        reject(error);
+                      },
+                      () => {
+                        reject(error);
+                      },
+                    );
+                  },
+                );
+              },
+              (error: Error): void => {
+                this.deleteNamespace(wrapper.namespace).then(
+                  () => {
                     reject(error);
-                  });
-                },
-                (error) => {
-                  this.deleteNamespace(wrapper.namespace);
-                  reject(error);
-                },
-              );
-            },
-            (error) => {
-              this.deleteNamespace(wrapper.namespace);
-              reject(error);
-            },
-          );
-        }, reject);
+                  },
+                  () => {
+                    reject(error);
+                  },
+                );
+              },
+            );
+          },
+          (error: Error): void => {
+            reject(error);
+          },
+        );
       } catch (e) {
-        reject(e);
+        reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
@@ -1727,13 +1870,13 @@ class NomadVM extends EventCaster {
   /**
    * Emit an event towards the {@link Worker}.
    *
-   * @param {number} namespace - Namespace to use.
-   * @param {string} event - Event name to emit.
-   * @param {...any} args - Associated arguments to emit alongside the event.
-   * @returns {this} `this`, for chaining.
+   * @param namespace - Namespace to use.
+   * @param event - Event name to emit.
+   * @param args - Associated arguments to emit alongside the event.
+   * @returns `this`, for chaining.
    */
-  emit(namespace, event, ...args) {
-    this.#postEmitMessage(Validation.namespace(namespace), EventCaster.validateEvent(event), args);
+  emit(namespace: string, event: string, ...args: unknown[]): this {
+    this.#postEmitMessage(validateNamespace(namespace), EventCaster.validateEvent(event), args);
     return this;
   }
 }
@@ -1751,26 +1894,24 @@ class NomadVMNamespace {
   /**
    * The {@link NomadVM} instance to wrap.
    *
-   * @type {NomadVM}
    */
-  #vm;
+  #vm: NomadVM;
 
   /**
    * The namespace to wrap for.
    *
-   * @type {string}
    */
-  #namespace;
+  #namespace: string;
 
   /**
    * Create a new {@link NomadVMNamespace} wrapper around the given {@link NomadVM} for the given namespace.
    *
-   * @param {NomadVM} vm - The VM instance to wrap.
-   * @param {string} namespace - The namespace to wrap for.
+   * @param vm - The VM instance to wrap.
+   * @param namespace - The namespace to wrap for.
    * @throws {Error} If the given VM is not a {@link NomadVM} instance.
    * @throws {Error} If the given namespace is not a string.
    */
-  constructor(vm, namespace) {
+  constructor(vm: NomadVM, namespace: string) {
     if (!(vm instanceof NomadVM)) {
       throw new Error('expected vm to be an instance of NomadVM');
     } else if ('string' !== typeof namespace) {
@@ -1784,30 +1925,28 @@ class NomadVMNamespace {
   /**
    * Getter used to retrieve the wrapped {@link NomadVM}.
    *
-   * @type {NomadVM}
    */
-  get vm() {
+  get vm(): NomadVM {
     return this.#vm;
   }
 
   /**
    * Getter used to retrieve the wrapped namespace.
    *
-   * @type {string}
    */
-  get namespace() {
+  get namespace(): string {
     return this.#namespace;
   }
 
   /**
    * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped namespace.
    *
-   * @param {unknown} filter - Event name filter to assign the listener to.
-   * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {this} `this`, for chaining.
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
    * @see {@link NomadVM.onThis} for additional exceptions thrown.
    */
-  onThis(filter, callback) {
+  onThis(filter: string, callback: (...args: unknown[]) => void): this {
     this.vm.onThis(`${this.namespace}:${filter}`, callback);
     return this;
   }
@@ -1815,12 +1954,12 @@ class NomadVMNamespace {
   /**
    * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped namespace, and removed upon being called once.
    *
-   * @param {unknown} filter - Event name filter to assign the listener to.
-   * @param {unknown} callback - Callback to call on a matching event being cast.
-   * @returns {this} `this`, for chaining.
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
    * @see {@link NomadVM.onThis} for additional exceptions thrown.
    */
-  onceThis(filter, callback) {
+  onceThis(filter: string, callback: (...args: unknown[]) => void): this {
     this.vm.onceThis(`${this.namespace}:${filter}`, callback);
     return this;
   }
@@ -1828,126 +1967,126 @@ class NomadVMNamespace {
   /**
    * Link the wrapped namespace to another, so that events cast on the wrapped namespace are also handled in the other.
    *
-   * @param {string} target - "Destination" namespace to use.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param target - "Destination" namespace to use.
+   * @returns A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  link(target) {
+  link(target: string): Promise<void> {
     return this.vm.linkNamespaces(this.namespace, target);
   }
 
   /**
    * Unlink the wrapped namespace from another, so that events cast on the wrapped namespace are no longer handled in the other.
    *
-   * @param {string} target - "Destination" namespace to use.
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param target - "Destination" namespace to use.
+   * @returns A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unlink(target) {
+  unlink(target: string): Promise<boolean> {
     return this.vm.unlinkNamespaces(this.namespace, target);
   }
 
   /**
    * Mute the wrapped namespace, so that events cast on it are no longer propagated to the wrapped VM.
    *
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  mute() {
+  mute(): Promise<boolean> {
     return this.vm.muteNamespace(this.namespace);
   }
 
   /**
    * Unmute the wrapped namespace, so that events cast on it are propagated to wrapped VM.
    *
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unmute() {
+  unmute(): Promise<boolean> {
     return this.vm.unmuteNamespace(this.namespace);
   }
 
   /**
    * List the dependencies (user-level and predefined) installed on the wrapped namespace or its ancestors.
    *
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listInstalled() {
+  listInstalled(): Promise<string[]> {
     return this.vm.listInstalled(this.namespace);
   }
 
   /**
    * List the namespaces the wrapped one is linked to.
    *
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinksTo() {
+  listLinksTo(): Promise<string[]> {
     return this.vm.listLinksTo(this.namespace);
   }
 
   /**
    * List the namespaces that link to the wrapped one.
    *
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinkedFrom() {
+  listLinkedFrom(): Promise<string[]> {
     return this.vm.listLinkedFrom(this.namespace);
   }
 
   /**
    * Determine whether the wrapped namespace is muted.
    *
-   * @returns {Promise<boolean, Error>} A {@link Promise} that resolves with a boolean value indicating whether the wrapped namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a boolean value indicating whether the wrapped namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
    */
-  isMuted() {
+  isMuted(): Promise<boolean> {
     return this.vm.isMuted(this.namespace);
   }
 
   /**
    * List the wrapped namespace's descendants.
    *
-   * @param {number} depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns {Promise<Array<string>, Error>} A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getDescendants(depth = null) {
+  getDescendants(depth: number | null = null): Promise<string[]> {
     return this.vm.getDescendants(this.namespace, depth);
   }
 
   /**
    * Add a predefined function to the VM's list under the wrapped namespace.
    *
-   * @param {string} name - Function name to add.
-   * @param {Function} callback - {@link Function} callback to use.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   * @param name - Function name to add.
+   * @param callback - {@link Function} callback to use.
+   * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
    */
-  predefine(name, callback) {
+  predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
     return this.vm.predefine(this.namespace, name, callback);
   }
 
   /**
    * Install the given {@link Dependency} on the wrapped VM under the wrapped namespace.
    *
-   * @param {Dependency} dependency - The {@link Dependency} to install.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  install(dependency) {
+  install(dependency: Dependency): Promise<void> {
     return this.vm.install(this.namespace, dependency);
   }
 
   /**
    * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped namespace.
    *
-   * @param {Dependency} dependency - The {@link Dependency} to execute.
-   * @param {Map<string, unknown>} args - The arguments map to execute with.
-   * @returns {Promise<unknown, Error>} A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   * @param dependency - The {@link Dependency} to execute.
+   * @param args - The arguments map to execute with.
+   * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
    */
-  execute(dependency, args = new Map()) {
+  execute(dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
     return this.vm.execute(this.namespace, dependency, args);
   }
 
   /**
    * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
-   * @param {Iterable<Dependency>} dependencies - Dependencies to install.
-   * @returns {Promise<void, Error>} A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @param dependencies - Dependencies to install.
+   * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  installAll(dependencies) {
+  installAll(dependencies: Iterable<Dependency>): Promise<void> {
     return this.vm.installAll(this.namespace, dependencies);
   }
 }
