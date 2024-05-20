@@ -14,7 +14,7 @@ import {
 import { EventCaster } from './eventCaster';
 import { Dependency } from './dependency';
 
-import workerRunner from './workerRunner.cjs';
+import workerCode from './workerCode.cjs';
 
 /**
  * A safe execution environment for NOMAD code execution.
@@ -1236,7 +1236,7 @@ class NomadVM extends EventCaster {
               new Blob(
                 [
                   `'use strict';
-                  (${workerRunner.toString()})(
+                  (${workerCode.toString()})(
                     this,
                     ((_addEventListener) => (listener) => {
                       _addEventListener('message', ({ data }) => {
