@@ -3,11 +3,6 @@
 import * as Validation from './validation';
 
 /**
- * @see {@link https://stackoverflow.com/a/75645622}
- */
-type AnyFunction = (...args: never) => unknown;
-
-/**
  * The type of a Dependency primitive object.
  *
  */
@@ -105,7 +100,7 @@ class Dependency {
    * @param func - Instance to test.
    * @returns True if the given argument is a defined function, false otherwise.
    */
-  static #isPlainFunction(func: AnyFunction): func is AnyFunction {
+  static #isPlainFunction(func: (...args: unknown[]) => unknown): func is (...args: unknown[]) => unknown {
     // https://stackoverflow.com/a/38830947
     return (
       Function === func.constructor &&
@@ -172,7 +167,7 @@ class Dependency {
    * @returns A {@link DependencyObject} extracted from the given instance.
    * @throws {Error} If the function body cannot be determined.
    */
-  static #getDependencyPrimitive(func: AnyFunction): DependencyObject {
+  static #getDependencyPrimitive(func: (...args: unknown[]) => unknown): DependencyObject {
     const str: string = Dependency.#removeComments(func.toString()).replace(/^\s+|\s+$/g, '');
     let body: string | null = null;
     let code: string = '';
@@ -241,10 +236,9 @@ class Dependency {
    * @param func - Function to use for constructing the {@link Dependency}.
    * @param fName - Name to use instead if given.
    * @returns The constructed {@link Dependency}.
-   * @throws {Error} If the given argument is not a {@link Function}.
-   * @throws {Error} If the given argument is an arrow function.
+   * @throws {Error} If the given argument is not a {@link !Function}.
    */
-  static from(func: AnyFunction, fName: string | null = null): Dependency {
+  static from(func: (...args: unknown[]) => unknown, fName: string | null = null): Dependency {
     if (!Dependency.#isPlainFunction(func)) {
       throw new Error('Expected defined function');
     }
@@ -291,14 +285,10 @@ class Dependency {
   }
 
   /**
-   * Validate the given dependency and return it if valid.
+   * Validate the given {@link DependencyObject} and return it if valid.
    *
-   * @param dependency - The dependency to validate.
-   * @returns The validated dependency.
-   * @throws {Error} If the given dependency is not a non-`null` `object`.
-   * @throws {Error} If the given dependency does not contain a `name` property.
-   * @throws {Error} If the given dependency does not contain a `code` property.
-   * @throws {Error} If the given dependency does not contain a `dependencies` property.
+   * @param dependency - The {@link DependencyObject} to validate.
+   * @returns The validated {@link DependencyObject}.
    * @see {@link Validation.dependencyObject} for additional exceptions thrown.
    */
   static validate(dependency: DependencyObject): DependencyObject {
@@ -504,4 +494,4 @@ class Dependency {
 }
 
 export { Dependency };
-export type { DependencyObject, AnyFunction };
+export type { DependencyObject };
