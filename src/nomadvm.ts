@@ -14,7 +14,7 @@ import {
 import { EventCaster } from './eventCaster';
 import { Dependency } from './dependency';
 
-import workerRunner from './worker.cjs';
+import workerRunner from './workerRunner.cjs';
 
 /**
  * A safe execution environment for NOMAD code execution.
