@@ -77,6 +77,19 @@ class Dependency {
     /**
      * List of builtin functions to analyze for prefix / suffix behavior.
      *
+     * This list is used to determine native functions' prefixes and suffixes when converting them to `string`.
+     * The list comprises:
+     *
+     * - {@link eval},
+     * - {@link isFinite},
+     * - {@link isNaN},
+     * - {@link parseFloat},
+     * - {@link parseInt},
+     * - {@link decodeURI},
+     * - {@link decodeURIComponent},
+     * - {@link encodeURI}, and
+     * - {@link encodeURIComponent}.
+     *
      */
     const builtin: string[] = [
       eval.toString(),

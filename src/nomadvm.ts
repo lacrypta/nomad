@@ -1969,6 +1969,7 @@ class NomadVMNamespace {
    *
    * @param target - "Destination" namespace to use.
    * @returns A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.linkNamespaces} for additional exceptions thrown.
    */
   link(target: string): Promise<void> {
     return this.vm.linkNamespaces(this.namespace, target);
@@ -1979,6 +1980,7 @@ class NomadVMNamespace {
    *
    * @param target - "Destination" namespace to use.
    * @returns A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.unlinkNamespaces} for additional exceptions thrown.
    */
   unlink(target: string): Promise<boolean> {
     return this.vm.unlinkNamespaces(this.namespace, target);
@@ -1988,6 +1990,7 @@ class NomadVMNamespace {
    * Mute the wrapped namespace, so that events cast on it are no longer propagated to the wrapped VM.
    *
    * @returns A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.muteNamespace} for additional exceptions thrown.
    */
   mute(): Promise<boolean> {
     return this.vm.muteNamespace(this.namespace);
@@ -1997,6 +2000,7 @@ class NomadVMNamespace {
    * Unmute the wrapped namespace, so that events cast on it are propagated to wrapped VM.
    *
    * @returns A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.unmuteNamespace} for additional exceptions thrown.
    */
   unmute(): Promise<boolean> {
     return this.vm.unmuteNamespace(this.namespace);
@@ -2006,6 +2010,7 @@ class NomadVMNamespace {
    * List the dependencies (user-level and predefined) installed on the wrapped namespace or its ancestors.
    *
    * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.listInstalled} for additional exceptions thrown.
    */
   listInstalled(): Promise<string[]> {
     return this.vm.listInstalled(this.namespace);
@@ -2015,6 +2020,7 @@ class NomadVMNamespace {
    * List the namespaces the wrapped one is linked to.
    *
    * @returns A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.listLinksTo} for additional exceptions thrown.
    */
   listLinksTo(): Promise<string[]> {
     return this.vm.listLinksTo(this.namespace);
@@ -2024,6 +2030,7 @@ class NomadVMNamespace {
    * List the namespaces that link to the wrapped one.
    *
    * @returns A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.listLinkedFrom} for additional exceptions thrown.
    */
   listLinkedFrom(): Promise<string[]> {
     return this.vm.listLinkedFrom(this.namespace);
@@ -2033,6 +2040,7 @@ class NomadVMNamespace {
    * Determine whether the wrapped namespace is muted.
    *
    * @returns A {@link Promise} that resolves with a boolean value indicating whether the wrapped namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.isMuted} for additional exceptions thrown.
    */
   isMuted(): Promise<boolean> {
     return this.vm.isMuted(this.namespace);
@@ -2043,6 +2051,7 @@ class NomadVMNamespace {
    *
    * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
    * @returns A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.getDescendants} for additional exceptions thrown.
    */
   getDescendants(depth: number | null = null): Promise<string[]> {
     return this.vm.getDescendants(this.namespace, depth);
@@ -2054,6 +2063,7 @@ class NomadVMNamespace {
    * @param name - Function name to add.
    * @param callback - {@link Function} callback to use.
    * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   * @see {@link NomadVM.predefine} for additional exceptions thrown.
    */
   predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
     return this.vm.predefine(this.namespace, name, callback);
@@ -2064,6 +2074,7 @@ class NomadVMNamespace {
    *
    * @param dependency - The {@link Dependency} to install.
    * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @see {@link NomadVM.install} for additional exceptions thrown.
    */
   install(dependency: Dependency): Promise<void> {
     return this.vm.install(this.namespace, dependency);
@@ -2075,6 +2086,7 @@ class NomadVMNamespace {
    * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
    * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
   execute(dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
     return this.vm.execute(this.namespace, dependency, args);
@@ -2085,6 +2097,7 @@ class NomadVMNamespace {
    *
    * @param dependencies - Dependencies to install.
    * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @see {@link NomadVM.installAll} for additional exceptions thrown.
    */
   installAll(dependencies: Iterable<Dependency>): Promise<void> {
     return this.vm.installAll(this.namespace, dependencies);
