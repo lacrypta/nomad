@@ -2,6 +2,7 @@
 
 import type { DependencyObject } from './dependency';
 import type { Cast, EventCallback, ProtectedMethods } from './eventCaster';
+import type { WorkerInstance, WorkerBuilder } from './worker';
 
 import {
   namespace as validateNamespace,
@@ -13,6 +14,7 @@ import {
 
 import { EventCaster } from './eventCaster';
 import { Dependency } from './dependency';
+import BrowserWorkerBuilder from './worker/browser';
 
 import workerCode from './workerCode.cjs';
 
@@ -192,10 +194,10 @@ class NomadVM extends EventCaster {
   #state: 'created' | 'booting' | 'running' | 'stopped';
 
   /**
-   * The {@link Worker} instance this VM is using for secure execution.
+   * The {@link WorkerInstance} this VM is using for secure execution, or `null` if none create or stopped.
    *
    */
-  #worker: Worker | null;
+  #worker: WorkerInstance | null;
 
   /**
    * A list of predefined functions.
@@ -224,7 +226,7 @@ class NomadVM extends EventCaster {
    * The timestamp when the last `pong` message was received.
    *
    */
-  #lastPong: number = Date.now();
+  #lastPong: number = NaN;
 
   /**
    * Construct a new {@link NomadVM} instance, using the given name.
@@ -336,16 +338,6 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post the JSON string associated to the given data to the VM's {@link Worker}.
-   *
-   * @param data - Data to post to the {@link Worker}.
-   * @returns
-   */
-  #postJsonMessage(data: object): void {
-    this.#worker?.postMessage(JSON.stringify(data));
-  }
-
-  /**
    * Post a `ping` message to the {@link Worker}.
    *
    * A `ping` message has the form:
@@ -359,7 +351,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postPingMessage(): void {
-    this.#postJsonMessage({ name: 'ping' });
+    this.#worker?.shout({ name: 'ping' });
   }
 
   /**
@@ -386,7 +378,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postResolveMessage(tunnel: number, payload: unknown): void {
-    this.#postJsonMessage({ name: 'resolve', tunnel, payload });
+    this.#worker?.shout({ name: 'resolve', tunnel, payload });
   }
 
   /**
@@ -413,7 +405,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postRejectMessage(tunnel: number, error: string): void {
-    this.#postJsonMessage({ name: 'reject', tunnel, error });
+    this.#worker?.shout({ name: 'reject', tunnel, error });
   }
 
   /**
@@ -442,7 +434,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postEmitMessage(namespace: string, event: string, args: unknown[]): void {
-    this.#postJsonMessage({
+    this.#worker?.shout({
       name: 'emit',
       namespace,
       event: event,
@@ -476,7 +468,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postInstallMessage(namespace: string, tunnel: number, dependency: DependencyObject): void {
-    this.#postJsonMessage({ name: 'install', namespace, tunnel, dependency });
+    this.#worker?.shout({ name: 'install', namespace, tunnel, dependency });
   }
 
   /**
@@ -515,7 +507,7 @@ class NomadVM extends EventCaster {
     dependency: DependencyObject,
     args: Map<string, unknown>,
   ): void {
-    this.#postJsonMessage({
+    this.#worker?.shout({
       name: 'execute',
       namespace,
       tunnel,
@@ -553,7 +545,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postPredefineMessage(namespace: string, tunnel: number, idx: number, funcName: string): void {
-    this.#postJsonMessage({
+    this.#worker?.shout({
       name: 'predefine',
       namespace,
       tunnel,
@@ -585,7 +577,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postCreateMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({
+    this.#worker?.shout({
       name: 'create',
       namespace,
       tunnel,
@@ -615,7 +607,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postDeleteMessage(tunnel: number, namespace: string): void {
-    this.#postJsonMessage({ name: 'delete', tunnel, namespace });
+    this.#worker?.shout({ name: 'delete', tunnel, namespace });
   }
 
   /**
@@ -641,7 +633,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postAssimilateMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'assimilate', namespace, tunnel });
+    this.#worker?.shout({ name: 'assimilate', namespace, tunnel });
   }
 
   /**
@@ -670,7 +662,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postLinkMessage(namespace: string, tunnel: number, target: string): void {
-    this.#postJsonMessage({ name: 'link', namespace, tunnel, target });
+    this.#worker?.shout({ name: 'link', namespace, tunnel, target });
   }
 
   /**
@@ -699,7 +691,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postUnlinkMessage(namespace: string, tunnel: number, target: string): void {
-    this.#postJsonMessage({ name: 'unlink', namespace, tunnel, target });
+    this.#worker?.shout({ name: 'unlink', namespace, tunnel, target });
   }
 
   /**
@@ -725,7 +717,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postMuteMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'mute', namespace, tunnel });
+    this.#worker?.shout({ name: 'mute', namespace, tunnel });
   }
 
   /**
@@ -751,7 +743,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postUnmuteMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'unmute', namespace, tunnel });
+    this.#worker?.shout({ name: 'unmute', namespace, tunnel });
   }
 
   /**
@@ -774,7 +766,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postListOrphanNamespacesMessage(tunnel: number): void {
-    this.#postJsonMessage({ name: 'listOrphanNamespaces', tunnel });
+    this.#worker?.shout({ name: 'listOrphanNamespaces', tunnel });
   }
 
   /**
@@ -800,7 +792,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postListInstalledMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'listInstalled', namespace, tunnel });
+    this.#worker?.shout({ name: 'listInstalled', namespace, tunnel });
   }
 
   /**
@@ -826,7 +818,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postListLinksToMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'listLinksTo', namespace, tunnel });
+    this.#worker?.shout({ name: 'listLinksTo', namespace, tunnel });
   }
 
   /**
@@ -852,7 +844,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postListLinkedFromMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'listLinkedFrom', namespace, tunnel });
+    this.#worker?.shout({ name: 'listLinkedFrom', namespace, tunnel });
   }
 
   /**
@@ -878,7 +870,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postIsMutedMessage(namespace: string, tunnel: number): void {
-    this.#postJsonMessage({ name: 'isMuted', namespace, tunnel });
+    this.#worker?.shout({ name: 'isMuted', namespace, tunnel });
   }
 
   /**
@@ -907,7 +899,7 @@ class NomadVM extends EventCaster {
    * @returns
    */
   #postGetDescendantsMessage(namespace: string, depth: number, tunnel: number): void {
-    this.#postJsonMessage({ name: 'getDescendants', namespace, depth, tunnel });
+    this.#worker?.shout({ name: 'getDescendants', namespace, depth, tunnel });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -1022,7 +1014,7 @@ class NomadVM extends EventCaster {
    * @param event.data - The message's `data` field, a JSON-encoded string.
    * @returns
    */
-  #messageHandler({ data }: { data: string }): void {
+  #messageHandler(data: string): void {
     try {
       const parsedData: { [_: string]: unknown } = JSON.parse(data) as {
         [_: string]: unknown;
@@ -1103,28 +1095,14 @@ class NomadVM extends EventCaster {
    * @param error - Error to handle.
    * @returns
    */
-  #errorHandler(error: Event): void {
-    error.preventDefault();
-    this.#castEvent('worker:error', error);
-  }
-
-  /**
-   * Handle the {@link Worker}'s `messageerror` event.
-   *
-   * Handling a {@link Worker}'s `messageerror` event simply entails casting a `worker:error` event.
-   *
-   * @param event - The message event itself.
-   * @param event.data - The message's `data` field.
-   * @returns
-   */
-  #messageErrorHandler({ data }: { data: string }): void {
-    this.#castEvent('worker:error', data);
+  #errorHandler(error: Error): void {
+    this.#castEvent('worker:error', error.message);
   }
 
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Shut down the {@link Worker} and reject all pending tunnels.
+   * Perform the stoppage steps on the {@link Worker} and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
@@ -1138,7 +1116,7 @@ class NomadVM extends EventCaster {
    * @param reject - Rejection callback: called if anything went wrong with shutting down.
    * @returns
    */
-  #shutdown(resolve: () => void, reject: (error: Error) => void): void {
+  #doStop(resolve: () => void, reject: (error: Error) => void): void {
     this.#castEvent('stop');
     try {
       if ('stopped' !== this.#state) {
@@ -1149,7 +1127,7 @@ class NomadVM extends EventCaster {
           this.#pinger = null;
         }
         if (null !== this.#worker) {
-          this.#worker.terminate();
+          this.#worker.kill();
           this.#worker = null;
         }
 
@@ -1183,7 +1161,7 @@ class NomadVM extends EventCaster {
    * @param timeout - Milliseconds to wait for the {@link Worker} to complete its boot-up sequence.
    * @returns A {@link Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link Worker} respectively) if the {@link Worker} was successfully booted up, and rejects with an {@link Error} in case errors are found.
    */
-  start(timeout: number = 100): Promise<[number, number]> {
+  start(workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(), timeout: number = 100): Promise<[number, number]> {
     return new Promise<[number, number]>(
       (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
         this.#castEvent('start');
@@ -1191,91 +1169,53 @@ class NomadVM extends EventCaster {
           this.#assertCreated();
           timeout = validateTimeout(timeout);
           this.#state = 'booting';
-          let blobURL: string = '';
-          try {
-            const externalBootTime: number = Date.now();
-            let bootTimeout: ReturnType<typeof setTimeout>;
-            this.#addTunnel(
-              (internalBootTime: number): void => {
-                clearTimeout(bootTimeout);
-                URL.revokeObjectURL(blobURL);
-                this.#pinger = setInterval(() => {
-                  const delta: number = Date.now() - this.#lastPong;
-                  if (NomadVM.#pongLimit < delta) {
-                    this.#castEvent('worker:unresponsive', delta);
-                    this.#shutdown(
-                      () => null,
-                      () => null,
-                    );
-                  }
-                  this.#postPingMessage();
-                }, NomadVM.#pingInterval);
-                this.#state = 'running';
-                this.#castEvent('start:ok');
-                resolve([internalBootTime, Date.now() - externalBootTime]);
-              },
-              (error: Error): void => {
-                clearTimeout(bootTimeout);
-                URL.revokeObjectURL(blobURL);
-                this.#castEvent('start:error', error);
-                this.stop().then(
-                  (): void => {
-                    reject(error);
-                  },
-                  (): void => {
-                    reject(error);
-                  },
+
+          const externalBootTime: number = Date.now();
+          const bootTimeout: ReturnType<typeof setTimeout> = setTimeout((): void => {
+            this.#rejectTunnel(0, new Error('boot timed out'));
+          }, timeout);
+
+          const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
+            clearTimeout(bootTimeout);
+            this.#lastPong = Date.now();
+            this.#pinger = setInterval(() => {
+              const delta: number = Date.now() - this.#lastPong;
+              if (NomadVM.#pongLimit < delta) {
+                this.#castEvent('worker:unresponsive', delta);
+                this.#doStop(
+                  () => null,
+                  () => null,
                 );
+              }
+              this.#postPingMessage();
+            }, NomadVM.#pingInterval);
+            this.#state = 'running';
+            this.#castEvent('start:ok');
+            resolve([internalBootTime, Date.now() - externalBootTime]);
+          };
+          const bootReject: (error: Error) => void = (error: Error): void => {
+            clearTimeout(bootTimeout);
+            this.#castEvent('start:error', error);
+            this.stop().then(
+              (): void => {
+                reject(error);
+              },
+              (): void => {
+                reject(error);
               },
             );
-            bootTimeout = setTimeout((): void => {
-              this.#rejectTunnel(0, new Error('boot timed out'));
-            }, timeout);
+          };
 
-            blobURL = URL.createObjectURL(
-              new Blob(
-                [
-                  `'use strict';
-                  (${workerCode.toString()})(
-                    this,
-                    ((_addEventListener) => (listener) => {
-                      _addEventListener('message', ({ data }) => {
-                        listener(data);
-                      });
-                    })(addEventListener),
-                    ((_postMessage) => (message) => {
-                      _postMessage(message);
-                    })(postMessage),
-                    ((_setTimeout) => (callback) => {
-                      _setTimeout(callback, 0);
-                    })(setTimeout),
-                  );`,
-                ],
-                {
-                  type: 'application/javascript',
-                },
-              ),
-            );
+          this.#addTunnel(bootResolve, bootReject);
 
-            this.#worker = new Worker(blobURL, {
-              name: this.#name,
-              type: 'classic',
-              credentials: 'omit',
-            });
-
-            this.#worker.addEventListener('message', (args: MessageEvent): void => {
-              this.#messageHandler(args);
-            });
-            this.#worker.addEventListener('error', (args: Event): void => {
-              this.#errorHandler(args);
-            });
-            this.#worker.addEventListener('messageerror', (args: MessageEvent): void => {
-              this.#messageErrorHandler(args);
-            });
-          } catch (e) {
-            URL.revokeObjectURL(blobURL);
-            throw e;
-          }
+          this.#worker = workerBuilder.build(workerCode.toString(), this.name).listen(
+            (data: string): void => {
+              this.#messageHandler(data);
+            },
+            (error: Error): void => {
+              this.#errorHandler(error);
+            },
+          );
         } catch (e) {
           this.#castEvent('start:error', e);
           reject(e instanceof Error ? e : new Error('unknown error'));
@@ -1288,11 +1228,11 @@ class NomadVM extends EventCaster {
    * Stop the {@link Worker} and reject all pending tunnels.
    *
    * @returns A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.#shutdown} for the actual shutdown process
+   * @see {@link NomadVM.#doStop} for the actual shutdown process
    */
   stop(): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#shutdown(resolve, reject);
+      this.#doStop(resolve, reject);
     });
   }
 
