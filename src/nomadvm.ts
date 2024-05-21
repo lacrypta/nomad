@@ -139,16 +139,16 @@ class NomadVM extends EventCaster {
   static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
 
   /**
-   * The number of milliseconds to wait between `ping` messages to the {@link Worker}.
+   * The default number of milliseconds to wait between `ping` messages to the {@link Worker}.
    *
    */
-  static #pingInterval: number = 100;
+  static #defaultPingInterval: number = 100;
 
   /**
-   * The number of milliseconds that must elapse between `pong` messages in order to consider a {@link Worker} "unresponsive".
+   * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link Worker} "unresponsive".
    *
    */
-  static #pongLimit: number = 1000;
+  static #defaultPongLimit: number = 1000;
 
   /**
    * Retrieve the VM registered under the given name.
@@ -1159,13 +1159,20 @@ class NomadVM extends EventCaster {
    * @param timeout - Milliseconds to wait for the {@link Worker} to complete its boot-up sequence.
    * @returns A {@link Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link Worker} respectively) if the {@link Worker} was successfully booted up, and rejects with an {@link Error} in case errors are found.
    */
-  start(workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(), timeout: number = 100): Promise<[number, number]> {
+  start(
+    workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(),
+    timeout: number = 100,
+    pingInterval: number = NomadVM.#defaultPingInterval,
+    pongLimit: number = NomadVM.#defaultPongLimit,
+  ): Promise<[number, number]> {
     return new Promise<[number, number]>(
       (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
         this.#castEvent('start');
         try {
           this.#assertCreated();
           timeout = validateTimeDelta(timeout);
+          pingInterval = validateTimeDelta(pingInterval);
+          pongLimit = validateNonNegativeInteger(pongLimit);
           this.#state = 'booting';
 
           const externalBootTime: number = Date.now();
@@ -1178,7 +1185,7 @@ class NomadVM extends EventCaster {
             this.#lastPong = Date.now();
             this.#pinger = setInterval(() => {
               const delta: number = Date.now() - this.#lastPong;
-              if (NomadVM.#pongLimit < delta) {
+              if (pongLimit < delta) {
                 this.#castEvent('worker:unresponsive', delta);
                 this.#doStop(
                   () => null,
@@ -1186,7 +1193,7 @@ class NomadVM extends EventCaster {
                 );
               }
               this.#postPingMessage();
-            }, NomadVM.#pingInterval);
+            }, pingInterval);
             this.#state = 'running';
             this.#castEvent('start:ok');
             resolve([internalBootTime, Date.now() - externalBootTime]);
