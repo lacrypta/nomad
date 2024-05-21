@@ -1016,9 +1016,7 @@ class NomadVM extends EventCaster {
    */
   #messageHandler(data: string): void {
     try {
-      const parsedData: { [_: string]: unknown } = JSON.parse(data) as {
-        [_: string]: unknown;
-      };
+      const parsedData: Record<string, unknown> = JSON.parse(data) as Record<string, unknown>;
       switch (parsedData.name) {
         case 'pong':
           this.#lastPong = Date.now();
