@@ -765,13 +765,13 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post a `listOrphanNamespaces` message to the {@link Worker}.
+   * Post a `listRootNamespaces` message to the {@link Worker}.
    *
-   * A `listOrphanNamespaces` message has the form:
+   * A `listRootNamespaces` message has the form:
    *
    * ```json
    * {
-   *   name: "listOrphanNamespaces",
+   *   name: "listRootNamespaces",
    *   tunnel: <int>
    * }
    * ```
@@ -783,8 +783,8 @@ class NomadVM extends EventCaster {
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postListOrphanNamespacesMessage(tunnel: number): void {
-    this.#worker?.shout({ name: 'listOrphanNamespaces', tunnel });
+  #postListRootNamespacesMessage(tunnel: number): void {
+    this.#worker?.shout({ name: 'listRootNamespaces', tunnel });
   }
 
   /**
@@ -1257,7 +1257,7 @@ class NomadVM extends EventCaster {
    *
    * 1. Emitting the "shutdown" event on the {@link Worker}.
    * 2. Waiting for the given timeout milliseconds.
-   * 3. Removing all orphaned namespaces.
+   * 3. Removing all root namespaces.
    * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
    *
    * @param timeout - Milliseconds to wait for the {@link Worker} to shut down.
@@ -1267,17 +1267,15 @@ class NomadVM extends EventCaster {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       timeout = validateTimeDelta(timeout);
 
-      this.listOrphanNamespaces().then(
-        (orphanedNamespaces: string[]) => {
-          orphanedNamespaces.forEach((orphanedNamespace: string): void => {
-            this.emit(orphanedNamespace, 'shutdown');
+      this.listRootNamespaces().then(
+        (rootNamespaces: string[]) => {
+          rootNamespaces.forEach((rootNamespace: string): void => {
+            this.emit(rootNamespace, 'shutdown');
           });
 
           setTimeout((): void => {
             Promise.all(
-              orphanedNamespaces.map(
-                (orphanedNamespace: string): Promise<string[]> => this.deleteNamespace(orphanedNamespace),
-              ),
+              rootNamespaces.map((rootNamespace: string): Promise<string[]> => this.deleteNamespace(rootNamespace)),
             ).then(
               (): void => {
                 this.stop().then(
@@ -1565,17 +1563,17 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the orphaned namespaces created.
+   * List the root namespaces created.
    *
-   * @returns A {@link Promise} that resolves with a list of orphan namespaces created if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of root namespaces created if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listOrphanNamespaces(): Promise<string[]> {
+  listRootNamespaces(): Promise<string[]> {
     return new Promise<string[]>(
-      (resolve: (orphanNamespaces: string[]) => void, reject: (error: Error) => void): void => {
+      (resolve: (rootNamespaces: string[]) => void, reject: (error: Error) => void): void => {
         try {
           this.#assertRunning();
 
-          this.#postListOrphanNamespacesMessage(this.#addTunnel(resolve, reject));
+          this.#postListRootNamespacesMessage(this.#addTunnel(resolve, reject));
         } catch (e) {
           reject(e instanceof Error ? e : new Error('unknown error'));
         }

@@ -1314,7 +1314,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} namespace - The namespace to assimilate to its parent.
    * @returns {void}
-   * @throws {Error} If the given namespace is orphaned.
+   * @throws {Error} If the given namespace is a root namespace.
    */
   const assimilateNamespace = (namespace) => {
     const { tunnels, listeners, dependencies, port } = getNamespace(namespace);
@@ -1442,11 +1442,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Retrieve a list of orphan namespaces.
+   * Retrieve a list of root namespaces.
    *
-   * @returns {Array<string>} A list of orphan namespaces.
+   * @returns {Array<string>} A list of root namespaces.
    */
-  const listOrphanNamespaces = () => {
+  const listRootNamespaces = () => {
     return [...namespaces.keys()].filter((namespace) => -1 === namespace.indexOf('.')).sort();
   };
 
@@ -2819,11 +2819,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             }
           }
           break;
-        case 'listOrphanNamespaces':
+        case 'listRootNamespaces':
           {
             const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listOrphanNamespaces());
+              postResolveMessage(tunnel, listRootNamespaces());
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }

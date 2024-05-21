@@ -4,7 +4,6 @@
 
 // TODO: Change "namespace" to "enclosure" or something along those lines
 // TODO: Change "descendant" to "sub" or something along those lines
-// TODO: Change "orphaned" to "root" or something along those lines
 
 // TODO: For worker.js, only use eslint JS rules, avoid eslint ts rules (otoh: pay attention to them as well, no matter how whiny they are)
 
