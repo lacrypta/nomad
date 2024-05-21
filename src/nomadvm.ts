@@ -6,7 +6,7 @@ import type { WorkerInstance, WorkerBuilder } from './worker';
 
 import {
   namespace as validateNamespace,
-  timeout as validateTimeout,
+  timeDelta as validateTimeDelta,
   nonNegativeInteger as validateNonNegativeInteger,
   identifier as validateIdentifier,
   argumentsMap as validateArgumentsMap,
@@ -1165,7 +1165,7 @@ class NomadVM extends EventCaster {
         this.#castEvent('start');
         try {
           this.#assertCreated();
-          timeout = validateTimeout(timeout);
+          timeout = validateTimeDelta(timeout);
           this.#state = 'booting';
 
           const externalBootTime: number = Date.now();

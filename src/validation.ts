@@ -282,24 +282,24 @@ const nonNegativeInteger = (datum: number): number => {
 };
 
 /**
- * The maximum boot timeout value to allow.
+ * The time delta value to allow.
  *
  */
-const timeoutLimit: number = 1 << 30;
+const timeDeltaLimit: number = 1 << 30;
 
 /**
- * Validate the given boot timeout value.
+ * Validate the given time delta value.
  *
- * @param timeout - The boot timeout value to validate.
- * @returns The validated boot timeout value.
- * @throws {Error} If the given timeout value is larger than the maximum boot timeout value allowed.
+ * @param delta - The time delta value to validate.
+ * @returns The validated time delta value.
+ * @throws {Error} If the given time delta value is larger than the maximum time delta value allowed.
  * @see {@link nonNegativeInteger} for additional exceptions thrown.
  */
-const timeout = (timeout: number): number => {
-  if (timeoutLimit < nonNegativeInteger(timeout)) {
-    throw new Error(`expected timeout to be at most ${timeoutLimit.toString()}`);
+const timeDelta = (delta: number): number => {
+  if (timeDeltaLimit < nonNegativeInteger(delta)) {
+    throw new Error(`expected time delta to be at most ${timeDeltaLimit.toString()}`);
   }
-  return timeout;
+  return delta;
 };
 
 /**
@@ -338,7 +338,7 @@ export {
   functionCode,
   dependencyMap,
   dependencyObject,
-  timeout,
+  timeDelta,
   argumentsMap,
   namespace,
   nonNegativeInteger,
