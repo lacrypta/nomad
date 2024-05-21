@@ -76,7 +76,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const ARGUMENTS_LIMIT = 1024;
 
   /**
-   * Default namespace name to use for initial namespace.
+   * Default enclosure name to use for initial enclosure.
    *
    * @type {string}
    */
@@ -1119,7 +1119,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * ```json
    * {
    *   name: "call",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   idx: <int>,
    *   args: <unknown[]>,
@@ -1128,21 +1128,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace that is awaiting the call's result (for reporting on the VM's side).
+   * - `enclosure` is the WW-side enclosure that is awaiting the call's result (for reporting on the VM's side).
    * - `tunnel` is the WW-side tunnel index awaiting the call's result.
    * - `idx` is the function index being called.
    * - `args` is an array of optional call arguments.
    *
-   * @param {string} namespace - The namespace to use.
+   * @param {string} enclosure - The enclosure to use.
    * @param {number} tunnel - The tunnel index where the call result is expected.
    * @param {number} idx - The function index to call in the {@link NomadVM}.
    * @param {Array<unknown>} args - The arguments to forward to the function call itself.
    * @returns {void}
    */
-  const postCallMessage = (namespace, tunnel, idx, args) => {
+  const postCallMessage = (enclosure, tunnel, idx, args) => {
     postJsonMessage({
       name: 'call',
-      namespace,
+      enclosure,
       tunnel,
       idx,
       args,
@@ -1150,64 +1150,64 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   // ----------------------------------------------------------------------------------------------
-  // -- Namespace Framework -----------------------------------------------------------------------
+  // -- Enclosure Framework -----------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * The type of a Namespace object.
+   * The type of an Enclosure object.
    *
-   * @typedef NamespaceObject
+   * @typedef EnclosureObject
    * @type {object}
    * @internal
-   * @property {Set<number>} tunnels - Set of tunnels associated to this namespace.
-   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this namespace, mapping listener proper to a set of filter {@link RegExp}s.
-   * @property {Set<string>} linked - Set of linked namespaces to forward events to.
-   * @property {boolean} muted - Whether this namespace is inhibited from emitting events on the host.
+   * @property {Set<number>} tunnels - Set of tunnels associated to this enclosure.
+   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this enclosure, mapping listener proper to a set of filter {@link RegExp}s.
+   * @property {Set<string>} linked - Set of linked enclosures to forward events to.
+   * @property {boolean} muted - Whether this enclosure is inhibited from emitting events on the host.
    * @property {object} dependencies - The installed dependencies object.
-   * @property {number} port - The port number where to find this namespace's back-reference.
+   * @property {number} port - The port number where to find this enclosure's back-reference.
    */
 
   /**
-   * Mapping from namespace name to {@link NamespaceObject}.
+   * Mapping from enclosure name to {@link EnclosureObject}.
    *
-   * @type {Map<string, NamespaceObject>}
+   * @type {Map<string, EnclosureObject>}
    */
-  const namespaces = new _Map();
+  const enclosures = new _Map();
 
   /**
-   * Back-references from "port number" to namespace name.
+   * Back-references from "port number" to enclosure name.
    *
-   * This device is in place so as to allow for transparent assimilation of namespaces.
+   * This device is in place so as to allow for transparent assimilation of enclosures.
    *
    * @type {Array<string>}
    */
-  const namespacePorts = [];
+  const enclosurePorts = [];
 
   /**
-   * A list of inter-process tunnels being used, alongside with namespace port number.
+   * A list of inter-process tunnels being used, alongside with enclosure port number.
    *
    * @type {Array<{ resolve: Function, reject: Function, port: number }>}
    */
   const tunnels = [];
 
   /**
-   * Retrieve the "base" of the namespace (ie. all but the last segment).
+   * Retrieve the "base" of the enclosure (ie. all but the last segment).
    *
-   * @param {string} namespace - Namespace to retrieve the base of.
-   * @returns {string} The given namespace's base.
+   * @param {string} enclosure - Enclosure to retrieve the base of.
+   * @returns {string} The given enclosure's base.
    */
-  const getNamespaceBase = (namespace) => {
-    return namespace.split('.').slice(0, -1).join('.');
+  const getEnclosureBase = (enclosure) => {
+    return enclosure.split('.').slice(0, -1).join('.');
   };
 
   /**
-   * Retrieve a list of prefix namespaces of the given one.
+   * Retrieve a list of prefix enclosures of the given one.
    *
-   * @param {string} namespace - Namespace to retrieve the prefixes list of.
-   * @returns {string[]} An array of namespace names.
+   * @param {string} enclosure - Enclosure to retrieve the prefixes list of.
+   * @returns {string[]} An array of enclosure names.
    */
-  const namespacePrefixes = (namespace) => {
-    return getNamespaceBase(namespace)
+  const enclosurePrefixes = (enclosure) => {
+    return getEnclosureBase(enclosure)
       .split('.')
       .reduce(
         ([all, prev], part) => [
@@ -1219,83 +1219,83 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Add the given namespace.
+   * Add the given enclosure.
    *
-   * @param {string} namespace - Namespace to create.
+   * @param {string} enclosure - Enclosure to create.
    * @returns {void}
-   * @throws {Error} If the given namespace already exists.
-   * @throws {Error} If the given namespace's parent does not exist.
+   * @throws {Error} If the given enclosure already exists.
+   * @throws {Error} If the given enclosure's parent does not exist.
    */
-  const addNamespace = (namespace) => {
-    const parent = getNamespaceBase(namespace) || null;
+  const addEnclosure = (enclosure) => {
+    const parent = getEnclosureBase(enclosure) || null;
 
-    if (namespaces.has(namespace)) {
-      throw new _Error(`duplicate namespace name ${namespace}`);
-    } else if (parent !== null && !namespaces.has(parent)) {
-      throw new _Error(`parent namespace ${parent} does not exist`);
+    if (enclosures.has(enclosure)) {
+      throw new _Error(`duplicate enclosure name ${enclosure}`);
+    } else if (parent !== null && !enclosures.has(parent)) {
+      throw new _Error(`parent enclosure ${parent} does not exist`);
     }
 
-    namespaces.set(namespace, {
+    enclosures.set(enclosure, {
       tunnels: new _Set(),
       listeners: new _Map(),
       linked: new _Set(),
       muted: false,
-      dependencies: _Object.create(null === parent ? null : getNamespace(parent).dependencies),
-      port: namespacePorts.push(namespace) - 1,
+      dependencies: _Object.create(null === parent ? null : getEnclosure(parent).dependencies),
+      port: enclosurePorts.push(enclosure) - 1,
     });
   };
 
   /**
-   * Retrieve the namespace given.
+   * Retrieve the enclosure given.
    *
-   * @param {string} namespace - Namespace to retrieve.
-   * @returns {NamespaceObject} Namespace object under the given name.
-   * @throws {Error} If the given namespace does not exist.
+   * @param {string} enclosure - Enclosure to retrieve.
+   * @returns {EnclosureObject} Enclosure object under the given name.
+   * @throws {Error} If the given enclosure does not exist.
    */
-  const getNamespace = (namespace) => {
-    if (!namespaces.has(namespace)) {
-      throw new _Error(`namespace ${namespace} does not exist`);
+  const getEnclosure = (enclosure) => {
+    if (!enclosures.has(enclosure)) {
+      throw new _Error(`enclosure ${enclosure} does not exist`);
     }
 
-    return namespaces.get(namespace);
+    return enclosures.get(enclosure);
   };
 
   /**
-   * Retrieve a list of _all_ sub namespaces of the given namespace (including transitive relationships).
+   * Retrieve a list of _all_ sub enclosures of the given enclosure (including transitive relationships).
    *
-   * @param {string} namespace - Namespace to retrieve the list of sub namespaces of.
+   * @param {string} enclosure - Enclosure to retrieve the list of sub enclosures of.
    * @param {number} depth - Maximum depth to retrieve results for, or `0` for unlimited results.
-   * @returns {Array<string>} An array with the namespace's sub namespaces.
+   * @returns {Array<string>} An array with the enclosure's sub enclosures.
    */
-  const namespaceSubNamespaces = (namespace, depth = 0) => {
-    const limit = 0 < depth ? depth + namespace.split('.').length : Infinity;
-    return [...namespaces.keys()].filter(
-      (candidate) => candidate.startsWith(`${namespace}.`) && candidate.split('.').length <= limit,
+  const enclosureSubEnclosures = (enclosure, depth = 0) => {
+    const limit = 0 < depth ? depth + enclosure.split('.').length : Infinity;
+    return [...enclosures.keys()].filter(
+      (candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit,
     );
   };
 
   /**
-   * Remove the given namespace and return a list of transitively-removed namespaces.
+   * Remove the given enclosure and return a list of transitively-removed enclosures.
    *
-   * Upon deleting a namespace, all of its sub namespaces will be delete along with it.
-   * Any tunnel in a so removed namespace will be rejected.
-   * Any port back-referencing a so removed namespace will be deleted.
+   * Upon deleting an enclosure, all of its sub enclosures will be delete along with it.
+   * Any tunnel in a so removed enclosure will be rejected.
+   * Any port back-referencing a so removed enclosure will be deleted.
    *
-   * @param {string} namespace - Namespace to remove.
-   * @returns {Array<string>} A list of namespaces that actually got removed (this includes the one given, and all of its sub namespaces).
+   * @param {string} enclosure - Enclosure to remove.
+   * @returns {Array<string>} A list of enclosures that actually got removed (this includes the one given, and all of its sub enclosures).
    */
-  const removeNamespace = (namespace) => {
+  const removeEnclosure = (enclosure) => {
     let toReject = [];
 
-    const removed = [namespace, ...namespaceSubNamespaces(namespace)].sort();
+    const removed = [enclosure, ...enclosureSubEnclosures(enclosure)].sort();
     removed.forEach((toRemove) => {
-      const { tunnels, port } = getNamespace(toRemove);
+      const { tunnels, port } = getEnclosure(toRemove);
       toReject = [...toReject, ...tunnels];
-      delete namespacePorts[port];
-      delete namespaces[toRemove];
+      delete enclosurePorts[port];
+      delete enclosures[toRemove];
     });
 
-    const error = new _Error('deleting namespace');
+    const error = new _Error('deleting enclosure');
     toReject.sort().forEach((tunnel) => {
       rejectTunnel(tunnel, error);
     });
@@ -1304,34 +1304,34 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Assimilate the given namespace into its parent.
+   * Assimilate the given enclosure into its parent.
    *
-   * Assimilation merges a namespace's dependencies with those of its parent, as does its tunnels and event listeners.
-   * The given namespace's parent adopts all of the given namespace's sub namespaces.
-   * Finally, the given namespace's port is redirected to its parent.
+   * Assimilation merges an enclosure's dependencies with those of its parent, as does its tunnels and event listeners.
+   * The given enclosure's parent adopts all of the given enclosure's sub enclosures.
+   * Finally, the given enclosure's port is redirected to its parent.
    *
    * NOTE: we can never get rid of assimilated ports because the wrapped event caster may have been cached dependency-side.
    *
-   * @param {string} namespace - The namespace to assimilate to its parent.
+   * @param {string} enclosure - The enclosure to assimilate to its parent.
    * @returns {void}
-   * @throws {Error} If the given namespace is a root namespace.
+   * @throws {Error} If the given enclosure is a root enclosure.
    */
-  const assimilateNamespace = (namespace) => {
-    const { tunnels, listeners, dependencies, port } = getNamespace(namespace);
+  const assimilateEnclosure = (enclosure) => {
+    const { tunnels, listeners, dependencies, port } = getEnclosure(enclosure);
 
-    const parent = getNamespaceBase(namespace) || null;
+    const parent = getEnclosureBase(enclosure) || null;
     if (null === parent) {
-      throw new _Error(`namespace ${namespace} has no parent`);
+      throw new _Error(`enclosure ${enclosure} has no parent`);
     }
 
-    const newSubNamespaces = new _Map(
-      namespaceSubNamespaces(namespace).map((subNamespace) => [
-        subNamespace,
-        `${parent}.${subNamespace.slice(namespace.length + 1)}`,
+    const newSubEnclosures = new _Map(
+      enclosureSubEnclosures(enclosure).map((subEnclosure) => [
+        subEnclosure,
+        `${parent}.${subEnclosure.slice(enclosure.length + 1)}`,
       ]),
     );
     {
-      const collisions = [...newSubNamespaces.values()].filter((newSubNamespace) => namespaces.has(newSubNamespace));
+      const collisions = [...newSubEnclosures.values()].filter((newSubEnclosure) => enclosures.has(newSubEnclosure));
       if (0 < collisions.length) {
         throw new Error(`collisions found on [${collisions.join(', ')}]`);
       }
@@ -1341,7 +1341,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       tunnels: parentTunnels,
       listeners: parentListeners,
       dependencies: parentDependencies,
-    } = getNamespace(parent);
+    } = getEnclosure(parent);
 
     [...tunnels].forEach((tunnel) => parentTunnels.add(tunnel));
 
@@ -1357,45 +1357,45 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       parentDependencies[name] = value;
     });
 
-    namespacePorts[port] = parent;
+    enclosurePorts[port] = parent;
 
-    [...newSubNamespaces.entries()].forEach(([subNamespace, newSubNamespace]) => {
-      listLinkedFrom(subNamespace).forEach((linkSource) => {
-        const { linked } = getNamespace(linkSource);
-        linked.delete(subNamespace);
-        linked.add(newSubNamespace);
+    [...newSubEnclosures.entries()].forEach(([subEnclosure, newSubEnclosure]) => {
+      listLinkedFrom(subEnclosure).forEach((linkSource) => {
+        const { linked } = getEnclosure(linkSource);
+        linked.delete(subEnclosure);
+        linked.add(newSubEnclosure);
       });
-      const subNamespaceNamespace = getNamespace(subNamespace);
-      if (-1 === newSubNamespace.slice(parent.length + 1).indexOf('.')) {
-        _Object.setPrototypeOf(subNamespaceNamespace.dependencies, parentDependencies);
+      const subEnclosureEnclosure = getEnclosure(subEnclosure);
+      if (-1 === newSubEnclosure.slice(parent.length + 1).indexOf('.')) {
+        _Object.setPrototypeOf(subEnclosureEnclosure.dependencies, parentDependencies);
       }
-      namespacePorts[subNamespaceNamespace.port] = newSubNamespace;
-      namespaces.set(newSubNamespace, subNamespaceNamespace);
-      namespaces.delete(subNamespace);
+      enclosurePorts[subEnclosureEnclosure.port] = newSubEnclosure;
+      enclosures.set(newSubEnclosure, subEnclosureEnclosure);
+      enclosures.delete(subEnclosure);
     });
 
-    namespaces.delete(namespace);
+    enclosures.delete(enclosure);
   };
 
   /**
-   * Link the given namespace with the given target namespace.
+   * Link the given enclosure with the given target enclosure.
    *
-   * Linking one namespace to another makes it so that events emitted on the former are also cast on the latter.
+   * Linking one enclosure to another makes it so that events emitted on the former are also cast on the latter.
    *
-   * A namespace may not be linked to either itself, any of its prefixes, any of its sub namespaces.
-   * Likewise, a namespace may not be linked to the same target twice.
+   * An enclosure may not be linked to either itself, any of its prefixes, any of its sub enclosures.
+   * Likewise, an enclosure may not be linked to the same target twice.
    * In any of these cases, this function does nothing but return `false`.
    *
-   * @param {string} namespace - Namespace to link "from".
-   * @param {string} target - Target namespace to link "to".
+   * @param {string} enclosure - Enclosure to link "from".
+   * @param {string} target - Target enclosure to link "to".
    * @returns {boolean} Whether a link was actually added.
    */
-  const linkNamespace = (namespace, target) => {
-    getNamespace(target); // just for validation
-    const { linked } = getNamespace(namespace);
+  const linkEnclosure = (enclosure, target) => {
+    getEnclosure(target); // just for validation
+    const { linked } = getEnclosure(enclosure);
 
     if (
-      [namespace, ...namespaceSubNamespaces(namespace), ...namespacePrefixes(namespace), ...linked].includes(target)
+      [enclosure, ...enclosureSubEnclosures(enclosure), ...enclosurePrefixes(enclosure), ...linked].includes(target)
     ) {
       return false;
     }
@@ -1404,66 +1404,66 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Unlink the given target from the given namespace.
+   * Unlink the given target from the given enclosure.
    *
-   * @param {string} namespace - Namespace to unlink "from".
-   * @param {string} target - Target namespace to unlink "to".
+   * @param {string} enclosure - Enclosure to unlink "from".
+   * @param {string} target - Target enclosure to unlink "to".
    * @returns {boolean} Whether a link was actually severed.
    */
-  const unlinkNamespace = (namespace, target) => {
-    getNamespace(target); // just for validation
-    return getNamespace(namespace).linked.delete(target);
+  const unlinkEnclosure = (enclosure, target) => {
+    getEnclosure(target); // just for validation
+    return getEnclosure(enclosure).linked.delete(target);
   };
 
   /**
-   * Mute the given namespace.
+   * Mute the given enclosure.
    *
-   * Muting a namespace prevents it from emitting events towards the host.
+   * Muting an enclosure prevents it from emitting events towards the host.
    *
-   * @param {string} namespace - Namespace to mute.
-   * @returns {boolean} The previous muting status of the given namespace.
+   * @param {string} enclosure - Enclosure to mute.
+   * @returns {boolean} The previous muting status of the given enclosure.
    */
-  const muteNamespace = (namespace) => {
-    const namespaceObject = getNamespace(namespace);
-    const result = namespaceObject.muted;
-    namespaceObject.muted = true;
+  const muteEnclosure = (enclosure) => {
+    const enclosureObject = getEnclosure(enclosure);
+    const result = enclosureObject.muted;
+    enclosureObject.muted = true;
     return result;
   };
 
   /**
-   * Unmute the given namespace.
+   * Unmute the given enclosure.
    *
-   * @param {string} namespace - Namespace to unmute.
-   * @returns {boolean} The previous muting status of the given namespace.
+   * @param {string} enclosure - Enclosure to unmute.
+   * @returns {boolean} The previous muting status of the given enclosure.
    */
-  const unmuteNamespace = (namespace) => {
-    const namespaceObject = getNamespace(namespace);
-    const result = namespaceObject.muted;
-    namespaceObject.muted = false;
+  const unmuteEnclosure = (enclosure) => {
+    const enclosureObject = getEnclosure(enclosure);
+    const result = enclosureObject.muted;
+    enclosureObject.muted = false;
     return result;
   };
 
   /**
-   * Retrieve a list of root namespaces.
+   * Retrieve a list of root enclosures.
    *
-   * @returns {Array<string>} A list of root namespaces.
+   * @returns {Array<string>} A list of root enclosures.
    */
-  const listRootNamespaces = () => {
-    return [...namespaces.keys()].filter((namespace) => -1 === namespace.indexOf('.')).sort();
+  const listRootEnclosures = () => {
+    return [...enclosures.keys()].filter((enclosure) => -1 === enclosure.indexOf('.')).sort();
   };
 
   /**
-   * Create a new tunnel with the given resolution and rejection callbacks for the given namespace, returning the index of the created tunnel.
+   * Create a new tunnel with the given resolution and rejection callbacks for the given enclosure, returning the index of the created tunnel.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {Function} resolve - The resolution callback.
    * @param {Function} reject - The rejection callback.
    * @returns {number} The created tunnel's index.
    */
-  const addTunnel = (namespace, resolve, reject) => {
-    const { tunnels: namespaceTunnels, port } = getNamespace(namespace);
+  const addTunnel = (enclosure, resolve, reject) => {
+    const { tunnels: enclosureTunnels, port } = getEnclosure(enclosure);
     const tunnel = tunnels.push({ resolve, reject, port }) - 1;
-    namespaceTunnels.add(tunnel);
+    enclosureTunnels.add(tunnel);
 
     return tunnel;
   };
@@ -1482,7 +1482,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     const { resolve, reject, port } = tunnels[tunnel];
 
-    getNamespace(namespacePorts[port]).tunnels.delete(tunnel);
+    getEnclosure(enclosurePorts[port]).tunnels.delete(tunnel);
 
     return { resolve, reject };
   };
@@ -1510,16 +1510,16 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Cast the given event with the given arguments and trigger any matching listeners in the given namespace.
+   * Cast the given event with the given arguments and trigger any matching listeners in the given enclosure.
    *
-   * @param {string} namespace - The namespace to cast the given event on.
+   * @param {string} enclosure - The enclosure to cast the given event on.
    * @param {string} event - The event name to cast.
    * @param {...unknown} args - Any additional arguments o associate to the cast event.
    * @returns {void}
    * @throws {Error} If the given event name is not a `string`.
    * @throws {Error} If the given event name fails regular expression validation.
    */
-  const cast = (namespace, event, ...args) => {
+  const cast = (enclosure, event, ...args) => {
     const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
 
     if ('string' !== typeof event) {
@@ -1528,11 +1528,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       throw new _Error(`event name must adhere to ${eventRegex.toString()}`);
     }
 
-    const { linked } = getNamespace(namespace);
+    const { linked } = getEnclosure(enclosure);
 
     const callbacks = new _Set();
-    [namespace, ...namespacePrefixes(namespace), ...namespaceSubNamespaces(namespace), ...linked].forEach((target) => {
-      for (const [callback, filters] of getNamespace(target).listeners.entries()) {
+    [enclosure, ...enclosurePrefixes(enclosure), ...enclosureSubEnclosures(enclosure), ...linked].forEach((target) => {
+      for (const [callback, filters] of getEnclosure(target).listeners.entries()) {
         if ([...filters.values()].some((filter) => filter.test(event))) {
           callbacks.add(callback);
         }
@@ -1543,53 +1543,53 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Cast the given user event with the given arguments in the given namespace and its linked namespaces; cast towards the host if not muted.
+   * Cast the given user event with the given arguments in the given enclosure and its linked enclosures; cast towards the host if not muted.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {string} event - Event name to cast.
    * @param {...unknown} args - Arguments to cast alongside the event.
    * @returns {void}
    */
-  const castUser = (namespace, event, ...args) => {
-    cast(namespace, event, ...args);
+  const castUser = (enclosure, event, ...args) => {
+    cast(enclosure, event, ...args);
 
-    if (!getNamespace(namespace).muted) {
-      postEmitMessage(`${namespace}:user:${event}`, args);
+    if (!getEnclosure(enclosure).muted) {
+      postEmitMessage(`${enclosure}:user:${event}`, args);
     }
   };
 
   /**
-   * Cast the given host event with the given arguments in the given namespace and its linked namespaces.
+   * Cast the given host event with the given arguments in the given enclosure and its linked enclosures.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {string} event - Event name to cast.
    * @param {...unknown} args - Arguments to cast alongside the event.
    * @returns {void}
    */
-  const castHost = (namespace, event, ...args) => {
-    cast(namespace, `${namespace}:user:${event}`, ...args);
+  const castHost = (enclosure, event, ...args) => {
+    cast(enclosure, `${enclosure}:user:${event}`, ...args);
   };
 
   /**
-   * Remove the given callback from the listeners set in the given namespace.
+   * Remove the given callback from the listeners set in the given enclosure.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {Function} callback - The callback to remove.
    * @returns {void}
    * @throws {Error} If the given callback is not a {@link Function} instance.
    */
-  const off = (namespace, callback) => {
+  const off = (enclosure, callback) => {
     if (!(callback instanceof _Function)) {
       throw new _Error('expected callback to be a function');
     }
 
-    getNamespace(namespace).listeners.delete(callback);
+    getEnclosure(enclosure).listeners.delete(callback);
   };
 
   /**
-   * Attach the given callback to the event caster, triggered on events matching the given filter on the given namespace.
+   * Attach the given callback to the event caster, triggered on events matching the given filter on the given enclosure.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {void}
@@ -1598,7 +1598,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @throws {Error} If the given event name filter fails regular expression validation.
    * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
    */
-  const on = (namespace, filter, callback) => {
+  const on = (enclosure, filter, callback) => {
     const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
 
     if (!(callback instanceof _Function)) {
@@ -1611,7 +1611,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       throw new _Error('event name filter must not contain consecutive ** wildcards');
     }
 
-    const { listeners } = getNamespace(namespace);
+    const { listeners } = getEnclosure(enclosure);
     if (!listeners.has(callback)) {
       listeners.set(callback, new _Set());
     }
@@ -1638,45 +1638,45 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Attach the given callback to the event caster, triggered on events matching the given filter on the given namespace, and removed upon being called once.
+   * Attach the given callback to the event caster, triggered on events matching the given filter on the given enclosure, and removed upon being called once.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {Function} callback - Callback to call on a matching event being cast.
    * @returns {void}
    */
-  const once = (namespace, filter, callback) => {
+  const once = (enclosure, filter, callback) => {
     const wrapped = (...args) => {
       callback.apply(undefined, args);
-      off(namespace, wrapped);
+      off(enclosure, wrapped);
     };
-    on(namespace, filter, wrapped);
+    on(enclosure, filter, wrapped);
   };
 
   /**
-   * Create a wrapped event caster for the given namespace (that will survive the namespace being assimilated).
+   * Create a wrapped event caster for the given enclosure (that will survive the enclosure being assimilated).
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @returns {{ on: Function, once: Function, off: Function, cast: Function }} The wrapped event caster created.
    */
-  const eventCaster = (namespace) => {
-    const { port } = getNamespace(namespace);
+  const eventCaster = (enclosure) => {
+    const { port } = getEnclosure(enclosure);
 
     const eventCaster = _Object.create(null);
     const __on = (filter, callback) => {
-      on(namespacePorts[port], filter, callback);
+      on(enclosurePorts[port], filter, callback);
       return eventCaster;
     };
     const __once = (filter, callback) => {
-      once(namespacePorts[port], filter, callback);
+      once(enclosurePorts[port], filter, callback);
       return eventCaster;
     };
     const __off = (callback) => {
-      off(namespacePorts[port], callback);
+      off(enclosurePorts[port], callback);
       return eventCaster;
     };
     const __cast = (event, ...args) => {
-      castUser(namespacePorts[port], event, ...args);
+      castUser(enclosurePorts[port], event, ...args);
       return eventCaster;
     };
     eventCaster.on = _Object.freeze((filter, callback) => __on(filter, callback));
@@ -1688,48 +1688,48 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Retrieve a list of installed dependencies on the given namespace.
+   * Retrieve a list of installed dependencies on the given enclosure.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @returns {Array<string>} A list of installed dependencies.
    */
-  const listInstalled = (namespace) => {
+  const listInstalled = (enclosure) => {
     const result = [];
-    for (const dep in getNamespace(namespace).dependencies) {
+    for (const dep in getEnclosure(enclosure).dependencies) {
       result.push(dep);
     }
     return result.sort();
   };
 
   /**
-   * Retrieve a list of namespaces the given one links to.
+   * Retrieve a list of enclosures the given one links to.
    *
-   * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} A list of namespaces linked to by the given one.
+   * @param {string} enclosure - Enclosure to use.
+   * @returns {Array<string>} A list of enclosures linked to by the given one.
    */
-  const listLinksTo = (namespace) => {
-    return [...getNamespace(namespace).linked].sort();
+  const listLinksTo = (enclosure) => {
+    return [...getEnclosure(enclosure).linked].sort();
   };
 
   /**
-   * Retrieve a list of namespaces that link to the given one.
+   * Retrieve a list of enclosures that link to the given one.
    *
-   * @param {string} namespace - Namespace to use.
-   * @returns {Array<string>} A list of namespaces linking to the given one.
+   * @param {string} enclosure - Enclosure to use.
+   * @returns {Array<string>} A list of enclosures linking to the given one.
    */
-  const listLinkedFrom = (namespace) => {
-    getNamespace(namespace);
-    return [...namespaces.entries()].filter(([, { linked }]) => linked.has(namespace)).map(([name]) => name);
+  const listLinkedFrom = (enclosure) => {
+    getEnclosure(enclosure);
+    return [...enclosures.entries()].filter(([, { linked }]) => linked.has(enclosure)).map(([name]) => name);
   };
 
   /**
-   * Determine whether the given namespace is muted or not.
+   * Determine whether the given enclosure is muted or not.
    *
-   * @param {string} namespace - Namespace to use.
-   * @returns {boolean} Whether the given namespace is muted or not.
+   * @param {string} enclosure - Enclosure to use.
+   * @returns {boolean} Whether the given enclosure is muted or not.
    */
-  const isMuted = (namespace) => {
-    return getNamespace(namespace).muted;
+  const isMuted = (enclosure) => {
+    return getEnclosure(enclosure).muted;
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1737,21 +1737,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Execute the given dependency in the given namespace passing in the given arguments map in a secure context and return its result.
+   * Execute the given dependency in the given enclosure passing in the given arguments map in a secure context and return its result.
    *
    * The dependency code will be executed with access to each dependency name mapped to the installed dependency's value.
    * Additionally, every value in the dependency map will be exposed as a variable.
    * Furthermore, the dependency is execute in the global context, in strict mode.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
    * @param {Map<string, unknown>} args - Arguments map to use.
    * @returns {unknown} The result of executing the given dependency.
    * @throws {Error} If there are any missing dependencies.
    * @throws {Error} If any argument would shadow an imported dependency.
    */
-  const executeDependency = (namespace, dependency, args) => {
-    const { dependencies } = getNamespace(namespace);
+  const executeDependency = (enclosure, dependency, args) => {
+    const { dependencies } = getEnclosure(enclosure);
     const importedNames = _Object.keys(dependency.dependencies);
     {
       if (IMPORT_LIMIT < importedNames.length) {
@@ -1785,48 +1785,48 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     `,
     ).call(
       undefined,
-      eventCaster(namespace),
+      eventCaster(enclosure),
       ...importedNames.map((importedName) => dependencies[dependency.dependencies[importedName]]),
       ...argumentNames.map((argumentName) => args.get(argumentName)),
     );
   };
 
   /**
-   * Install the given dependency in the given namespace by executing in a secure context and caching its result.
+   * Install the given dependency in the given enclosure by executing in a secure context and caching its result.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
    * @returns {void}
    * @throws {Error} If there are any missing dependencies.
    * @see {@link NomadVM.executeDependency} for further execution context details.
    */
-  const installDependency = (namespace, dependency) => {
-    const { dependencies } = getNamespace(namespace);
+  const installDependency = (enclosure, dependency) => {
+    const { dependencies } = getEnclosure(enclosure);
     if (dependency.name in dependencies) {
       throw new _Error(`duplicate dependency ${dependency.name.toString()}`);
     }
-    const result = executeDependency(namespace, dependency, new _Map());
+    const result = executeDependency(enclosure, dependency, new _Map());
     dependencies[dependency.name] = 'object' === typeof result ? _Object.freeze(result) : result;
   };
 
   /**
-   * Declare the given function index as a predefined function under the given name in the given namespace.
+   * Declare the given function index as a predefined function under the given name in the given enclosure.
    *
-   * @param {string} namespace - Namespace to use.
+   * @param {string} enclosure - Enclosure to use.
    * @param {number} idx - Function index to use for execution.
    * @param {string} name - Function name to use for registration.
    * @returns {void}
    * @throws {Error} If the given name is already in use.
    */
-  const addPredefined = (namespace, idx, name) => {
-    const { dependencies, port } = getNamespace(namespace);
+  const addPredefined = (enclosure, idx, name) => {
+    const { dependencies, port } = getEnclosure(enclosure);
     if (name in dependencies) {
       throw new _Error(`duplicate dependency ${name}`);
     }
     const __predefined = _Object.freeze(
       (...args) =>
         new _Promise((resolve, reject) => {
-          postCallMessage(namespacePorts[port], addTunnel(namespace, resolve, reject), idx, args);
+          postCallMessage(enclosurePorts[port], addTunnel(enclosure, resolve, reject), idx, args);
         }),
     );
     dependencies[name] = (...args) => __predefined(...args);
@@ -2683,10 +2683,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     deepFreezeThis();
 
     // --------------------------------------------------------------------------------------------
-    // -- Create Default Namespace ----------------------------------------------------------------
+    // -- Create Default Enclosure ----------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    addNamespace(DEFAULT_NAMESPACE_NAME);
+    addEnclosure(DEFAULT_NAMESPACE_NAME);
 
     // --------------------------------------------------------------------------------------------
     // -- Worker Event Listeners ------------------------------------------------------------------
@@ -2713,15 +2713,15 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'emit':
           {
-            const { namespace, event, args } = parsedData;
-            castHost(namespace, event, args);
+            const { enclosure, event, args } = parsedData;
+            castHost(enclosure, event, args);
           }
           break;
         case 'install':
           {
-            const { namespace, tunnel, dependency } = parsedData;
+            const { enclosure, tunnel, dependency } = parsedData;
             try {
-              installDependency(namespace, dependency);
+              installDependency(enclosure, dependency);
               postResolveMessage(tunnel, undefined);
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
@@ -2730,9 +2730,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'execute':
           {
-            const { namespace, tunnel, dependency, args } = parsedData;
+            const { enclosure, tunnel, dependency, args } = parsedData;
             try {
-              postResolveMessage(tunnel, executeDependency(namespace, dependency, new _Map(_Object.entries(args))));
+              postResolveMessage(tunnel, executeDependency(enclosure, dependency, new _Map(_Object.entries(args))));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2740,9 +2740,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'predefine':
           {
-            const { namespace, tunnel, idx, function: fName } = parsedData;
+            const { enclosure, tunnel, idx, function: fName } = parsedData;
             try {
-              addPredefined(namespace, idx, fName);
+              addPredefined(enclosure, idx, fName);
               postResolveMessage(tunnel, undefined);
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
@@ -2751,9 +2751,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'create':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              addNamespace(namespace);
+              addEnclosure(enclosure);
               postResolveMessage(tunnel, undefined);
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
@@ -2762,9 +2762,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'delete':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, removeNamespace(namespace));
+              postResolveMessage(tunnel, removeEnclosure(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2772,9 +2772,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'assimilate':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              assimilateNamespace(namespace);
+              assimilateEnclosure(enclosure);
               postResolveMessage(tunnel, undefined);
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
@@ -2783,9 +2783,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'link':
           {
-            const { namespace, tunnel, target } = parsedData;
+            const { enclosure, tunnel, target } = parsedData;
             try {
-              postResolveMessage(tunnel, linkNamespace(namespace, target));
+              postResolveMessage(tunnel, linkEnclosure(enclosure, target));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2793,9 +2793,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'unlink':
           {
-            const { namespace, tunnel, target } = parsedData;
+            const { enclosure, tunnel, target } = parsedData;
             try {
-              postResolveMessage(tunnel, unlinkNamespace(namespace, target));
+              postResolveMessage(tunnel, unlinkEnclosure(enclosure, target));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2803,9 +2803,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'mute':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, muteNamespace(namespace));
+              postResolveMessage(tunnel, muteEnclosure(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2813,19 +2813,19 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'unmute':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, unmuteNamespace(namespace));
+              postResolveMessage(tunnel, unmuteEnclosure(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
-        case 'listRootNamespaces':
+        case 'listRootEnclosures':
           {
             const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listRootNamespaces());
+              postResolveMessage(tunnel, listRootEnclosures());
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2833,9 +2833,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'listInstalled':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listInstalled(namespace));
+              postResolveMessage(tunnel, listInstalled(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2843,9 +2843,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'listLinksTo':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listLinksTo(namespace));
+              postResolveMessage(tunnel, listLinksTo(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2853,9 +2853,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'listLinkedFrom':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, listLinkedFrom(namespace));
+              postResolveMessage(tunnel, listLinkedFrom(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -2863,19 +2863,19 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'isMuted':
           {
-            const { namespace, tunnel } = parsedData;
+            const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, isMuted(namespace));
+              postResolveMessage(tunnel, isMuted(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
-        case 'getSubNamespaces':
+        case 'getSubEnclosures':
           {
-            const { namespace, tunnel, depth } = parsedData;
+            const { enclosure, tunnel, depth } = parsedData;
             try {
-              postResolveMessage(tunnel, namespaceSubNamespaces(namespace, depth));
+              postResolveMessage(tunnel, enclosureSubEnclosures(enclosure, depth));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }

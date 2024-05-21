@@ -317,16 +317,16 @@ const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
 };
 
 /**
- * Validate the given argument is a namespace identifier and return it if valid.
+ * Validate the given argument is a enclosure identifier and return it if valid.
  *
- * A namespace identifier is a sequence of identifiers (as per {@link identifier}) separated by periods (`"."`).
+ * A enclosure identifier is a sequence of identifiers (as per {@link identifier}) separated by periods (`"."`).
  *
  * @param ns - The argument to validate.
- * @returns The validated namespace identifier.
- * @throws {Error} If the given argument is not a valid namespace identifier.
+ * @returns The validated enclosure identifier.
+ * @throws {Error} If the given argument is not a valid enclosure identifier.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const namespace = (ns: string): string => {
+const enclosure = (ns: string): string => {
   return ns
     .split('.')
     .map((part: string): string => identifier(part))
@@ -340,6 +340,6 @@ export {
   dependencyObject,
   timeDelta,
   argumentsMap,
-  namespace,
+  enclosure,
   nonNegativeInteger,
 };

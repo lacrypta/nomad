@@ -81,7 +81,7 @@
         .then((result) => console.log(`>>> ${result}`));
       await vm.listInstalled('root').then((result) => console.log(`>>> INSTALLED: ${result}`));
 
-      await vm.listRootNamespaces().then((result) => console.log(`>>> NAMESPACES: ${result}`));
+      await vm.listRootEnclosures().then((result) => console.log(`>>> ENCLOSURES: ${result}`));
 
       console.dir(vm);
     </script>

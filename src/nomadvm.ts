@@ -5,7 +5,7 @@ import type { Cast, EventCallback, ProtectedMethods } from './eventCaster';
 import type { WorkerInstance, WorkerBuilder } from './worker';
 
 import {
-  namespace as validateNamespace,
+  enclosure as validateEnclosure,
   timeDelta as validateTimeDelta,
   nonNegativeInteger as validateNonNegativeInteger,
   identifier as validateIdentifier,
@@ -56,44 +56,44 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link Worker} encounters a non-fatal, yet reportable, error `error`.
    * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link Worker} encounters a fatal error `error`.
    * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link Worker} fails to respond to ping / pong messages for `delta` milliseconds.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
-   * - `nomadvm:{NAME}:{NAMESPACE}:create(vm)`: when a new namespace is being created on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:create:ok(vm)`: when a new namespace has been successfully created on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:create:error(vm, error)`: when a new namespace has failed to be created on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:delete(vm)`: when a namespace is being deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:delete:ok(vm, deleted)`: when namespaces `deleted` have been successfully deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:delete:error(vm, error)`: when a namespace has failed to be deleted from VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate(vm, namespace)`: when a namespace `namespace` is being assimilated to its parent from VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate:ok(vm, namespace)`: when namespace `namespace` has been successfully assimilated to its parent on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:assimilate:error(vm, namespace, error)`: when a namespace `namespace` has failed to be assimilated to its parent in VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:link(vm, target)`: when a namespace is being linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:link:ok(vm, target)`: when a namespace has been successfully linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:link:error(vm, target, error)`: when a namespace has failed to be linked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unlink(vm, target)`: when a namespace is being unlinked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unlink:ok(vm, target, unlinked)`: when a namespace has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target namespace was previously linked.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unlink:error(vm, target, error)`: when a namespace has failed to be unlinked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:mute(vm)`: when a namespace is being muted on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:mute:ok(vm, previous)`: when a namespace has been successfully muted on VM `vm`, where the previous muting status was `previous`..
-   * - `nomadvm:{NAME}:{NAMESPACE}:mute:error(vm, error)`: when a namespace has failed to be muted on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unmute(vm)`: when a namespace is being unmuted on VM `vm`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unmute:ok(vm, previous)`: when a namespace has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:unmute:error(vm, error)`: when a namespace has failed to be unmuted on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
-   * - `nomadvm:{NAME}:{NAMESPACE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
-   * - `nomadvm:{NAME}:{NAMESPACE}:user:{eventname}(vm, ...args)`: when the {@link Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
+   * - `nomadvm:{NAME}:{ENCLOSURE}:create(vm)`: when a new enclosure is being created on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:create:ok(vm)`: when a new enclosure has been successfully created on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when a enclosure has failed to be deleted from VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate(vm, enclosure)`: when a enclosure `enclosure` is being assimilated to its parent from VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully assimilated to its parent on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:error(vm, enclosure, error)`: when a enclosure `enclosure` has failed to be assimilated to its parent in VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when a enclosure is being linked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when a enclosure has been successfully linked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when a enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when a enclosure is being unlinked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when a enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when a enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when a enclosure is being muted on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when a enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when a enclosure has failed to be muted on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when a enclosure is being unmuted on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when a enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when a enclosure has failed to be unmuted on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
    *
    * Internally, the {@link Worker} will cast the following events when instructed to by the VM:
    *
-   * - `nomadvm:{NAME}:{NAMESPACE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link Worker} with name `EVENT` and arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link Worker} with name `EVENT` and arguments `args`.
    *
    */
   static #events: Readonly<EventCaster>;
@@ -387,7 +387,7 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace that is awaiting a response.
+   * - `enclosure` is the WW-side enclosure that is awaiting a response.
    * - `tunnel` is the WW-side tunnel index awaiting a response.
    * - `payload` is any resolution result being returned.
    *
@@ -414,7 +414,7 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace that is awaiting a response.
+   * - `enclosure` is the WW-side enclosure that is awaiting a response.
    * - `tunnel` is the WW-side tunnel index awaiting a response.
    * - `error` is the rejection's error string.
    *
@@ -434,7 +434,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "emit",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   event: <string>,
    *   args: <unknown[]>
    * }
@@ -442,19 +442,19 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace the event is being emitted into.
+   * - `enclosure` is the WW-side enclosure the event is being emitted into.
    * - `event` is the event name being emitted on the WW.
    * - `args` is an array of optional event arguments.
    *
-   * @param namespace - The namespace to use.
+   * @param enclosure - The enclosure to use.
    * @param event - The event name to emit.
    * @param args - The arguments to associate to the given event.
    * @returns
    */
-  #postEmitMessage(namespace: string, event: string, args: unknown[]): void {
+  #postEmitMessage(enclosure: string, event: string, args: unknown[]): void {
     this.#worker?.shout({
       name: 'emit',
-      namespace,
+      enclosure,
       event: event,
       args,
     });
@@ -468,7 +468,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "install",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   dependency: <DependencyObject>
    * }
@@ -476,17 +476,17 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to install the dependency into.
+   * - `enclosure` is the WW-side enclosure to install the dependency into.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `dependency` is the {@link DependencyObject} describing the dependency to install.
    *
-   * @param namespace - The namespace to use.
+   * @param enclosure - The enclosure to use.
    * @param tunnel - The tunnel index to expect a response on.
    * @param dependency - The dependency being installed.
    * @returns
    */
-  #postInstallMessage(namespace: string, tunnel: number, dependency: DependencyObject): void {
-    this.#worker?.shout({ name: 'install', namespace, tunnel, dependency });
+  #postInstallMessage(enclosure: string, tunnel: number, dependency: DependencyObject): void {
+    this.#worker?.shout({ name: 'install', enclosure, tunnel, dependency });
   }
 
   /**
@@ -497,7 +497,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "execute",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   dependency: <DependencyObject>,
    *   args: {
@@ -508,26 +508,26 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to install the dependency into.
+   * - `enclosure` is the WW-side enclosure to install the dependency into.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `dependency` is the {@link DependencyObject} describing the dependency to install.
    * - `args` is an array of optional execution arguments.
    *
-   * @param namespace - The namespace to use.
+   * @param enclosure - The enclosure to use.
    * @param tunnel - The tunnel index to expect a response on.
    * @param dependency - The dependency being executed.
    * @param args - The arguments to execute the dependency with.
    * @returns
    */
   #postExecuteMessage(
-    namespace: string,
+    enclosure: string,
     tunnel: number,
     dependency: DependencyObject,
     args: Map<string, unknown>,
   ): void {
     this.#worker?.shout({
       name: 'execute',
-      namespace,
+      enclosure,
       tunnel,
       dependency,
       args: Object.fromEntries(args.entries()),
@@ -542,7 +542,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "predefine",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   idx: <int>,
    *   function: <string>
@@ -551,21 +551,21 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to predefine the function into.
+   * - `enclosure` is the WW-side enclosure to predefine the function into.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    * - `idx` is the function index being predefined.
    * - `function` is the predefined function name to use.
    *
-   * @param namespace - The namespace to use.
+   * @param enclosure - The enclosure to use.
    * @param tunnel - The tunnel index to expect a response on.
    * @param idx - The predefined function index to use.
    * @param funcName - The function name to use.
    * @returns
    */
-  #postPredefineMessage(namespace: string, tunnel: number, idx: number, funcName: string): void {
+  #postPredefineMessage(enclosure: string, tunnel: number, idx: number, funcName: string): void {
     this.#worker?.shout({
       name: 'predefine',
-      namespace,
+      enclosure,
       tunnel,
       idx,
       function: funcName,
@@ -580,24 +580,24 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "create",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to create.
+   * - `enclosure` is the WW-side enclosure to create.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to create.
+   * @param enclosure - The enclosure to create.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postCreateMessage(namespace: string, tunnel: number): void {
+  #postCreateMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({
       name: 'create',
-      namespace,
+      enclosure,
       tunnel,
     });
   }
@@ -611,21 +611,21 @@ class NomadVM extends EventCaster {
    * {
    *   name: "delete",
    *   tunnel: <int>,
-   *   namespace: <string>,
+   *   enclosure: <string>,
    * }
    * ```
    *
    * Where:
    *
    * - `tunnel` is the VM-side tunnel index awaiting a response.
-   * - `namespace` is the WW-side namespace to delete.
+   * - `enclosure` is the WW-side enclosure to delete.
    *
    * @param tunnel - The tunnel index to expect a response on.
-   * @param namespace - The namespace to delete.
+   * @param enclosure - The enclosure to delete.
    * @returns
    */
-  #postDeleteMessage(tunnel: number, namespace: string): void {
-    this.#worker?.shout({ name: 'delete', tunnel, namespace });
+  #postDeleteMessage(tunnel: number, enclosure: string): void {
+    this.#worker?.shout({ name: 'delete', tunnel, enclosure });
   }
 
   /**
@@ -636,22 +636,22 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "assimilate",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to assimilate.
+   * - `enclosure` is the WW-side enclosure to assimilate.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to assimilate.
+   * @param enclosure - The enclosure to assimilate.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postAssimilateMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'assimilate', namespace, tunnel });
+  #postAssimilateMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'assimilate', enclosure, tunnel });
   }
 
   /**
@@ -662,7 +662,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "link",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   target: <string>
    * }
@@ -670,17 +670,17 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to use as link source.
+   * - `enclosure` is the WW-side enclosure to use as link source.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
-   * - `target` is the WW-side namespace to use as link target.
+   * - `target` is the WW-side enclosure to use as link target.
    *
-   * @param namespace - The namespace to use as link source.
+   * @param enclosure - The enclosure to use as link source.
    * @param tunnel - The tunnel index to expect a response on.
-   * @param target - The namespace to use as link target.
+   * @param target - The enclosure to use as link target.
    * @returns
    */
-  #postLinkMessage(namespace: string, tunnel: number, target: string): void {
-    this.#worker?.shout({ name: 'link', namespace, tunnel, target });
+  #postLinkMessage(enclosure: string, tunnel: number, target: string): void {
+    this.#worker?.shout({ name: 'link', enclosure, tunnel, target });
   }
 
   /**
@@ -691,7 +691,7 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "unlink",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>,
    *   target: <int>
    * }
@@ -699,17 +699,17 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to use as unlink source.
+   * - `enclosure` is the WW-side enclosure to use as unlink source.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
-   * - `target` is the WW-side namespace to use as unlink target.
+   * - `target` is the WW-side enclosure to use as unlink target.
    *
-   * @param namespace - The namespace to use as unlink source.
+   * @param enclosure - The enclosure to use as unlink source.
    * @param tunnel - The tunnel index to expect a response on.
-   * @param target - The namespace to use as unlink target.
+   * @param target - The enclosure to use as unlink target.
    * @returns
    */
-  #postUnlinkMessage(namespace: string, tunnel: number, target: string): void {
-    this.#worker?.shout({ name: 'unlink', namespace, tunnel, target });
+  #postUnlinkMessage(enclosure: string, tunnel: number, target: string): void {
+    this.#worker?.shout({ name: 'unlink', enclosure, tunnel, target });
   }
 
   /**
@@ -720,22 +720,22 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "mute",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to mute.
+   * - `enclosure` is the WW-side enclosure to mute.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to mute.
+   * @param enclosure - The enclosure to mute.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postMuteMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'mute', namespace, tunnel });
+  #postMuteMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'mute', enclosure, tunnel });
   }
 
   /**
@@ -746,32 +746,32 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "unmute",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to unmute.
+   * - `enclosure` is the WW-side enclosure to unmute.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to unmute.
+   * @param enclosure - The enclosure to unmute.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postUnmuteMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'unmute', namespace, tunnel });
+  #postUnmuteMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'unmute', enclosure, tunnel });
   }
 
   /**
-   * Post a `listRootNamespaces` message to the {@link Worker}.
+   * Post a `listRootEnclosures` message to the {@link Worker}.
    *
-   * A `listRootNamespaces` message has the form:
+   * A `listRootEnclosures` message has the form:
    *
    * ```json
    * {
-   *   name: "listRootNamespaces",
+   *   name: "listRootEnclosures",
    *   tunnel: <int>
    * }
    * ```
@@ -783,8 +783,8 @@ class NomadVM extends EventCaster {
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postListRootNamespacesMessage(tunnel: number): void {
-    this.#worker?.shout({ name: 'listRootNamespaces', tunnel });
+  #postListRootEnclosuresMessage(tunnel: number): void {
+    this.#worker?.shout({ name: 'listRootEnclosures', tunnel });
   }
 
   /**
@@ -795,22 +795,22 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "listInstalled",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to list installed dependencies of.
+   * - `enclosure` is the WW-side enclosure to list installed dependencies of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to list installed dependencies of.
+   * @param enclosure - The enclosure to list installed dependencies of.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postListInstalledMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'listInstalled', namespace, tunnel });
+  #postListInstalledMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'listInstalled', enclosure, tunnel });
   }
 
   /**
@@ -821,22 +821,22 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "listLinksTo",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to list linked-to namespaces of.
+   * - `enclosure` is the WW-side enclosure to list linked-to enclosures of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to list linked-to namespaces of.
+   * @param enclosure - The enclosure to list linked-to enclosures of.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postListLinksToMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'listLinksTo', namespace, tunnel });
+  #postListLinksToMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'listLinksTo', enclosure, tunnel });
   }
 
   /**
@@ -847,22 +847,22 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "listLinkedFrom",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to list linked-from namespaces of.
+   * - `enclosure` is the WW-side enclosure to list linked-from enclosures of.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to list linked-from namespaces of.
+   * @param enclosure - The enclosure to list linked-from enclosures of.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postListLinkedFromMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'listLinkedFrom', namespace, tunnel });
+  #postListLinkedFromMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'listLinkedFrom', enclosure, tunnel });
   }
 
   /**
@@ -873,33 +873,33 @@ class NomadVM extends EventCaster {
    * ```json
    * {
    *   name: "isMuted",
-   *   namespace: <string>,
+   *   enclosure: <string>,
    *   tunnel: <int>
    * }
    * ```
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to determine mute status.
+   * - `enclosure` is the WW-side enclosure to determine mute status.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to determine mute status.
+   * @param enclosure - The enclosure to determine mute status.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postIsMutedMessage(namespace: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'isMuted', namespace, tunnel });
+  #postIsMutedMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'isMuted', enclosure, tunnel });
   }
 
   /**
-   * Post a `getSubNamespaces` message to the {@link Worker}.
+   * Post a `getSubEnclosures` message to the {@link Worker}.
    *
-   * A `getSubNamespaces` message has the form:
+   * A `getSubEnclosures` message has the form:
    *
    * ```json
    * {
-   *   name: "getSubNamespaces",
-   *   namespace: <string>,
+   *   name: "getSubEnclosures",
+   *   enclosure: <string>,
    *   depth: <int>,
    *   tunnel: <int>
    * }
@@ -907,17 +907,17 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to determine the sub namespaces of.
-   * - `depth` is the maximum namespace depth to retrieve, `0` meaning unlimited.
+   * - `enclosure` is the WW-side enclosure to determine the sub enclosures of.
+   * - `depth` is the maximum enclosure depth to retrieve, `0` meaning unlimited.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to determine the sub namespaces of.
-   * @param depth - The maximum namespace depth to retrieve, or `0` for unlimited.
+   * @param enclosure - The enclosure to determine the sub enclosures of.
+   * @param depth - The maximum enclosure depth to retrieve, or `0` for unlimited.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postGetSubNamespacesMessage(namespace: string, depth: number, tunnel: number): void {
-    this.#worker?.shout({ name: 'getSubNamespaces', namespace, depth, tunnel });
+  #postGetSubEnclosuresMessage(enclosure: string, depth: number, tunnel: number): void {
+    this.#worker?.shout({ name: 'getSubEnclosures', enclosure, depth, tunnel });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -989,26 +989,26 @@ class NomadVM extends EventCaster {
   /**
    * Call the given predefined function ID with the given arguments, resolving or rejecting the given tunnel ID with the result or error.
    *
-   * @param namespace - Namespace to use.
+   * @param enclosure - Enclosure to use.
    * @param tunnel - Tunnel to use for resolution / rejection signalling.
    * @param idx - The predefined function index to call.
    * @param args - The arguments to forward to the predefined function called.
    * @returns
    */
-  #callPredefined(namespace: string, tunnel: number, idx: number, args: unknown[]): void {
-    this.#castEvent(`${namespace}:predefined:call`, idx, args);
+  #callPredefined(enclosure: string, tunnel: number, idx: number, args: unknown[]): void {
+    this.#castEvent(`${enclosure}:predefined:call`, idx, args);
     if (idx in this.#predefined) {
       try {
         this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
-        this.#castEvent(`${namespace}:predefined:call:ok`, idx, args);
+        this.#castEvent(`${enclosure}:predefined:call:ok`, idx, args);
       } catch (e) {
         this.#postRejectMessage(tunnel, e instanceof Error ? e.message : 'unknown error');
-        this.#castEvent(`${namespace}:predefined:call:error`, idx, args, e);
+        this.#castEvent(`${enclosure}:predefined:call:error`, idx, args, e);
       }
     } else {
       this.#postRejectMessage(tunnel, `unknown function index ${idx.toString()}`);
       this.#castEvent(
-        `${namespace}:predefined:call:error`,
+        `${enclosure}:predefined:call:error`,
         idx,
         args,
         new Error(`unknown function index ${idx.toString()}`),
@@ -1060,22 +1060,22 @@ class NomadVM extends EventCaster {
         case 'call':
           {
             const {
-              namespace,
+              enclosure,
               tunnel,
               idx,
               args,
             }: {
-              namespace: string;
+              enclosure: string;
               tunnel: number;
               idx: number;
               args: unknown[];
             } = parsedData as {
-              namespace: string;
+              enclosure: string;
               tunnel: number;
               idx: number;
               args: unknown[];
             };
-            this.#callPredefined(namespace, tunnel, idx, args);
+            this.#callPredefined(enclosure, tunnel, idx, args);
           }
           break;
         case 'emit':
@@ -1257,7 +1257,7 @@ class NomadVM extends EventCaster {
    *
    * 1. Emitting the "shutdown" event on the {@link Worker}.
    * 2. Waiting for the given timeout milliseconds.
-   * 3. Removing all root namespaces.
+   * 3. Removing all root enclosures.
    * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
    *
    * @param timeout - Milliseconds to wait for the {@link Worker} to shut down.
@@ -1267,15 +1267,15 @@ class NomadVM extends EventCaster {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       timeout = validateTimeDelta(timeout);
 
-      this.listRootNamespaces().then(
-        (rootNamespaces: string[]) => {
-          rootNamespaces.forEach((rootNamespace: string): void => {
-            this.emit(rootNamespace, 'shutdown');
+      this.listRootEnclosures().then(
+        (rootEnclosures: string[]) => {
+          rootEnclosures.forEach((rootEnclosure: string): void => {
+            this.emit(rootEnclosure, 'shutdown');
           });
 
           setTimeout((): void => {
             Promise.all(
-              rootNamespaces.map((rootNamespace: string): Promise<string[]> => this.deleteNamespace(rootNamespace)),
+              rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
             ).then(
               (): void => {
                 this.stop().then(
@@ -1315,35 +1315,35 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Create a new namespace with the given name.
+   * Create a new enclosure with the given name.
    *
-   * @param namespace - Namespace to create.
-   * @returns A {@link Promise} that resolves with a {@link NomadVMNamespace} wrapper if namespace creation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to create.
+   * @returns A {@link Promise} that resolves with a {@link NomadVMEnclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  createNamespace(namespace: string): Promise<NomadVMNamespace> {
-    return new Promise<NomadVMNamespace>(
-      (resolve: (nomadVmNamespace: NomadVMNamespace) => void, reject: (error: Error) => void): void => {
-        this.#castEvent(`${namespace}:create`);
+  createEnclosure(enclosure: string): Promise<NomadVMEnclosure> {
+    return new Promise<NomadVMEnclosure>(
+      (resolve: (nomadVmEnclosure: NomadVMEnclosure) => void, reject: (error: Error) => void): void => {
+        this.#castEvent(`${enclosure}:create`);
         try {
-          validateNamespace(namespace);
+          validateEnclosure(enclosure);
 
           this.#assertRunning();
 
           this.#postCreateMessage(
-            namespace,
+            enclosure,
             this.#addTunnel(
               (): void => {
-                this.#castEvent(`${namespace}:create:ok`);
-                resolve(new NomadVMNamespace(this, namespace));
+                this.#castEvent(`${enclosure}:create:ok`);
+                resolve(new NomadVMEnclosure(this, enclosure));
               },
               (error: Error): void => {
-                this.#castEvent(`${namespace}:create:error`, error);
+                this.#castEvent(`${enclosure}:create:error`, error);
                 reject(error);
               },
             ),
           );
         } catch (e) {
-          this.#castEvent(`${namespace}:create:error`, e);
+          this.#castEvent(`${enclosure}:create:error`, e);
           reject(e instanceof Error ? e : new Error('unknown error'));
         }
       },
@@ -1351,229 +1351,229 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Delete the namespace with the given name.
+   * Delete the enclosure with the given name.
    *
-   * This method will reject all tunnels awaiting responses on the given namespace.
+   * This method will reject all tunnels awaiting responses on the given enclosure.
    *
-   * @param namespace - Namespace to delete.
-   * @returns A {@link Promise} that resolves with a list of deleted namespaces (the one given and any sub namespaces of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to delete.
+   * @returns A {@link Promise} that resolves with a list of deleted enclosures (the one given and any sub enclosures of it) if enclosure deletion completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  deleteNamespace(namespace: string): Promise<string[]> {
+  deleteEnclosure(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:delete`);
+      this.#castEvent(`${enclosure}:delete`);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
         this.#postDeleteMessage(
           this.#addTunnel(
             (deleted: string[]): void => {
-              this.#castEvent(`${namespace}:delete:ok`, deleted);
+              this.#castEvent(`${enclosure}:delete:ok`, deleted);
               resolve(deleted);
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:delete:error`, error);
+              this.#castEvent(`${enclosure}:delete:error`, error);
               reject(error);
             },
           ),
-          namespace,
+          enclosure,
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:delete:error`, e);
+        this.#castEvent(`${enclosure}:delete:error`, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * Assimilate the given namespace to its parent.
+   * Assimilate the given enclosure to its parent.
    *
-   * @param namespace - Namespace to assimilate.
-   * @returns A {@link Promise} that resolves with `void` if namespace assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to assimilate.
+   * @returns A {@link Promise} that resolves with `void` if enclosure assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  assimilateNamespace(namespace: string): Promise<void> {
+  assimilateEnclosure(enclosure: string): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:assimilate`, namespace);
+      this.#castEvent(`${enclosure}:assimilate`, enclosure);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
         this.#postAssimilateMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (): void => {
-              this.#castEvent(`${namespace}:assimilate:ok`, namespace);
+              this.#castEvent(`${enclosure}:assimilate:ok`, enclosure);
               resolve();
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:assimilate:error`, namespace, error);
+              this.#castEvent(`${enclosure}:assimilate:error`, enclosure, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`"${namespace}:assimilate:error`, namespace, e);
+        this.#castEvent(`"${enclosure}:assimilate:error`, enclosure, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * Link one namespace to another, so that events cast on the first are also handled in the second.
+   * Link one enclosure to another, so that events cast on the first are also handled in the second.
    *
-   * @param namespace - "Source" namespace to use.
-   * @param target - "Destination" namespace to use.
-   * @returns A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - "Source" enclosure to use.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  linkNamespaces(namespace: string, target: string): Promise<void> {
+  linkEnclosures(enclosure: string, target: string): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:link`, target);
+      this.#castEvent(`${enclosure}:link`, target);
       try {
-        validateNamespace(namespace);
-        validateNamespace(target);
+        validateEnclosure(enclosure);
+        validateEnclosure(target);
 
         this.#assertRunning();
 
         this.#postLinkMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (): void => {
-              this.#castEvent(`${namespace}:link:ok`, target);
+              this.#castEvent(`${enclosure}:link:ok`, target);
               resolve();
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:link:error`, target, error);
+              this.#castEvent(`${enclosure}:link:error`, target, error);
               reject(error);
             },
           ),
           target,
         );
       } catch (e) {
-        this.#castEvent(`"${namespace}:link:error`, target, e);
+        this.#castEvent(`"${enclosure}:link:error`, target, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * Unlink one namespace from another, so that events cast on the first are no longer handled in the second.
+   * Unlink one enclosure from another, so that events cast on the first are no longer handled in the second.
    *
-   * @param namespace - "Source" namespace to use.
-   * @param target - "Destination" namespace to use.
-   * @returns A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - "Source" enclosure to use.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unlinkNamespaces(namespace: string, target: string): Promise<boolean> {
+  unlinkEnclosures(enclosure: string, target: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (unlinked: boolean) => void, reject: (error: Error) => void): void => {
-      validateNamespace(namespace);
-      validateNamespace(target);
+      validateEnclosure(enclosure);
+      validateEnclosure(target);
 
-      this.#castEvent(`${namespace}:unlink`, target);
+      this.#castEvent(`${enclosure}:unlink`, target);
       try {
         this.#assertRunning();
 
         this.#postUnlinkMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (unlinked: boolean): void => {
-              this.#castEvent(`${namespace}:unlink:ok`, target, unlinked);
+              this.#castEvent(`${enclosure}:unlink:ok`, target, unlinked);
               resolve(unlinked);
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:unlink:error`, target, error);
+              this.#castEvent(`${enclosure}:unlink:error`, target, error);
               reject(error);
             },
           ),
           target,
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:unlink:error`, target, e);
+        this.#castEvent(`${enclosure}:unlink:error`, target, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * Mute the given namespace, so that events cast on it are no longer propagated to this VM.
+   * Mute the given enclosure, so that events cast on it are no longer propagated to this VM.
    *
-   * @param namespace - Namespace to mute.
-   * @returns A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to mute.
+   * @returns A {@link Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  muteNamespace(namespace: string): Promise<boolean> {
+  muteEnclosure(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (previous: boolean) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:muteNamespace`);
+      this.#castEvent(`${enclosure}:muteEnclosure`);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
         this.#postMuteMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (previous: boolean): void => {
-              this.#castEvent(`${namespace}:mute:ok`, previous);
+              this.#castEvent(`${enclosure}:mute:ok`, previous);
               resolve(previous);
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:mute:error`, error);
+              this.#castEvent(`${enclosure}:mute:error`, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:mute:error`, e);
+        this.#castEvent(`${enclosure}:mute:error`, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * Unmute the given namespace, so that events cast on it are propagated to this VM.
+   * Unmute the given enclosure, so that events cast on it are propagated to this VM.
    *
-   * @param namespace - Namespace to unmute.
-   * @returns A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to unmute.
+   * @returns A {@link Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
    */
-  unmuteNamespace(namespace: string): Promise<boolean> {
+  unmuteEnclosure(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (prev: boolean) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:unmute`);
+      this.#castEvent(`${enclosure}:unmute`);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
         this.#postUnmuteMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (prev: boolean): void => {
-              this.#castEvent(`${namespace}:unmute:ok`, prev);
+              this.#castEvent(`${enclosure}:unmute:ok`, prev);
               resolve(prev);
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:unmute:error`, error);
+              this.#castEvent(`${enclosure}:unmute:error`, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:unmute:error`, e);
+        this.#castEvent(`${enclosure}:unmute:error`, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
   }
 
   /**
-   * List the root namespaces created.
+   * List the root enclosures created.
    *
-   * @returns A {@link Promise} that resolves with a list of root namespaces created if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of root enclosures created if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listRootNamespaces(): Promise<string[]> {
+  listRootEnclosures(): Promise<string[]> {
     return new Promise<string[]>(
-      (resolve: (rootNamespaces: string[]) => void, reject: (error: Error) => void): void => {
+      (resolve: (rootEnclosures: string[]) => void, reject: (error: Error) => void): void => {
         try {
           this.#assertRunning();
 
-          this.#postListRootNamespacesMessage(this.#addTunnel(resolve, reject));
+          this.#postListRootEnclosuresMessage(this.#addTunnel(resolve, reject));
         } catch (e) {
           reject(e instanceof Error ? e : new Error('unknown error'));
         }
@@ -1582,19 +1582,19 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the dependencies (user-level and predefined) installed on the given namespace or its prefixes.
+   * List the dependencies (user-level and predefined) installed on the given enclosure or its prefixes.
    *
-   * @param namespace - Namespace to list installed dependencies of.
+   * @param enclosure - Enclosure to list installed dependencies of.
    * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listInstalled(namespace: string): Promise<string[]> {
+  listInstalled(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (installed: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postListInstalledMessage(namespace, this.#addTunnel(resolve, reject));
+        this.#postListInstalledMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
@@ -1602,19 +1602,19 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the namespaces the given one is linked to.
+   * List the enclosures the given one is linked to.
    *
-   * @param namespace - Namespace to list linked-to namespaces of.
-   * @returns A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to list linked-to enclosures of.
+   * @returns A {@link Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinksTo(namespace: string): Promise<string[]> {
+  listLinksTo(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linksTo: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postListLinksToMessage(namespace, this.#addTunnel(resolve, reject));
+        this.#postListLinksToMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
@@ -1622,19 +1622,19 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the namespaces that link to the given one.
+   * List the enclosures that link to the given one.
    *
-   * @param namespace - Namespace to list linked-from namespaces of.
-   * @returns A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to list linked-from enclosures of.
+   * @returns A {@link Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link Error} in case errors occur.
    */
-  listLinkedFrom(namespace: string): Promise<string[]> {
+  listLinkedFrom(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linkedFrom: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postListLinkedFromMessage(namespace, this.#addTunnel(resolve, reject));
+        this.#postListLinkedFromMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
@@ -1642,19 +1642,19 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Determine whether the given namespace is muted.
+   * Determine whether the given enclosure is muted.
    *
-   * @param namespace - Namespace to determine mute status of.
-   * @returns A {@link Promise} that resolves with a boolean value indicating whether the namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to determine mute status of.
+   * @returns A {@link Promise} that resolves with a boolean value indicating whether the enclosure is muted if successful, and rejects with an {@link Error} in case errors occur.
    */
-  isMuted(namespace: string): Promise<boolean> {
+  isMuted(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (muted: boolean) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postIsMutedMessage(namespace, this.#addTunnel(resolve, reject));
+        this.#postIsMutedMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
@@ -1662,21 +1662,21 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the given namespace's sub namespaces.
+   * List the given enclosure's sub enclosures.
    *
-   * @param namespace - Namespace to list the sub namespaces of.
-   * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of sub namespaces namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @param enclosure - Enclosure to list the sub enclosures of.
+   * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getSubNamespaces(namespace: string, depth: number | null = null): Promise<string[]> {
-    return new Promise<string[]>((resolve: (subNamespaces: string[]) => void, reject: (error: Error) => void): void => {
+  getSubEnclosures(enclosure: string, depth: number | null = null): Promise<string[]> {
+    return new Promise<string[]>((resolve: (subEnclosures: string[]) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postGetSubNamespacesMessage(
-          namespace,
+        this.#postGetSubEnclosuresMessage(
+          enclosure,
           validateNonNegativeInteger(depth ?? 0),
           this.#addTunnel(resolve, reject),
         );
@@ -1689,36 +1689,36 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}) under the given namespace.
+   * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}) under the given enclosure.
    *
-   * @param namespace - Namespace to use.
+   * @param enclosure - Enclosure to use.
    * @param name - Function name to add.
    * @param callback - {@link Function} callback to use.
    * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
    */
-  predefine(namespace: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
+  predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       const idx: number =
         this.#predefined.push(() => {
           throw new Error('SHOULD NEVER HAPPEN');
         }) - 1;
-      this.#castEvent(`${namespace}:predefined:add`, name, callback, idx);
+      this.#castEvent(`${enclosure}:predefined:add`, name, callback, idx);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         this.#assertRunning();
         this.#postPredefineMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (): void => {
               this.#predefined[idx] = callback;
-              this.#castEvent(`${namespace}:predefined:add:ok`, name, callback, idx);
+              this.#castEvent(`${enclosure}:predefined:add:ok`, name, callback, idx);
               resolve();
             },
             (error: Error): void => {
               // eslint-disable-next-line @typescript-eslint/no-array-delete, @typescript-eslint/no-dynamic-delete
               delete this.#predefined[idx];
-              this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, error);
+              this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, error);
               reject(error);
             },
           ),
@@ -1726,7 +1726,7 @@ class NomadVM extends EventCaster {
           validateIdentifier(name),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:predefined:add:error`, name, callback, idx, e);
+        this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
@@ -1735,15 +1735,15 @@ class NomadVM extends EventCaster {
   /**
    * Install the given {@link Dependency} on the {@link Worker}.
    *
-   * @param namespace - Namespace to use.
+   * @param enclosure - Enclosure to use.
    * @param dependency - The {@link Dependency} to install.
    * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  install(namespace: string, dependency: Dependency): Promise<void> {
+  install(enclosure: string, dependency: Dependency): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${namespace}:install`, dependency);
+      this.#castEvent(`${enclosure}:install`, dependency);
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only install Dependency');
@@ -1751,21 +1751,21 @@ class NomadVM extends EventCaster {
         this.#assertRunning();
 
         this.#postInstallMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (): void => {
-              this.#castEvent(`${namespace}:install:ok`, dependency);
+              this.#castEvent(`${enclosure}:install:ok`, dependency);
               resolve();
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:install:error`, dependency, error);
+              this.#castEvent(`${enclosure}:install:error`, dependency, error);
               reject(error);
             },
           ),
           dependency.asObject(),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:install:error`, dependency, e);
+        this.#castEvent(`${enclosure}:install:error`, dependency, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
@@ -1774,17 +1774,17 @@ class NomadVM extends EventCaster {
   /**
    * Execute the given {@link Dependency} with the given arguments map in the {@link Worker}.
    *
-   * @param namespace - The namespace to use.
+   * @param enclosure - The enclosure to use.
    * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
    * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
    */
-  execute(namespace: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
+  execute(enclosure: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
-        validateNamespace(namespace);
+        validateEnclosure(enclosure);
 
-        this.#castEvent(`${namespace}:execute`, dependency, args);
+        this.#castEvent(`${enclosure}:execute`, dependency, args);
 
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only execute Dependency');
@@ -1792,14 +1792,14 @@ class NomadVM extends EventCaster {
         this.#assertRunning();
 
         this.#postExecuteMessage(
-          namespace,
+          enclosure,
           this.#addTunnel(
             (result: unknown): void => {
-              this.#castEvent(`${namespace}:execute:ok`, dependency, args, result);
+              this.#castEvent(`${enclosure}:execute:ok`, dependency, args, result);
               resolve(result);
             },
             (error: Error): void => {
-              this.#castEvent(`${namespace}:execute:error`, dependency, args, error);
+              this.#castEvent(`${enclosure}:execute:error`, dependency, args, error);
               reject(error);
             },
           ),
@@ -1807,7 +1807,7 @@ class NomadVM extends EventCaster {
           validateArgumentsMap(args),
         );
       } catch (e) {
-        this.#castEvent(`${namespace}:execute:error`, dependency, args, e);
+        this.#castEvent(`${enclosure}:execute:error`, dependency, args, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
@@ -1816,27 +1816,27 @@ class NomadVM extends EventCaster {
   /**
    * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
-   * @param namespace - Namespace to use.
+   * @param enclosure - Enclosure to use.
    * @param dependencies - Dependencies to install.
    * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
    */
-  installAll(namespace: string, dependencies: Iterable<Dependency>): Promise<void> {
+  installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       try {
-        this.createNamespace(`${namespace}.tmp_${NomadVM.#pseudoRandomString()}`).then(
-          (wrapper: NomadVMNamespace): void => {
+        this.createEnclosure(`${enclosure}.tmp_${NomadVM.#pseudoRandomString()}`).then(
+          (wrapper: NomadVMEnclosure): void => {
             wrapper.listInstalled().then(
               (installed: string[]): void => {
                 Promise.all(
                   Dependency.sort(dependencies, installed).map((dependency: Dependency) => wrapper.install(dependency)),
                 ).then(
                   (): void => {
-                    this.assimilateNamespace(wrapper.namespace).then(
+                    this.assimilateEnclosure(wrapper.enclosure).then(
                       (): void => {
                         resolve();
                       },
                       (error: Error): void => {
-                        this.deleteNamespace(wrapper.namespace).then(
+                        this.deleteEnclosure(wrapper.enclosure).then(
                           () => {
                             reject(error);
                           },
@@ -1848,7 +1848,7 @@ class NomadVM extends EventCaster {
                     );
                   },
                   (error: Error): void => {
-                    this.deleteNamespace(wrapper.namespace).then(
+                    this.deleteEnclosure(wrapper.enclosure).then(
                       () => {
                         reject(error);
                       },
@@ -1860,7 +1860,7 @@ class NomadVM extends EventCaster {
                 );
               },
               (error: Error): void => {
-                this.deleteNamespace(wrapper.namespace).then(
+                this.deleteEnclosure(wrapper.enclosure).then(
                   () => {
                     reject(error);
                   },
@@ -1886,22 +1886,22 @@ class NomadVM extends EventCaster {
   /**
    * Emit an event towards the {@link Worker}.
    *
-   * @param namespace - Namespace to use.
+   * @param enclosure - Enclosure to use.
    * @param event - Event name to emit.
    * @param args - Associated arguments to emit alongside the event.
    * @returns `this`, for chaining.
    */
-  emit(namespace: string, event: string, ...args: unknown[]): this {
-    this.#postEmitMessage(validateNamespace(namespace), EventCaster.validateEvent(event), args);
+  emit(enclosure: string, event: string, ...args: unknown[]): this {
+    this.#postEmitMessage(validateEnclosure(enclosure), EventCaster.validateEvent(event), args);
     return this;
   }
 }
 
 /**
- * A {@link NomadVM} namespace interface wrapper object.
+ * A {@link NomadVM} enclosure interface wrapper object.
  *
  */
-class NomadVMNamespace {
+class NomadVMEnclosure {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -1914,28 +1914,28 @@ class NomadVMNamespace {
   #vm: NomadVM;
 
   /**
-   * The namespace to wrap for.
+   * The enclosure to wrap for.
    *
    */
-  #namespace: string;
+  #enclosure: string;
 
   /**
-   * Create a new {@link NomadVMNamespace} wrapper around the given {@link NomadVM} for the given namespace.
+   * Create a new {@link NomadVMEnclosure} wrapper around the given {@link NomadVM} for the given enclosure.
    *
    * @param vm - The VM instance to wrap.
-   * @param namespace - The namespace to wrap for.
+   * @param enclosure - The enclosure to wrap for.
    * @throws {Error} If the given VM is not a {@link NomadVM} instance.
-   * @throws {Error} If the given namespace is not a string.
+   * @throws {Error} If the given enclosure is not a string.
    */
-  constructor(vm: NomadVM, namespace: string) {
+  constructor(vm: NomadVM, enclosure: string) {
     if (!(vm instanceof NomadVM)) {
       throw new Error('expected vm to be an instance of NomadVM');
-    } else if ('string' !== typeof namespace) {
-      throw new Error('expected namespace to be a string');
+    } else if ('string' !== typeof enclosure) {
+      throw new Error('expected enclosure to be a string');
     }
 
     this.#vm = vm;
-    this.#namespace = namespace;
+    this.#enclosure = enclosure;
   }
 
   /**
@@ -1947,15 +1947,15 @@ class NomadVMNamespace {
   }
 
   /**
-   * Getter used to retrieve the wrapped namespace.
+   * Getter used to retrieve the wrapped enclosure.
    *
    */
-  get namespace(): string {
-    return this.#namespace;
+  get enclosure(): string {
+    return this.#enclosure;
   }
 
   /**
-   * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped namespace.
+   * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped enclosure.
    *
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
@@ -1963,12 +1963,12 @@ class NomadVMNamespace {
    * @see {@link NomadVM.onThis} for additional exceptions thrown.
    */
   onThis(filter: string, callback: (...args: unknown[]) => void): this {
-    this.vm.onThis(`${this.namespace}:${filter}`, callback);
+    this.vm.onThis(`${this.enclosure}:${filter}`, callback);
     return this;
   }
 
   /**
-   * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped namespace, and removed upon being called once.
+   * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped enclosure, and removed upon being called once.
    *
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
@@ -1976,105 +1976,105 @@ class NomadVMNamespace {
    * @see {@link NomadVM.onThis} for additional exceptions thrown.
    */
   onceThis(filter: string, callback: (...args: unknown[]) => void): this {
-    this.vm.onceThis(`${this.namespace}:${filter}`, callback);
+    this.vm.onceThis(`${this.enclosure}:${filter}`, callback);
     return this;
   }
 
   /**
-   * Link the wrapped namespace to another, so that events cast on the wrapped namespace are also handled in the other.
+   * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
    *
-   * @param target - "Destination" namespace to use.
-   * @returns A {@link Promise} that resolves with `void` if namespace linking completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.linkNamespaces} for additional exceptions thrown.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.linkEnclosures} for additional exceptions thrown.
    */
   link(target: string): Promise<void> {
-    return this.vm.linkNamespaces(this.namespace, target);
+    return this.vm.linkEnclosures(this.enclosure, target);
   }
 
   /**
-   * Unlink the wrapped namespace from another, so that events cast on the wrapped namespace are no longer handled in the other.
+   * Unlink the wrapped enclosure from another, so that events cast on the wrapped enclosure are no longer handled in the other.
    *
-   * @param target - "Destination" namespace to use.
-   * @returns A {@link Promise} that resolves with a boolean indicating whether the target namespace was previously linked if namespace unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.unlinkNamespaces} for additional exceptions thrown.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.unlinkEnclosures} for additional exceptions thrown.
    */
   unlink(target: string): Promise<boolean> {
-    return this.vm.unlinkNamespaces(this.namespace, target);
+    return this.vm.unlinkEnclosures(this.enclosure, target);
   }
 
   /**
-   * Mute the wrapped namespace, so that events cast on it are no longer propagated to the wrapped VM.
+   * Mute the wrapped enclosure, so that events cast on it are no longer propagated to the wrapped VM.
    *
-   * @returns A {@link Promise} that resolves with the previous muting status if namespace muting completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.muteNamespace} for additional exceptions thrown.
+   * @returns A {@link Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.muteEnclosure} for additional exceptions thrown.
    */
   mute(): Promise<boolean> {
-    return this.vm.muteNamespace(this.namespace);
+    return this.vm.muteEnclosure(this.enclosure);
   }
 
   /**
-   * Unmute the wrapped namespace, so that events cast on it are propagated to wrapped VM.
+   * Unmute the wrapped enclosure, so that events cast on it are propagated to wrapped VM.
    *
-   * @returns A {@link Promise} that resolves with he previous muting status if namespace un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.unmuteNamespace} for additional exceptions thrown.
+   * @returns A {@link Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.unmuteEnclosure} for additional exceptions thrown.
    */
   unmute(): Promise<boolean> {
-    return this.vm.unmuteNamespace(this.namespace);
+    return this.vm.unmuteEnclosure(this.enclosure);
   }
 
   /**
-   * List the dependencies (user-level and predefined) installed on the wrapped namespace or its prefixes
+   * List the dependencies (user-level and predefined) installed on the wrapped enclosure or its prefixes
    *
    * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.listInstalled} for additional exceptions thrown.
    */
   listInstalled(): Promise<string[]> {
-    return this.vm.listInstalled(this.namespace);
+    return this.vm.listInstalled(this.enclosure);
   }
 
   /**
-   * List the namespaces the wrapped one is linked to.
+   * List the enclosures the wrapped one is linked to.
    *
-   * @returns A {@link Promise} that resolves with a list of linked-to namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.listLinksTo} for additional exceptions thrown.
    */
   listLinksTo(): Promise<string[]> {
-    return this.vm.listLinksTo(this.namespace);
+    return this.vm.listLinksTo(this.enclosure);
   }
 
   /**
-   * List the namespaces that link to the wrapped one.
+   * List the enclosures that link to the wrapped one.
    *
-   * @returns A {@link Promise} that resolves with a list of linked-from namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.listLinkedFrom} for additional exceptions thrown.
    */
   listLinkedFrom(): Promise<string[]> {
-    return this.vm.listLinkedFrom(this.namespace);
+    return this.vm.listLinkedFrom(this.enclosure);
   }
 
   /**
-   * Determine whether the wrapped namespace is muted.
+   * Determine whether the wrapped enclosure is muted.
    *
-   * @returns A {@link Promise} that resolves with a boolean value indicating whether the wrapped namespace is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a boolean value indicating whether the wrapped enclosure is muted if successful, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.isMuted} for additional exceptions thrown.
    */
   isMuted(): Promise<boolean> {
-    return this.vm.isMuted(this.namespace);
+    return this.vm.isMuted(this.enclosure);
   }
 
   /**
-   * List the wrapped namespace's sub namespaces.
+   * List the wrapped enclosure's sub enclosures.
    *
-   * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of sub namespaces if successful, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.getSubNamespaces} for additional exceptions thrown.
+   * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link Promise} that resolves with a list of sub enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.getSubEnclosures} for additional exceptions thrown.
    */
-  getSubNamespaces(depth: number | null = null): Promise<string[]> {
-    return this.vm.getSubNamespaces(this.namespace, depth);
+  getSubEnclosures(depth: number | null = null): Promise<string[]> {
+    return this.vm.getSubEnclosures(this.enclosure, depth);
   }
 
   /**
-   * Add a predefined function to the VM's list under the wrapped namespace.
+   * Add a predefined function to the VM's list under the wrapped enclosure.
    *
    * @param name - Function name to add.
    * @param callback - {@link Function} callback to use.
@@ -2082,22 +2082,22 @@ class NomadVMNamespace {
    * @see {@link NomadVM.predefine} for additional exceptions thrown.
    */
   predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
-    return this.vm.predefine(this.namespace, name, callback);
+    return this.vm.predefine(this.enclosure, name, callback);
   }
 
   /**
-   * Install the given {@link Dependency} on the wrapped VM under the wrapped namespace.
+   * Install the given {@link Dependency} on the wrapped VM under the wrapped enclosure.
    *
    * @param dependency - The {@link Dependency} to install.
    * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
    * @see {@link NomadVM.install} for additional exceptions thrown.
    */
   install(dependency: Dependency): Promise<void> {
-    return this.vm.install(this.namespace, dependency);
+    return this.vm.install(this.enclosure, dependency);
   }
 
   /**
-   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped namespace.
+   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped enclosure.
    *
    * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
@@ -2105,7 +2105,7 @@ class NomadVMNamespace {
    * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
   execute(dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
-    return this.vm.execute(this.namespace, dependency, args);
+    return this.vm.execute(this.enclosure, dependency, args);
   }
 
   /**
@@ -2116,8 +2116,8 @@ class NomadVMNamespace {
    * @see {@link NomadVM.installAll} for additional exceptions thrown.
    */
   installAll(dependencies: Iterable<Dependency>): Promise<void> {
-    return this.vm.installAll(this.namespace, dependencies);
+    return this.vm.installAll(this.enclosure, dependencies);
   }
 }
 
-export { NomadVM, NomadVMNamespace };
+export { NomadVM, NomadVMEnclosure };
