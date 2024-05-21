@@ -217,6 +217,12 @@ class NomadVM extends EventCaster {
   }[] = [];
 
   /**
+   * The timeout ID for the boot timeout, or `null` if not yet set up.
+   *
+   */
+  #bootTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  /**
    * The interval ID for the pinger, or `null` if not yet set up.
    *
    */
@@ -1120,6 +1126,10 @@ class NomadVM extends EventCaster {
       if ('stopped' !== this.#state) {
         this.#state = 'stopped';
 
+        if (null !== this.#bootTimeout) {
+          clearTimeout(this.#bootTimeout);
+          this.#bootTimeout = null;
+        }
         if (null !== this.#pinger) {
           clearTimeout(this.#pinger);
           this.#pinger = null;
@@ -1176,12 +1186,15 @@ class NomadVM extends EventCaster {
           this.#state = 'booting';
 
           const externalBootTime: number = Date.now();
-          const bootTimeout: ReturnType<typeof setTimeout> = setTimeout((): void => {
+          this.#bootTimeout = setTimeout((): void => {
             this.#rejectTunnel(0, new Error('boot timed out'));
           }, timeout);
 
           const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
-            clearTimeout(bootTimeout);
+            if (null !== this.#bootTimeout) {
+              clearTimeout(this.#bootTimeout);
+              this.#bootTimeout = null;
+            }
             this.#lastPong = Date.now();
             this.#pinger = setInterval(() => {
               const delta: number = Date.now() - this.#lastPong;
@@ -1199,7 +1212,6 @@ class NomadVM extends EventCaster {
             resolve([internalBootTime, Date.now() - externalBootTime]);
           };
           const bootReject: (error: Error) => void = (error: Error): void => {
-            clearTimeout(bootTimeout);
             this.#castEvent('start:error', error);
             this.stop().then(
               (): void => {
