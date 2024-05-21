@@ -1847,7 +1847,7 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
    * @param {any} e - Error to retrieve the message of.
    * @returns {string}
    */
-  const getErrorMessage = (e) => e instanceof _Error ? e.message : 'unknown error';
+  const getErrorMessage = (e) => (e instanceof _Error ? e.message : 'unknown error');
 
   try {
     // --------------------------------------------------------------------------------------------
