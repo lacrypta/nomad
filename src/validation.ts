@@ -317,9 +317,9 @@ const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
 };
 
 /**
- * Validate the given argument is a enclosure identifier and return it if valid.
+ * Validate the given argument is an enclosure identifier and return it if valid.
  *
- * A enclosure identifier is a sequence of identifiers (as per {@link identifier}) separated by periods (`"."`).
+ * An enclosure identifier is a sequence of identifiers (as per {@link identifier}) separated by periods (`"."`).
  *
  * @param ns - The argument to validate.
  * @returns The validated enclosure identifier.

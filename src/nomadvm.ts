@@ -67,22 +67,22 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when a enclosure has failed to be deleted from VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate(vm, enclosure)`: when a enclosure `enclosure` is being assimilated to its parent from VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when an enclosure has failed to be deleted from VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate(vm, enclosure)`: when an enclosure `enclosure` is being assimilated to its parent from VM `vm`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully assimilated to its parent on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:error(vm, enclosure, error)`: when a enclosure `enclosure` has failed to be assimilated to its parent in VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when a enclosure is being linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when a enclosure has been successfully linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when a enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when a enclosure is being unlinked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when a enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when a enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when a enclosure is being muted on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when a enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when a enclosure has failed to be muted on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when a enclosure is being unmuted on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when a enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when a enclosure has failed to be unmuted on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:error(vm, enclosure, error)`: when an enclosure `enclosure` has failed to be assimilated to its parent in VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when an enclosure is being linked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when an enclosure has been successfully linked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when an enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when an enclosure is being unlinked to the `target` one on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when an enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when an enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when an enclosure is being muted on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when an enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
+   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when an enclosure has failed to be muted on VM `vm` with error `error`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when an enclosure is being unmuted on VM `vm`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when an enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when an enclosure has failed to be unmuted on VM `vm` with error `error`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
    * - `nomadvm:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
    * - `nomadvm:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
