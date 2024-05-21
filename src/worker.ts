@@ -105,9 +105,9 @@ class BrowserWorkerInstance implements WorkerInstance {
                 listener(data);
               });
             })(addEventListener),
-            ((_postMessage) => (message) => {
-              _postMessage(message);
-            })(postMessage),
+            ((_postMessage, _JSON_stringify) => (message) => {
+              _postMessage(_JSON_stringify(message));
+            })(postMessage, JSON.stringify),
             ((_setTimeout) => (callback) => {
               _setTimeout(callback, 0);
             })(setTimeout),

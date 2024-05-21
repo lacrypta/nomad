@@ -44,9 +44,9 @@
  * The code the {@link Worker} will end up executing.
  *
  * @param {Record<string, any>} _this - The `this` value to use (injected by the caller).
- * @param {Listener} _listen - The `addEventListener` value to use (injected by the caller).
- * @param {Shouter} _shout - The `postMessage` value to use (injected by the caller).
- * @param {Scheduler} _schedule - The `setTimeout` value to use (injected by the caller).
+ * @param {Listener} _listen - The `listener` value to use (injected by the caller).
+ * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
+ * @param {Scheduler} _schedule - The `schedule` value to use (injected by the caller).
  * @returns {void}
  */
 const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
@@ -1006,17 +1006,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post the JSON string associated to the given data to the host {@link NomadVM}.
-   *
-   * @param {object} data - Data to post to the host {@link NomadVM}.
-   * @returns {void}
-   * @see {@link NomadVM.#postJsonMessage} for a more comprehensive treatment.
-   */
-  const postJsonMessage = (data) => {
-    _shout(_JSON.stringify(data));
-  };
-
-  /**
    * Post a `pong` message to the host {@link NomadVM}.
    *
    * A `pong` message has the following form:
@@ -1030,7 +1019,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postPongMessage = () => {
-    postJsonMessage({ name: 'pong' });
+    _shout({ name: 'pong' });
   };
 
   /**
@@ -1056,7 +1045,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postResolveMessage = (tunnel, payload) => {
-    postJsonMessage({ name: 'resolve', tunnel, payload });
+    _shout({ name: 'resolve', tunnel, payload });
   };
 
   /**
@@ -1082,7 +1071,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postRejectMessage = (tunnel, error) => {
-    postJsonMessage({ name: 'reject', tunnel, error });
+    _shout({ name: 'reject', tunnel, error });
   };
 
   /**
@@ -1108,7 +1097,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postEmitMessage = (event, args) => {
-    postJsonMessage({ name: 'emit', event, args });
+    _shout({ name: 'emit', event, args });
   };
 
   /**
@@ -1140,7 +1129,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postCallMessage = (enclosure, tunnel, idx, args) => {
-    postJsonMessage({
+    _shout({
       name: 'call',
       enclosure,
       tunnel,
