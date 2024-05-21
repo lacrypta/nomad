@@ -14,7 +14,7 @@ import {
 
 import { EventCaster } from './eventCaster';
 import { Dependency } from './dependency';
-import BrowserWorkerBuilder from './worker/browser';
+import { BrowserWorkerBuilder } from './worker';
 
 import workerCode from './workerCode.cjs';
 

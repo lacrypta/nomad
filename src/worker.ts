@@ -1,6 +1,53 @@
 'use strict';
 
-import type { WorkerBuilder, WorkerInstance } from './interfaces';
+/**
+ * A builder for a {@link WorkerInstance}.
+ *
+ */
+interface WorkerBuilder {
+  /**
+   * Get the {@link WorkerInstance} constructed using the given parameters.
+   *
+   * @param code - Code to set the {@link WorkerInstance} up with.
+   * @param name - Name to use for the {@link WorkerInstance}.
+   */
+  build(code: string, name: string): WorkerInstance;
+}
+
+/**
+ * An instance of an environment-agnostic worker.
+ *
+ */
+interface WorkerInstance {
+  /**
+   * Stop the worker instance immediately.
+   *
+   * @returns `this`, for chaining.
+   */
+  kill(): this;
+
+  /**
+   * Send the given data to the {@link WorkerInstance}.
+   *
+   * > [!warning]
+   * > The given `data` object **MUST** be serializable via `JSON.serialize`.
+   *
+   * @param data - object to send to the {@link WorkerInstance}.
+   * @returns `this`, for chaining.
+   */
+  shout(data: object): this;
+
+  /**
+   * Set the given callbacks as handlers for message / error.
+   *
+   * @param messageCallback - Callback to use for message handling.
+   * @param errorCallback - Callback to use for message errors.
+   * @returns `this`, for chaining.
+   */
+  listen(messageCallback: (data: string) => void, errorCallback: (error: Error) => void): this;
+}
+
+// ------------------------------------------------------------------------------------------------
 
 /**
  * A builder for a {@link BrowserWorkerInstance}.
@@ -131,4 +178,41 @@ class BrowserWorkerInstance implements WorkerInstance {
   }
 }
 
-export default BrowserWorkerBuilder;
+// ------------------------------------------------------------------------------------------------
+
+/**
+ * Get the {@link WorkerBuilder} to use under the current environment.
+ *
+ * @returns The {@link WorkerBuilder} to use under the current environment.
+ * @see {@link https://stackoverflow.com/a/31090240}
+ */
+function builder(): WorkerBuilder {
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  const isBrowser: boolean = new Function('try { return this === window; } catch { return false; }')() as boolean;
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  const isNode: boolean = new Function('try { return this === global; } catch { return false; }')() as boolean;
+
+  if (isBrowser) {
+    return new BrowserWorkerBuilder();
+  } else if (isNode) {
+    throw new Error('Unsupported execution environment');
+  } else {
+    throw new Error('Cannot determine execution environment');
+  }
+}
+
+/**
+ * Get the {@link WorkerInstance} constructed for the current environment using the given parameters.
+ *
+ * @param code - Code to set the {@link WorkerInstance} up with.
+ * @param name - Name to use for the {@link WorkerInstance}.
+ * @returns A {@link WorkerInstance} constructed via the {@link WorkerInstance} for the current environment.
+ */
+function build(code: string, name: string): WorkerInstance {
+  return builder().build(code, name);
+}
+
+// ------------------------------------------------------------------------------------------------
+
+export type { WorkerBuilder, WorkerInstance };
+export { BrowserWorkerBuilder, BrowserWorkerInstance, builder, build };
