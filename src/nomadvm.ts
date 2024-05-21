@@ -145,6 +145,12 @@ class NomadVM extends EventCaster {
   static #defaultBootTimeout: number = 100;
 
   /**
+   * The default number of milliseconds to wait for the {@link Worker} to stop.
+   *
+   */
+  static #defaultShutdownTimeout: number = 100;
+
+  /**
    * The default number of milliseconds to wait between `ping` messages to the {@link Worker}.
    *
    */
@@ -1245,7 +1251,59 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Stop the {@link Worker} and reject all pending tunnels.
+   * Shut the {@link Worker} down.
+   *
+   * Shutting a VM instance consists of the following:
+   *
+   * 1. Emitting the "shutdown" event on the {@link Worker}.
+   * 2. Waiting for the given timeout milliseconds.
+   * 3. Removing all orphaned namespaces.
+   * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
+   *
+   * @param timeout - Milliseconds to wait for the {@link Worker} to shut down.
+   * @returns A {@link Promise} that resolves with `void` if the {@link Worker} was successfully shut down, and rejects with an {@link Error} in case errors are found.
+   */
+  shutdown(timeout: number = NomadVM.#defaultShutdownTimeout): Promise<void> {
+    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+      timeout = validateTimeDelta(timeout);
+
+      this.listOrphanNamespaces().then(
+        (orphanedNamespaces: string[]) => {
+          orphanedNamespaces.forEach((orphanedNamespace: string): void => {
+            this.emit(orphanedNamespace, 'shutdown');
+          });
+
+          setTimeout((): void => {
+            Promise.all(
+              orphanedNamespaces.map(
+                (orphanedNamespace: string): Promise<string[]> => this.deleteNamespace(orphanedNamespace),
+              ),
+            ).then(
+              (): void => {
+                this.stop().then(
+                  (): void => {
+                    resolve();
+                  },
+                  (error: Error): void => {
+                    reject(error);
+                  },
+                );
+              },
+              (error: Error): void => {
+                reject(error);
+              },
+            );
+          }, timeout);
+        },
+        (error: Error) => {
+          reject(error);
+        },
+      );
+    });
+  }
+
+  /**
+   * Stop the {@link Worker} immediately and reject all pending tunnels.
    *
    * @returns A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.#doStop} for the actual shutdown process
