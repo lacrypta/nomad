@@ -1133,11 +1133,11 @@ class NomadVM extends EventCaster {
         this.#state = 'stopped';
 
         clearTimeout(this.#bootTimeout ?? undefined);
-        this.#bootTimeout = null;
         clearInterval(this.#pinger ?? undefined);
-        this.#pinger = null;
-
         this.#worker?.kill();
+
+        this.#bootTimeout = null;
+        this.#pinger = null;
         this.#worker = null;
 
         this.#tunnels.forEach((_: unknown, idx: number): void => {
@@ -1148,13 +1148,12 @@ class NomadVM extends EventCaster {
           }
         });
         this.#tunnels = [];
-
-        this.#castEvent('stop:ok');
       }
     } catch (e) {
       this.#castEvent('stop:error', e);
       reject(e instanceof Error ? e : new Error('unknown error'));
     }
+    this.#castEvent('stop:ok');
     resolve();
   }
 
@@ -1223,7 +1222,7 @@ class NomadVM extends EventCaster {
             );
           };
 
-          const bootTunnel = this.#addTunnel(bootResolve, bootReject);
+          const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
 
           this.#bootTimeout = setTimeout((): void => {
             this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
