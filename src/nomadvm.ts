@@ -892,13 +892,13 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post a `getDescendants` message to the {@link Worker}.
+   * Post a `getSubNamespaces` message to the {@link Worker}.
    *
-   * A `getDescendants` message has the form:
+   * A `getSubNamespaces` message has the form:
    *
    * ```json
    * {
-   *   name: "getDescendants",
+   *   name: "getSubNamespaces",
    *   namespace: <string>,
    *   depth: <int>,
    *   tunnel: <int>
@@ -907,17 +907,17 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `namespace` is the WW-side namespace to determine the descendants of.
+   * - `namespace` is the WW-side namespace to determine the sub namespaces of.
    * - `depth` is the maximum namespace depth to retrieve, `0` meaning unlimited.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param namespace - The namespace to determine the descendants of.
+   * @param namespace - The namespace to determine the sub namespaces of.
    * @param depth - The maximum namespace depth to retrieve, or `0` for unlimited.
    * @param tunnel - The tunnel index to expect a response on.
    * @returns
    */
-  #postGetDescendantsMessage(namespace: string, depth: number, tunnel: number): void {
-    this.#worker?.shout({ name: 'getDescendants', namespace, depth, tunnel });
+  #postGetSubNamespacesMessage(namespace: string, depth: number, tunnel: number): void {
+    this.#worker?.shout({ name: 'getSubNamespaces', namespace, depth, tunnel });
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -1356,7 +1356,7 @@ class NomadVM extends EventCaster {
    * This method will reject all tunnels awaiting responses on the given namespace.
    *
    * @param namespace - Namespace to delete.
-   * @returns A {@link Promise} that resolves with a list of deleted namespaces (the one given and any descendant of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of deleted namespaces (the one given and any sub namespaces of it) if namespace deletion completed successfully, and rejects with an {@link Error} in case errors occur.
    */
   deleteNamespace(namespace: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
@@ -1582,7 +1582,7 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the dependencies (user-level and predefined) installed on the given namespace or its ancestors.
+   * List the dependencies (user-level and predefined) installed on the given namespace or its prefixes.
    *
    * @param namespace - Namespace to list installed dependencies of.
    * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
@@ -1662,20 +1662,20 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * List the given namespace's descendants.
+   * List the given namespace's sub namespaces.
    *
-   * @param namespace - Namespace to list the descendants of.
+   * @param namespace - Namespace to list the sub namespaces of.
    * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link Promise} that resolves with a list of sub namespaces namespaces if successful, and rejects with an {@link Error} in case errors occur.
    */
-  getDescendants(namespace: string, depth: number | null = null): Promise<string[]> {
-    return new Promise<string[]>((resolve: (descendants: string[]) => void, reject: (error: Error) => void): void => {
+  getSubNamespaces(namespace: string, depth: number | null = null): Promise<string[]> {
+    return new Promise<string[]>((resolve: (subNamespaces: string[]) => void, reject: (error: Error) => void): void => {
       try {
         validateNamespace(namespace);
 
         this.#assertRunning();
 
-        this.#postGetDescendantsMessage(
+        this.#postGetSubNamespacesMessage(
           namespace,
           validateNonNegativeInteger(depth ?? 0),
           this.#addTunnel(resolve, reject),
@@ -2023,7 +2023,7 @@ class NomadVMNamespace {
   }
 
   /**
-   * List the dependencies (user-level and predefined) installed on the wrapped namespace or its ancestors.
+   * List the dependencies (user-level and predefined) installed on the wrapped namespace or its prefixes
    *
    * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
    * @see {@link NomadVM.listInstalled} for additional exceptions thrown.
@@ -2063,14 +2063,14 @@ class NomadVMNamespace {
   }
 
   /**
-   * List the wrapped namespace's descendants.
+   * List the wrapped namespace's sub namespaces.
    *
    * @param depth - Maximum namespace depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of descendant namespaces if successful, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.getDescendants} for additional exceptions thrown.
+   * @returns A {@link Promise} that resolves with a list of sub namespaces if successful, and rejects with an {@link Error} in case errors occur.
+   * @see {@link NomadVM.getSubNamespaces} for additional exceptions thrown.
    */
-  getDescendants(depth: number | null = null): Promise<string[]> {
-    return this.vm.getDescendants(this.namespace, depth);
+  getSubNamespaces(depth: number | null = null): Promise<string[]> {
+    return this.vm.getSubNamespaces(this.namespace, depth);
   }
 
   /**
