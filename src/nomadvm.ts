@@ -139,6 +139,12 @@ class NomadVM extends EventCaster {
   static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
 
   /**
+   * The default number of milliseconds to wait for the {@link Worker} to start.
+   *
+   */
+  static #defaultBootTimeout: number = 100;
+
+  /**
    * The default number of milliseconds to wait between `ping` messages to the {@link Worker}.
    *
    */
@@ -1168,7 +1174,7 @@ class NomadVM extends EventCaster {
    */
   start(
     workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(),
-    timeout: number = 100,
+    timeout: number = NomadVM.#defaultBootTimeout,
     pingInterval: number = NomadVM.#defaultPingInterval,
     pongLimit: number = NomadVM.#defaultPongLimit,
   ): Promise<[number, number]> {
