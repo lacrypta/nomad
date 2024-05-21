@@ -8,11 +8,6 @@
 
 // TODO: For worker.js, only use eslint JS rules, avoid eslint ts rules (otoh: pay attention to them as well, no matter how whiny they are)
 
-// TODO: Split NomadVM.stop() into three parts:
-// TODO:   - NomadVM.kill(): IMMEDIATELY terminates the worker and rejects all pending tunnels
-// TODO:   - NomadVM.stop(): Emits an event to the worker, after a certain amount of time, calls NomadVM.kill()
-// TODO: A pin/pong failure will trigger NomadVM.kill()
-
 import type { WorkerBuilder, WorkerInstance } from './worker';
 
 import { Dependency } from './dependency';
