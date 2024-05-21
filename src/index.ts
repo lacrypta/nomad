@@ -10,8 +10,8 @@ import type { WorkerBuilder, WorkerInstance } from './worker';
 
 import { Dependency } from './dependency';
 import { NomadVM, NomadVMNamespace } from './nomadvm';
-import { builder, build } from './worker';
+import { builder as workerBuilder, build as buildWorker } from './worker';
 
 export type { WorkerBuilder, WorkerInstance };
 
-export { Dependency, NomadVM, NomadVMNamespace, builder, build };
+export { Dependency, NomadVM, NomadVMNamespace, workerBuilder, buildWorker };
