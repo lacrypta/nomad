@@ -49,7 +49,7 @@
  * @param {Scheduler} _schedule - The `setTimeout` value to use (injected by the caller).
  * @returns {void}
  */
-const workerRunner = (_this, _listen, _shout, _schedule) => {
+const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   'use strict';
 
   /**
@@ -60,13 +60,6 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
   const STARTUP = Date.now();
 
   // ----------------------------------------------------------------------------------------------
-
-  /**
-   * Tunnel index to use to signal boot completion.
-   *
-   * @type {number}
-   */
-  const BOOT_TUNNEL = 0;
 
   /**
    * Maximum number of import declarations in a NOMAD execution / install.
@@ -2901,9 +2894,9 @@ const workerRunner = (_this, _listen, _shout, _schedule) => {
     // -- Signal Boot-Up Complete -----------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    postResolveMessage(BOOT_TUNNEL, _Date_now() - STARTUP);
+    postResolveMessage(_bootTunnel, _Date_now() - STARTUP);
   } catch (e) {
-    postRejectMessage(BOOT_TUNNEL, getErrorMessage(e));
+    postRejectMessage(_bootTunnel, getErrorMessage(e));
   }
 };
 

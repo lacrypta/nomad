@@ -1111,7 +1111,7 @@ class NomadVM extends EventCaster {
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link Worker.terminate} on the VM's {@link Worker}.
+   * 2. Calling {@link WorkerInstance.kill} on the VM's {@link WorkerInstance}.
    * 3. Rejecting all existing tunnels.
    *
    * NOTE: this method does NOT return a {@link Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link Promise}.
@@ -1126,18 +1126,13 @@ class NomadVM extends EventCaster {
       if ('stopped' !== this.#state) {
         this.#state = 'stopped';
 
-        if (null !== this.#bootTimeout) {
-          clearTimeout(this.#bootTimeout);
-          this.#bootTimeout = null;
-        }
-        if (null !== this.#pinger) {
-          clearTimeout(this.#pinger);
-          this.#pinger = null;
-        }
-        if (null !== this.#worker) {
-          this.#worker.kill();
-          this.#worker = null;
-        }
+        clearTimeout(this.#bootTimeout ?? undefined);
+        this.#bootTimeout = null;
+        clearInterval(this.#pinger ?? undefined);
+        this.#pinger = null;
+
+        this.#worker?.kill();
+        this.#worker = null;
 
         this.#tunnels.forEach((_: unknown, idx: number): void => {
           try {
@@ -1156,6 +1151,8 @@ class NomadVM extends EventCaster {
     }
     resolve();
   }
+
+  // ----------------------------------------------------------------------------------------------
 
   /**
    * Start the {@link Worker} and wait for its boot-up sequence to complete.
@@ -1186,15 +1183,10 @@ class NomadVM extends EventCaster {
           this.#state = 'booting';
 
           const externalBootTime: number = Date.now();
-          this.#bootTimeout = setTimeout((): void => {
-            this.#rejectTunnel(0, new Error('boot timed out'));
-          }, timeout);
-
           const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
-            if (null !== this.#bootTimeout) {
-              clearTimeout(this.#bootTimeout);
-              this.#bootTimeout = null;
-            }
+            clearTimeout(this.#bootTimeout ?? undefined);
+            this.#bootTimeout = null;
+
             this.#lastPong = Date.now();
             this.#pinger = setInterval(() => {
               const delta: number = Date.now() - this.#lastPong;
@@ -1207,8 +1199,10 @@ class NomadVM extends EventCaster {
               }
               this.#postPingMessage();
             }, pingInterval);
+
             this.#state = 'running';
             this.#castEvent('start:ok');
+
             resolve([internalBootTime, Date.now() - externalBootTime]);
           };
           const bootReject: (error: Error) => void = (error: Error): void => {
@@ -1223,9 +1217,13 @@ class NomadVM extends EventCaster {
             );
           };
 
-          this.#addTunnel(bootResolve, bootReject);
+          const bootTunnel = this.#addTunnel(bootResolve, bootReject);
 
-          this.#worker = workerBuilder.build(workerCode.toString(), this.name).listen(
+          this.#bootTimeout = setTimeout((): void => {
+            this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
+          }, timeout);
+
+          this.#worker = workerBuilder.build(workerCode.toString(), bootTunnel, this.name).listen(
             (data: string): void => {
               this.#messageHandler(data);
             },

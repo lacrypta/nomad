@@ -9,9 +9,10 @@ interface WorkerBuilder {
    * Get the {@link WorkerInstance} constructed using the given parameters.
    *
    * @param code - Code to set the {@link WorkerInstance} up with.
+   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
    * @param name - Name to use for the {@link WorkerInstance}.
    */
-  build(code: string, name: string): WorkerInstance;
+  build(code: string, tunnel: number, name: string): WorkerInstance;
 }
 
 /**
@@ -58,11 +59,12 @@ class BrowserWorkerBuilder implements WorkerBuilder {
    * Get the {@link BrowserWorkerInstance} constructed using the given parameters.
    *
    * @param code - Code to set the {@link BrowserWorkerInstance} up with.
+   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
    * @param name - Name to use for the {@link BrowserWorkerInstance}.
    * @returns The constructed {@link BrowserWorkerInstance}.
    */
-  build(code: string, name: string): WorkerInstance {
-    return new BrowserWorkerInstance(code, name);
+  build(code: string, tunnel: number, name: string): WorkerInstance {
+    return new BrowserWorkerInstance(code, tunnel, name);
   }
 }
 
@@ -87,15 +89,17 @@ class BrowserWorkerInstance implements WorkerInstance {
    * Construct a new {@link BrowserWorkerBuilder} with the given parameters.
    *
    * @param code - The code the {@link Worker} will, eventually, run.
+   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
    * @param name - The name to give to the {@link Worker}.
    */
-  constructor(code: string, name: string) {
+  constructor(code: string, tunnel: number, name: string) {
     this.#blobURL = URL.createObjectURL(
       new Blob(
         [
           `'use strict';
           (${code})(
             this,
+            ${tunnel.toString()},
             ((_addEventListener) => (listener) => {
               _addEventListener('message', ({ data }) => {
                 listener(data);
@@ -205,11 +209,12 @@ function builder(): WorkerBuilder {
  * Get the {@link WorkerInstance} constructed for the current environment using the given parameters.
  *
  * @param code - Code to set the {@link WorkerInstance} up with.
+ * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
  * @param name - Name to use for the {@link WorkerInstance}.
  * @returns A {@link WorkerInstance} constructed via the {@link WorkerInstance} for the current environment.
  */
-function build(code: string, name: string): WorkerInstance {
-  return builder().build(code, name);
+function build(code: string, tunnel: number, name: string): WorkerInstance {
+  return builder().build(code, tunnel, name);
 }
 
 // ------------------------------------------------------------------------------------------------
