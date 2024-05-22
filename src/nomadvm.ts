@@ -1146,19 +1146,22 @@ class NomadVM extends EventCaster {
    * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link !Worker} respectively) if the {@link !Worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
-    workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(),
-    timeout: number = NomadVM.#defaultBootTimeout,
-    pingInterval: number = NomadVM.#defaultPingInterval,
-    pongLimit: number = NomadVM.#defaultPongLimit,
+    workerBuilder: WorkerBuilder | null = null,
+    timeout: number | null = null,
+    pingInterval: number | null = null,
+    pongLimit: number | null = null,
   ): Promise<[number, number]> {
     return new Promise<[number, number]>(
       (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
         this.#castEvent('start');
         try {
           this.#assertCreated();
-          timeout = validateTimeDelta(timeout);
-          pingInterval = validateTimeDelta(pingInterval);
-          pongLimit = validateNonNegativeInteger(pongLimit);
+
+          const theWorkerBuilder: WorkerBuilder = workerBuilder ?? new BrowserWorkerBuilder();
+          const theTimeout: number = validateTimeDelta(timeout ?? NomadVM.#defaultBootTimeout);
+          const thePingInterval: number = validateTimeDelta(pingInterval ?? NomadVM.#defaultPingInterval);
+          const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? NomadVM.#defaultPongLimit);
+
           this.#state = 'booting';
 
           const externalBootTime: number = Date.now();
@@ -1169,7 +1172,7 @@ class NomadVM extends EventCaster {
             this.#lastPong = Date.now();
             this.#pinger = setInterval(() => {
               const delta: number = Date.now() - this.#lastPong;
-              if (pongLimit < delta) {
+              if (thePongLimit < delta) {
                 this.#castEvent('worker:unresponsive', delta);
                 this.#doStop(
                   () => null,
@@ -1177,7 +1180,7 @@ class NomadVM extends EventCaster {
                 );
               }
               this.#postPingMessage();
-            }, pingInterval);
+            }, thePingInterval);
 
             this.#state = 'running';
             this.#castEvent('start:ok');
@@ -1200,9 +1203,9 @@ class NomadVM extends EventCaster {
 
           this.#bootTimeout = setTimeout((): void => {
             this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
-          }, timeout);
+          }, theTimeout);
 
-          this.#worker = workerBuilder.build(workerCode.toString(), bootTunnel, this.name).listen(
+          this.#worker = theWorkerBuilder.build(workerCode.toString(), bootTunnel, this.name).listen(
             (data: string): void => {
               this.#messageHandler(data);
             },
@@ -1231,9 +1234,9 @@ class NomadVM extends EventCaster {
    * @param timeout - Milliseconds to wait for the {@link !Worker} to shut down.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
-  shutdown(timeout: number = NomadVM.#defaultShutdownTimeout): Promise<void> {
+  shutdown(timeout: number | null = null): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      timeout = validateTimeDelta(timeout);
+      const theTimeout: number = validateTimeDelta(timeout ?? NomadVM.#defaultShutdownTimeout);
 
       this.listRootEnclosures().then(
         (rootEnclosures: string[]) => {
@@ -1259,7 +1262,7 @@ class NomadVM extends EventCaster {
                 reject(error);
               },
             );
-          }, timeout);
+          }, theTimeout);
         },
         (error: Error) => {
           reject(error);
@@ -1752,10 +1755,11 @@ class NomadVM extends EventCaster {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
+  execute(enclosure: string, dependency: Dependency, args: Map<string, unknown> | null = null): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
         validateEnclosure(enclosure);
+        const theArgs: Map<string, unknown> = validateArgumentsMap(args ?? new Map<string, unknown>());
 
         this.#castEvent(`${enclosure}:execute`, dependency, args);
 
@@ -1777,7 +1781,7 @@ class NomadVM extends EventCaster {
             },
           ),
           dependency.asObject(),
-          validateArgumentsMap(args),
+          theArgs,
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:execute:error`, dependency, args, e);
@@ -2077,7 +2081,7 @@ class NomadVMEnclosure {
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
-  execute(dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
+  execute(dependency: Dependency, args: Map<string, unknown> | null): Promise<unknown> {
     return this.vm.execute(this.enclosure, dependency, args);
   }
 

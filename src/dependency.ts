@@ -337,12 +337,14 @@ class Dependency {
   constructor(
     name: string = '',
     code: string = '',
-    dependencies: Record<string, string> = Object.create(null) as Record<string, string>,
+    dependencies: Record<string, string> | null = null,
   ) {
+    const theDependencies: Record<string, string> = dependencies ?? (Object.create(null) as Record<string, string>);
+
     const dependency: DependencyObject = Dependency.validate({
       name,
       code,
-      dependencies,
+      dependencies: theDependencies,
     });
 
     this.#name = dependency.name;
