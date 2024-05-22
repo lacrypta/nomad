@@ -146,11 +146,11 @@ class EventCaster {
    * @param protectedMethodInjector - Callback that will receive the "protected" methods map.
    */
   constructor(
-    protectedMethodInjector: MethodInjector<{
+    protectedMethodInjector?: MethodInjector<{
       cast: Cast;
     }>,
   ) {
-    protectedMethodInjector({
+    protectedMethodInjector?.({
       cast: (name: string, ...args: unknown[]): this => this.#cast(name, ...args),
     });
   }

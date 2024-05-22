@@ -209,7 +209,7 @@ class NomadVM extends EventCaster {
    * The {@link WorkerInstance} this VM is using for secure execution, or `null` if none create or stopped.
    *
    */
-  #worker: WorkerInstance | null;
+  #worker?: WorkerInstance | undefined;
 
   /**
    * A list of predefined functions.
@@ -232,19 +232,19 @@ class NomadVM extends EventCaster {
    * The timeout ID for the boot timeout, or `null` if not yet set up.
    *
    */
-  #bootTimeout: ReturnType<typeof setTimeout> | null = null;
+  #bootTimeout?: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * The interval ID for the pinger, or `null` if not yet set up.
    *
    */
-  #pinger: ReturnType<typeof setInterval> | null = null;
+  #pinger?: ReturnType<typeof setInterval> | undefined;
 
   /**
    * The timestamp when the last `pong` message was received.
    *
    */
-  #lastPong: number = NaN;
+  #lastPong?: number;
 
   /**
    * Construct a new {@link NomadVM} instance, using the given name.
@@ -252,8 +252,8 @@ class NomadVM extends EventCaster {
    * @param name - The VM's name to use, or `null` to have one generated randomly.
    * @throws {Error} If the given name already exists.
    */
-  constructor(name: string | null = null) {
-    if (null === name) {
+  constructor(name?: string) {
+    if (undefined === name) {
       do {
         name = `${NomadVM.#namesPrefix}-${NomadVM.#pseudoRandomString()}`;
       } while (NomadVM.#names.has(name));
@@ -273,7 +273,6 @@ class NomadVM extends EventCaster {
     this.#name = name;
     NomadVM.#names.set(this.#name, new WeakRef<NomadVM>(this));
     this.#state = 'created';
-    this.#worker = null;
 
     NomadVM.#castGlobal(`${NomadVM.#eventPrefix}:${this.#name}:new`, this);
   }
@@ -1100,19 +1099,19 @@ class NomadVM extends EventCaster {
    * @param resolve - Resolution callback: called if shutting down completed successfully.
    * @param reject - Rejection callback: called if anything went wrong with shutting down.
    */
-  #doStop(resolve: () => void, reject: (error: Error) => void): void {
+  #doStop(resolve?: () => void, reject?: (error: Error) => void): void {
     this.#castEvent('stop');
     try {
       if ('stopped' !== this.#state) {
         this.#state = 'stopped';
 
-        clearTimeout(this.#bootTimeout ?? undefined);
-        clearInterval(this.#pinger ?? undefined);
+        clearTimeout(this.#bootTimeout);
+        clearInterval(this.#pinger);
         this.#worker?.kill();
 
-        this.#bootTimeout = null;
-        this.#pinger = null;
-        this.#worker = null;
+        this.#bootTimeout = undefined;
+        this.#pinger = undefined;
+        this.#worker = undefined;
 
         this.#tunnels.forEach((_: unknown, idx: number): void => {
           try {
@@ -1125,10 +1124,10 @@ class NomadVM extends EventCaster {
       }
     } catch (e) {
       this.#castEvent('stop:error', e);
-      reject(e instanceof Error ? e : new Error('unknown error'));
+      reject?.(e instanceof Error ? e : new Error('unknown error'));
     }
     this.#castEvent('stop:ok');
-    resolve();
+    resolve?.();
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -1146,10 +1145,10 @@ class NomadVM extends EventCaster {
    * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link !Worker} respectively) if the {@link !Worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
-    workerBuilder: WorkerBuilder | null = null,
-    timeout: number | null = null,
-    pingInterval: number | null = null,
-    pongLimit: number | null = null,
+    workerBuilder?: WorkerBuilder,
+    timeout?: number,
+    pingInterval?: number,
+    pongLimit?: number,
   ): Promise<[number, number]> {
     return new Promise<[number, number]>(
       (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
@@ -1166,18 +1165,15 @@ class NomadVM extends EventCaster {
 
           const externalBootTime: number = Date.now();
           const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
-            clearTimeout(this.#bootTimeout ?? undefined);
-            this.#bootTimeout = null;
+            clearTimeout(this.#bootTimeout);
+            this.#bootTimeout = undefined;
 
             this.#lastPong = Date.now();
             this.#pinger = setInterval(() => {
-              const delta: number = Date.now() - this.#lastPong;
+              const delta: number = Date.now() - (this.#lastPong ?? -Infinity);
               if (thePongLimit < delta) {
                 this.#castEvent('worker:unresponsive', delta);
-                this.#doStop(
-                  () => null,
-                  () => null,
-                );
+                this.#doStop();
               }
               this.#postPingMessage();
             }, thePingInterval);
@@ -1234,7 +1230,7 @@ class NomadVM extends EventCaster {
    * @param timeout - Milliseconds to wait for the {@link !Worker} to shut down.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
-  shutdown(timeout: number | null = null): Promise<void> {
+  shutdown(timeout?: number): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? NomadVM.#defaultShutdownTimeout);
 
@@ -1644,18 +1640,15 @@ class NomadVM extends EventCaster {
    * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
    * @returns A {@link !Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
-  getSubEnclosures(enclosure: string, depth: number | null = null): Promise<string[]> {
+  getSubEnclosures(enclosure: string, depth?: number): Promise<string[]> {
     return new Promise<string[]>((resolve: (subEnclosures: string[]) => void, reject: (error: Error) => void): void => {
+      const theDepth: number = validateNonNegativeInteger(depth ?? 0);
       try {
         validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postGetSubEnclosuresMessage(
-          enclosure,
-          validateNonNegativeInteger(depth ?? 0),
-          this.#addTunnel(resolve, reject),
-        );
+        this.#postGetSubEnclosuresMessage(enclosure, theDepth, this.#addTunnel(resolve, reject));
       } catch (e) {
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
@@ -1755,13 +1748,13 @@ class NomadVM extends EventCaster {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: Dependency, args: Map<string, unknown> | null = null): Promise<unknown> {
+  execute(enclosure: string, dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
         validateEnclosure(enclosure);
         const theArgs: Map<string, unknown> = validateArgumentsMap(args ?? new Map<string, unknown>());
 
-        this.#castEvent(`${enclosure}:execute`, dependency, args);
+        this.#castEvent(`${enclosure}:execute`, dependency, theArgs);
 
         if (!(dependency instanceof Dependency)) {
           throw new Error('can only execute Dependency');
@@ -1772,11 +1765,11 @@ class NomadVM extends EventCaster {
           enclosure,
           this.#addTunnel(
             (result: unknown): void => {
-              this.#castEvent(`${enclosure}:execute:ok`, dependency, args, result);
+              this.#castEvent(`${enclosure}:execute:ok`, dependency, theArgs, result);
               resolve(result);
             },
             (error: Error): void => {
-              this.#castEvent(`${enclosure}:execute:error`, dependency, args, error);
+              this.#castEvent(`${enclosure}:execute:error`, dependency, theArgs, error);
               reject(error);
             },
           ),
@@ -2046,7 +2039,7 @@ class NomadVMEnclosure {
    * @returns A {@link !Promise} that resolves with a list of sub enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.getSubEnclosures} for additional exceptions thrown.
    */
-  getSubEnclosures(depth: number | null = null): Promise<string[]> {
+  getSubEnclosures(depth?: number): Promise<string[]> {
     return this.vm.getSubEnclosures(this.enclosure, depth);
   }
 
@@ -2081,7 +2074,7 @@ class NomadVMEnclosure {
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
-  execute(dependency: Dependency, args: Map<string, unknown> | null): Promise<unknown> {
+  execute(dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
     return this.vm.execute(this.enclosure, dependency, args);
   }
 

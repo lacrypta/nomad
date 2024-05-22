@@ -268,7 +268,7 @@ class Dependency {
    * @returns Sorted {@link Dependency} list.
    * @throws {Error} If unresolved dependencies found.
    */
-  static sort(dependencies: Iterable<Dependency>, installed: Iterable<string> | null = null): Dependency[] {
+  static sort(dependencies: Iterable<Dependency>, installed?: Iterable<string>): Dependency[] {
     const existing: Set<string> = new Set<string>(installed ?? []);
     const pending: Set<Dependency> = new Set<Dependency>(dependencies);
     const newOnes: Set<Dependency> = new Set<Dependency>();
@@ -334,17 +334,11 @@ class Dependency {
    * @param dependencies - The dependency's dependencies map to use.
    * @see {@link Dependency.validate} for exceptions thrown.
    */
-  constructor(
-    name: string = '',
-    code: string = '',
-    dependencies: Record<string, string> | null = null,
-  ) {
-    const theDependencies: Record<string, string> = dependencies ?? (Object.create(null) as Record<string, string>);
-
+  constructor(name?: string, code?: string, dependencies?: Record<string, string>) {
     const dependency: DependencyObject = Dependency.validate({
-      name,
-      code,
-      dependencies: theDependencies,
+      name: name ?? '',
+      code: code ?? '',
+      dependencies: dependencies ?? (Object.create(null) as Record<string, string>),
     });
 
     this.#name = dependency.name;
