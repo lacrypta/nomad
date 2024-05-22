@@ -142,7 +142,7 @@ class NomadVM extends EventCaster {
    * The default number of milliseconds to wait for the {@link !Worker} to start.
    *
    */
-  static #defaultBootTimeout: number = 100;
+  static #defaultBootTimeout: number = 200;
 
   /**
    * The default number of milliseconds to wait for the {@link !Worker} to stop.
