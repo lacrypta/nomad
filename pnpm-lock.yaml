@@ -954,8 +954,8 @@ packages:
     resolution: {integrity: sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==, tarball: https://registry.npmjs.org/camelcase/-/camelcase-6.3.0.tgz}
     engines: {node: '>=10'}
 
-  caniuse-lite@1.0.30001620:
-    resolution: {integrity: sha512-WJvYsOjd1/BYUY6SNGUosK9DUidBPDTnOARHp3fSmFO1ekdxaY6nKRttEVrfMmYi80ctS0kz1wiWmm14fVc3ew==, tarball: https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001620.tgz}
+  caniuse-lite@1.0.30001621:
+    resolution: {integrity: sha512-+NLXZiviFFKX0fk8Piwv3PfLPGtRqJeq2TiNoUff/qB5KJgwecJTvCXDpmlyP/eCI/GUEmp/h/y5j0yckiiZrA==, tarball: https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001621.tgz}
 
   chalk@2.4.2:
     resolution: {integrity: sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==, tarball: https://registry.npmjs.org/chalk/-/chalk-2.4.2.tgz}
@@ -1867,8 +1867,8 @@ packages:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==, tarball: https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz}
     engines: {node: '>= 8'}
 
-  micromatch@4.0.6:
-    resolution: {integrity: sha512-Y4Ypn3oujJYxJcMacVgcs92wofTHxp9FzfDpQON4msDefoC0lb3ETvQLOdLcbhSwU1bz8HrL/1sygfBIHudrkQ==, tarball: https://registry.npmjs.org/micromatch/-/micromatch-4.0.6.tgz}
+  micromatch@4.0.7:
+    resolution: {integrity: sha512-LPP/3KorzCwBxfeUuZmaR6bG2kdeHSbe0P2tY3FLRU4vYrjYz5hI4QZwV0njUx3jeuKe67YukQ1LSPZBKDqO/Q==, tarball: https://registry.npmjs.org/micromatch/-/micromatch-4.0.7.tgz}
     engines: {node: '>=8.6'}
 
   mimic-fn@2.1.0:
@@ -2003,10 +2003,6 @@ packages:
   picomatch@2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==, tarball: https://registry.npmjs.org/picomatch/-/picomatch-2.3.1.tgz}
     engines: {node: '>=8.6'}
-
-  picomatch@4.0.2:
-    resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==, tarball: https://registry.npmjs.org/picomatch/-/picomatch-4.0.2.tgz}
-    engines: {node: '>=12'}
 
   pirates@4.0.6:
     resolution: {integrity: sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==, tarball: https://registry.npmjs.org/pirates/-/pirates-4.0.6.tgz}
@@ -2878,7 +2874,7 @@ snapshots:
       jest-util: 29.7.0
       jest-validate: 29.7.0
       jest-watcher: 29.7.0
-      micromatch: 4.0.6
+      micromatch: 4.0.7
       pretty-format: 29.7.0
       slash: 3.0.0
       strip-ansi: 6.0.1
@@ -2989,7 +2985,7 @@ snapshots:
       jest-haste-map: 29.7.0
       jest-regex-util: 29.6.3
       jest-util: 29.7.0
-      micromatch: 4.0.6
+      micromatch: 4.0.7
       pirates: 4.0.6
       slash: 3.0.0
       write-file-atomic: 4.0.2
@@ -3366,7 +3362,7 @@ snapshots:
 
   browserslist@4.23.0:
     dependencies:
-      caniuse-lite: 1.0.30001620
+      caniuse-lite: 1.0.30001621
       electron-to-chromium: 1.4.777
       node-releases: 2.0.14
       update-browserslist-db: 1.0.16(browserslist@4.23.0)
@@ -3395,7 +3391,7 @@ snapshots:
 
   camelcase@6.3.0: {}
 
-  caniuse-lite@1.0.30001620: {}
+  caniuse-lite@1.0.30001621: {}
 
   chalk@2.4.2:
     dependencies:
@@ -3844,7 +3840,7 @@ snapshots:
       '@nodelib/fs.walk': 1.2.8
       glob-parent: 5.1.2
       merge2: 1.4.1
-      micromatch: 4.0.6
+      micromatch: 4.0.7
 
   fast-json-stable-stringify@2.1.0: {}
 
@@ -4242,7 +4238,7 @@ snapshots:
       jest-runner: 29.7.0
       jest-util: 29.7.0
       jest-validate: 29.7.0
-      micromatch: 4.0.6
+      micromatch: 4.0.7
       parse-json: 5.2.0
       pretty-format: 29.7.0
       slash: 3.0.0
@@ -4294,7 +4290,7 @@ snapshots:
       jest-regex-util: 29.6.3
       jest-util: 29.7.0
       jest-worker: 29.7.0
-      micromatch: 4.0.6
+      micromatch: 4.0.7
       walker: 1.0.8
     optionalDependencies:
       fsevents: 2.3.3
@@ -4318,7 +4314,7 @@ snapshots:
       '@types/stack-utils': 2.0.3
       chalk: 4.1.2
       graceful-fs: 4.2.11
-      micromatch: 4.0.6
+      micromatch: 4.0.7
       pretty-format: 29.7.0
       slash: 3.0.0
       stack-utils: 2.0.6
@@ -4598,10 +4594,10 @@ snapshots:
 
   merge2@1.4.1: {}
 
-  micromatch@4.0.6:
+  micromatch@4.0.7:
     dependencies:
       braces: 3.0.3
-      picomatch: 4.0.2
+      picomatch: 2.3.1
 
   mimic-fn@2.1.0: {}
 
@@ -4727,8 +4723,6 @@ snapshots:
   picocolors@1.0.1: {}
 
   picomatch@2.3.1: {}
-
-  picomatch@4.0.2: {}
 
   pirates@4.0.6: {}
 
