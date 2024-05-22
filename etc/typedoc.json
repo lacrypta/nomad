@@ -6,7 +6,10 @@
     "typedoc-plugin-katex",
     "typedoc-plugin-mdn-links",
     "typedoc-plugin-mermaid",
-    "typedoc-plugin-remove-references"
+    "typedoc-plugin-remove-references",
+    "typedoc-plugin-missing-exports",
+    "typedoc-plugin-expand-object-like-types",
+    "typedoc-plugin-reference-excluder"
   ],
   "katex": {
     "options": {
@@ -28,6 +31,8 @@
   "markedOptions": {
     "gfm": true
   },
+  "internalModule": "<<internal>>",
+  "excludeExternals": true,
   "pretty": true,
   "sourceLinkExternal": true,
   "hideParameterTypesInTitle": false,

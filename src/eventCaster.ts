@@ -18,7 +18,7 @@ type EventCallback = (name: string, ...args: unknown[]) => unknown;
  * This event caster allows listeners to be attached to "glob" expressions.
  * All event names must adhere to the following ABNF:
  *
- * ```abnf
+ * ```ini
  * segment = 1*( "." / ALPHA / DIGIT / "-" )
  * event-name = segment *( ":" segment )
  * ```
@@ -32,7 +32,7 @@ type EventCallback = (name: string, ...args: unknown[]) => unknown;
  *
  * This yields the following ABNF for a filter proper:
  *
- * ```abnf
+ * ```ini
  * filter = ( ( segment / "*" ) [ ":" filter ] / "**" [ ":" segment [ ":" filter ] ] )
  * ```
  *
@@ -43,7 +43,7 @@ class EventCaster {
    *
    * All event names must adhere to the following ABNF:
    *
-   * ```abnf
+   * ```ini
    * segment = 1*( "." / ALPHA / DIGIT / "-" )
    * event-name = segment *( ":" segment )
    * ```
@@ -71,7 +71,7 @@ class EventCaster {
    *
    * All event name filters must adhere to the following ABNF:
    *
-   * ```abnf
+   * ```ini
    * filter-segment = "*" / "**" / 1*( "." / ALPHA / DIGIT / "-" )
    * filter = filter-segment *( ":" filter-segment )
    * ```
@@ -98,7 +98,7 @@ class EventCaster {
   }
 
   /**
-   * Turn an event name filter into a filtering {@link RegExp}.
+   * Turn an event name filter into a filtering {@link !RegExp}.
    *
    * @param filter - The event name filter to transform.
    * @returns The transformed event name filter.
@@ -161,7 +161,7 @@ class EventCaster {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
+   * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
    */
   on(filter: string, callback: EventCallback): this {
     if (!this.#listeners.has(callback)) {

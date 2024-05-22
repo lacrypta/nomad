@@ -41,9 +41,10 @@
  */
 
 /**
- * The code the {@link Worker} will end up executing.
+ * The code the {@link !Worker} will end up executing.
  *
  * @param {Record<string, any>} _this - The `this` value to use (injected by the caller).
+ * @param {number} _bootTunnel - The tunnel index to use to signal when boot-up is complete.
  * @param {Listener} _listen - The `listener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
  * @param {Scheduler} _schedule - The `schedule` value to use (injected by the caller).
@@ -53,7 +54,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   'use strict';
 
   /**
-   * Millisecond in which {@link Worker} execution started.
+   * Millisecond in which {@link !Worker} execution started.
    *
    * @type {number}
    */
@@ -126,7 +127,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Shim for {@link Array.fromAsync}.
+   * Shim for {@link !Array.fromAsync}.
    *
    * Needed because: Samsung, and NodeJS have no support.
    *
@@ -197,7 +198,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link ArrayBuffer}.
+   * Shim for {@link !ArrayBuffer}.
    *
    * Needed because: Firefox has problems dealing with resizing.
    *
@@ -208,7 +209,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Atomics.waitAsync}.
+   * Shim for {@link !Atomics.waitAsync}.
    *
    * Needed because: Firefox has no support.
    *
@@ -219,7 +220,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link FinalizationRegistry}.
+   * Shim for {@link !FinalizationRegistry}.
    *
    * Needed because: Firefox has no support for non-registered symbols as target.
    *
@@ -230,7 +231,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator}.
+   * Shim for {@link !Iterator}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -241,7 +242,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.from}.
+   * Shim for {@link !Iterator.from}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -252,7 +253,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.drop}.
+   * Shim for {@link !Iterator.prototype.drop}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -263,7 +264,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.every}.
+   * Shim for {@link !Iterator.prototype.every}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -274,7 +275,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.filter}.
+   * Shim for {@link !Iterator.prototype.filter}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -285,7 +286,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.find}.
+   * Shim for {@link !Iterator.prototype.find}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -296,7 +297,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.flatMap}.
+   * Shim for {@link !Iterator.prototype.flatMap}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -307,7 +308,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.forEach}.
+   * Shim for {@link !Iterator.prototype.forEach}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -318,7 +319,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.map}.
+   * Shim for {@link !Iterator.prototype.map}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -329,7 +330,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.reduce}.
+   * Shim for {@link !Iterator.prototype.reduce}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -340,7 +341,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.some}.
+   * Shim for {@link !Iterator.prototype.some}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -351,7 +352,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.take}.
+   * Shim for {@link !Iterator.prototype.take}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -362,7 +363,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Iterator.prototype.toArray}.
+   * Shim for {@link !Iterator.prototype.toArray}.
    *
    * Needed because: Firefox, Safari, Samsung, and NodeJS have no support.
    *
@@ -373,7 +374,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Map.groupBy}.
+   * Shim for {@link !Map.groupBy}.
    *
    * Needed because: Samsung has no support.
    *
@@ -398,7 +399,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Promise.withResolvers}.
+   * Shim for {@link !Promise.withResolvers}.
    *
    * Needed because: Samsung, and NodeJS have no support.
    *
@@ -422,7 +423,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.difference}.
+   * Shim for {@link !Set.prototype.difference}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -443,7 +444,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.intersection}.
+   * Shim for {@link !Set.prototype.intersection}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -464,7 +465,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.isDisjointFrom}.
+   * Shim for {@link !Set.prototype.isDisjointFrom}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -484,7 +485,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.isSubsetOf}.
+   * Shim for {@link !Set.prototype.isSubsetOf}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -504,7 +505,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.isSupersetOf}.
+   * Shim for {@link !Set.prototype.isSupersetOf}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -524,7 +525,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.symmetricDifference}.
+   * Shim for {@link !Set.prototype.symmetricDifference}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -550,7 +551,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link Set.prototype.union}.
+   * Shim for {@link !Set.prototype.union}.
    *
    * Needed because: Firefox, Samsung, and NodeJS have no support.
    *
@@ -572,7 +573,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link WeakMap}.
+   * Shim for {@link !WeakMap}.
    *
    * Needed because: Firefox has no support for non-registered symbols as target.
    *
@@ -583,7 +584,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link WeakRef}.
+   * Shim for {@link !WeakRef}.
    *
    * Needed because: Firefox has no support for non-registered symbols as target.
    *
@@ -594,7 +595,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Shim for {@link WeakSet}.
+   * Shim for {@link !WeakSet}.
    *
    * Needed because: Firefox has no support for non.registered symbols as target.
    *
@@ -609,7 +610,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Patch {@link eval}.
+   * Patch {@link !eval}.
    *
    * This makes it so that only [indirect eval](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval#direct_and_indirect_eval) is available.
    *
@@ -626,9 +627,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link Object}.
+   * Patch {@link !Object}.
    *
-   * This makes it so that {@link Object.prototype.toLocaleString} maps to {@link Object.prototype.toString}.
+   * This makes it so that {@link !Object.prototype.toLocaleString} maps to {@link !Object.prototype.toString}.
    *
    * @returns {void}
    */
@@ -637,9 +638,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link Number}.
+   * Patch {@link !Number}.
    *
-   * This makes it so that {@link Number.prototype.toLocaleString} maps to {@link Number.prototype.toString}.
+   * This makes it so that {@link !Number.prototype.toLocaleString} maps to {@link !Number.prototype.toString}.
    *
    * @returns {void}
    */
@@ -648,9 +649,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link BigInt}.
+   * Patch {@link !BigInt}.
    *
-   * This makes it so that {@link BigInt.prototype.toLocaleString} maps to {@link BigInt.prototype.toString}.
+   * This makes it so that {@link !BigInt.prototype.toLocaleString} maps to {@link !BigInt.prototype.toString}.
    *
    * @returns {void}
    */
@@ -659,9 +660,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link Math}.
+   * Patch {@link !Math}.
    *
-   * This makes it so that {@link Math.random} always returns {@link NaN}.
+   * This makes it so that {@link !Math.random} always returns {@link !NaN}.
    *
    * @returns {void}
    */
@@ -670,46 +671,46 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link Date}.
+   * Patch {@link !Date}.
    *
    * This makes it so that:
    *
-   * - {@link Date} will return {@link NaN} for the current date.
-   * - {@link Date.now} will return {@link NaN}.
-   * - {@link Date.prototype.getDate} maps to {@link Date.prototype.getUTCDate}.
-   * - {@link Date.prototype.getDay} maps to {@link Date.prototype.getUTCDay}.
-   * - {@link Date.prototype.getFullYear} maps to {@link Date.prototype.getUTCFullYear}.
-   * - {@link Date.prototype.getHours} maps to {@link Date.prototype.getUTCHours}.
-   * - {@link Date.prototype.getMilliseconds} maps to {@link Date.prototype.getUTCMilliseconds}.
-   * - {@link Date.prototype.getMinutes} maps to {@link Date.prototype.getUTCMinutes}.
-   * - {@link Date.prototype.getMonth} maps to {@link Date.prototype.getUTCMonth}.
-   * - {@link Date.prototype.getSeconds} maps to {@link Date.prototype.getUTCSeconds}.
-   * - {@link Date.prototype.setDate} maps to {@link Date.prototype.setUTCDate}.
-   * - {@link Date.prototype.setFullYear} maps to {@link Date.prototype.setUTCFullYear}.
-   * - {@link Date.prototype.setHours} maps to {@link Date.prototype.setUTCHours}.
-   * - {@link Date.prototype.setMilliseconds} maps to {@link Date.prototype.setUTCMilliseconds}.
-   * - {@link Date.prototype.setMinutes} maps to {@link Date.prototype.setUTCMinutes}.
-   * - {@link Date.prototype.setMonth} maps to {@link Date.prototype.setUTCMonth}.
-   * - {@link Date.prototype.setSeconds} maps to {@link Date.prototype.setUTCSeconds}.
-   * - {@link Date.prototype.getTimezoneOffset} will return `0`.
-   * - {@link Date.prototype.toDateString} will return {@link Date.prototype.toISOString}'s date part.
-   * - {@link Date.prototype.toTimeString} will return {@link Date.prototype.toISOString}'s time part.
-   * - {@link Date.prototype.toString} maps to {@link Date.prototype.toISOString}.
-   * - {@link Date.prototype.toLocaleDateString} maps to {@link Date.prototype.toDateString}.
-   * - {@link Date.prototype.toLocaleString} maps to {@link Date.prototype.toString}.
-   * - {@link Date.prototype.toLocaleTimeString} maps to {@link Date.prototype.toTimeString}.
+   * - {@link !Date} will return {@link !NaN} for the current date.
+   * - {@link !Date.now} will return {@link !NaN}.
+   * - {@link !Date.prototype.getDate} maps to {@link !Date.prototype.getUTCDate}.
+   * - {@link !Date.prototype.getDay} maps to {@link !Date.prototype.getUTCDay}.
+   * - {@link !Date.prototype.getFullYear} maps to {@link !Date.prototype.getUTCFullYear}.
+   * - {@link !Date.prototype.getHours} maps to {@link !Date.prototype.getUTCHours}.
+   * - {@link !Date.prototype.getMilliseconds} maps to {@link !Date.prototype.getUTCMilliseconds}.
+   * - {@link !Date.prototype.getMinutes} maps to {@link !Date.prototype.getUTCMinutes}.
+   * - {@link !Date.prototype.getMonth} maps to {@link !Date.prototype.getUTCMonth}.
+   * - {@link !Date.prototype.getSeconds} maps to {@link !Date.prototype.getUTCSeconds}.
+   * - {@link !Date.prototype.setDate} maps to {@link !Date.prototype.setUTCDate}.
+   * - {@link !Date.prototype.setFullYear} maps to {@link !Date.prototype.setUTCFullYear}.
+   * - {@link !Date.prototype.setHours} maps to {@link !Date.prototype.setUTCHours}.
+   * - {@link !Date.prototype.setMilliseconds} maps to {@link !Date.prototype.setUTCMilliseconds}.
+   * - {@link !Date.prototype.setMinutes} maps to {@link !Date.prototype.setUTCMinutes}.
+   * - {@link !Date.prototype.setMonth} maps to {@link !Date.prototype.setUTCMonth}.
+   * - {@link !Date.prototype.setSeconds} maps to {@link !Date.prototype.setUTCSeconds}.
+   * - {@link !Date.prototype.getTimezoneOffset} will return `0`.
+   * - {@link !Date.prototype.toDateString} will return {@link !Date.prototype.toISOString}'s date part.
+   * - {@link !Date.prototype.toTimeString} will return {@link !Date.prototype.toISOString}'s time part.
+   * - {@link !Date.prototype.toString} maps to {@link !Date.prototype.toISOString}.
+   * - {@link !Date.prototype.toLocaleDateString} maps to {@link !Date.prototype.toDateString}.
+   * - {@link !Date.prototype.toLocaleString} maps to {@link !Date.prototype.toString}.
+   * - {@link !Date.prototype.toLocaleTimeString} maps to {@link !Date.prototype.toTimeString}.
    *
    * @returns {void}
    */
   const patchDate = () => {
     /**
-     * Either construct a new {@link Date} instance or use as a function to obtain the {@link Date.toISOString} output.
+     * Either construct a new {@link !Date} instance or use as a function to obtain the {@link !Date.toISOString} output.
      *
      * This patch is intended to remove access to the current date / time.
-     * It strives to remove any implementation-dependent behavior from the {@link Date} constructor.
+     * It strives to remove any implementation-dependent behavior from the {@link !Date} constructor.
      *
      * @param {...unknown} args - Construction / execution arguments.
-     * @returns {string | Date} The {@link Date.toISOString} output (if called as a function), or the constructed {@link Date} instance (if used as a constructor).
+     * @returns {string | Date} The {@link !Date.toISOString} output (if called as a function), or the constructed {@link !Date} instance (if used as a constructor).
      * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
      */
     _this.Date = function Date(...args) {
@@ -855,13 +856,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link String}.
+   * Patch {@link !String}.
    *
    * This makes it so that:
    *
-   * - {@link String.prototype.localeCompare} performs a byte-wise comparison.
-   * - {@link String.prototype.toLocaleLowerCase} maps to {@link String.prototype.toLowerCase}.
-   * - {@link String.prototype.toLocaleUpperCase} maps to {@link String.prototype.toUpperCase}.
+   * - {@link !String.prototype.localeCompare} performs a byte-wise comparison.
+   * - {@link !String.prototype.toLocaleLowerCase} maps to {@link !String.prototype.toLowerCase}.
+   * - {@link !String.prototype.toLocaleUpperCase} maps to {@link !String.prototype.toUpperCase}.
    *
    * @returns {void}
    */
@@ -874,9 +875,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link Array}.
+   * Patch {@link !Array}.
    *
-   * This makes it so that {@link Array.prototype.toLocaleString} maps to {@link Array.prototype.toString}.
+   * This makes it so that {@link !Array.prototype.toLocaleString} maps to {@link !Array.prototype.toString}.
    *
    * @returns {void}
    */
@@ -885,21 +886,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link TypedArray}.
+   * Patch {@link !TypedArray}.
    *
    * This makes it so that:
    *
-   * - {@link Int8Array.prototype.toLocaleString} maps to {@link Int8Array.prototype.toString}.
-   * - {@link Uint8Array.prototype.toLocaleString} maps to {@link Uint8Array.prototype.toString}.
-   * - {@link Uint8ClampedArray.prototype.toLocaleString} maps to {@link Uint8ClampedArray.prototype.toString}.
-   * - {@link Int16Array.prototype.toLocaleString} maps to {@link Int16Array.prototype.toString}.
-   * - {@link Uint16Array.prototype.toLocaleString} maps to {@link Uint16Array.prototype.toString}.
-   * - {@link Int32Array.prototype.toLocaleString} maps to {@link Int32Array.prototype.toString}.
-   * - {@link Uint32Array.prototype.toLocaleString} maps to {@link Uint32Array.prototype.toString}.
-   * - {@link BigInt64Array.prototype.toLocaleString} maps to {@link BigInt64Array.prototype.toString}.
-   * - {@link BigUint64Array.prototype.toLocaleString} maps to {@link BigUint64Array.prototype.toString}.
-   * - {@link Float32Array.prototype.toLocaleString} maps to {@link Float32Array.prototype.toString}.
-   * - {@link Float64Array.prototype.toLocaleString} maps to {@link Float64Array.prototype.toString}.
+   * - {@link !Int8Array.prototype.toLocaleString} maps to {@link !Int8Array.prototype.toString}.
+   * - {@link !Uint8Array.prototype.toLocaleString} maps to {@link !Uint8Array.prototype.toString}.
+   * - {@link !Uint8ClampedArray.prototype.toLocaleString} maps to {@link !Uint8ClampedArray.prototype.toString}.
+   * - {@link !Int16Array.prototype.toLocaleString} maps to {@link !Int16Array.prototype.toString}.
+   * - {@link !Uint16Array.prototype.toLocaleString} maps to {@link !Uint16Array.prototype.toString}.
+   * - {@link !Int32Array.prototype.toLocaleString} maps to {@link !Int32Array.prototype.toString}.
+   * - {@link !Uint32Array.prototype.toLocaleString} maps to {@link !Uint32Array.prototype.toString}.
+   * - {@link !BigInt64Array.prototype.toLocaleString} maps to {@link !BigInt64Array.prototype.toString}.
+   * - {@link !BigUint64Array.prototype.toLocaleString} maps to {@link !BigUint64Array.prototype.toString}.
+   * - {@link !Float32Array.prototype.toLocaleString} maps to {@link !Float32Array.prototype.toString}.
+   * - {@link !Float64Array.prototype.toLocaleString} maps to {@link !Float64Array.prototype.toString}.
    *
    * @returns {void}
    */
@@ -918,25 +919,25 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Patch {@link RegExp}.
+   * Patch {@link !RegExp}.
    *
    * This makes it so that the following deprecated static properties are removed:
    *
-   * - {@link RegExp.$1}, {@link RegExp.$2}, {@link RegExp.$3}, {@link RegExp.$4}, {@link RegExp.$5}, {@link RegExp.$6}, {@link RegExp.$7}, {@link RegExp.$8}, {@link RegExp.$9}.
-   * - {@link RegExp.input}, {@link RegExp.$_}.
-   * - {@link RegExp.lastMatch}, {@link RegExp.$&}.
-   * - {@link RegExp.lastParen}, {@link RegExp.$+}.
-   * - {@link RegExp.leftContext}, {@link RegExp.$`}.
-   * - {@link RegExp.rightContext}, {@link RegExp.$'}.
+   * - {@link !RegExp.$1}, {@link !RegExp.$2}, {@link !RegExp.$3}, {@link !RegExp.$4}, {@link !RegExp.$5}, {@link !RegExp.$6}, {@link !RegExp.$7}, {@link !RegExp.$8}, {@link !RegExp.$9}.
+   * - {@link !RegExp.input}, {@link !RegExp.$_}.
+   * - {@link !RegExp.lastMatch}, {@link !RegExp.$&}.
+   * - {@link !RegExp.lastParen}, {@link !RegExp.$+}.
+   * - {@link !RegExp.leftContext}, {@link !RegExp.$`}.
+   * - {@link !RegExp.rightContext}, {@link !RegExp.$'}.
    *
    * @returns {void}
    */
   const patchRegExp = () => {
     /**
-     * Wrapper around {@link RegExp} constructor so as to hide deprecated static properties (needed in Firefox).
+     * Wrapper around {@link !RegExp} constructor so as to hide deprecated static properties (needed in Firefox).
      *
      * @param {...any} args - Constructor arguments.
-     * @returns {RegExp} The constructed {@link RegExp}.
+     * @returns {RegExp} The constructed {@link !RegExp}.
      */
     _this.RegExp = function RegExp(...args) {
       return new.target ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, args) : _RegExp(...args);
@@ -955,7 +956,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Recursively call {@link Object.freeze} on {@link this}.
+   * Recursively call {@link !Object.freeze} on {@link this}.
    *
    * @returns {void}
    */
@@ -1067,7 +1068,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * - `error` is the rejection's error string.
    *
    * @param {number} tunnel - The tunnel index to reject.
-   * @param {string} error - The error message to use for {@link Error} construction in the {@link NomadVM}.
+   * @param {string} error - The error message to use for {@link !Error} construction in the {@link NomadVM}.
    * @returns {void}
    */
   const postRejectMessage = (tunnel, error) => {
@@ -1149,7 +1150,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @type {object}
    * @internal
    * @property {Set<number>} tunnels - Set of tunnels associated to this enclosure.
-   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this enclosure, mapping listener proper to a set of filter {@link RegExp}s.
+   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this enclosure, mapping listener proper to a set of filter {@link !RegExp}s.
    * @property {Set<string>} linked - Set of linked enclosures to forward events to.
    * @property {boolean} muted - Whether this enclosure is inhibited from emitting events on the host.
    * @property {object} dependencies - The installed dependencies object.
@@ -1491,7 +1492,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * Reject the given tunnel with the given error object, removing the tunnel from the tunnels list.
    *
    * @param {number} tunnel - Tunnel to reject.
-   * @param {Error} error - {@link Error} to pass on to the rejection callback.
+   * @param {Error} error - {@link !Error} to pass on to the rejection callback.
    * @returns {void}
    */
   const rejectTunnel = (tunnel, error) => {
@@ -1565,7 +1566,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {Function} callback - The callback to remove.
    * @returns {void}
-   * @throws {Error} If the given callback is not a {@link Function} instance.
+   * @throws {Error} If the given callback is not a {@link !Function} instance.
    */
   const off = (enclosure, callback) => {
     if (!(callback instanceof _Function)) {
@@ -1582,7 +1583,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {void}
-   * @throws {Error} If the given callback is not a {@link Function} instance.
+   * @throws {Error} If the given callback is not a {@link !Function} instance.
    * @throws {Error} If the given event name filter is not a `string`.
    * @throws {Error} If the given event name filter fails regular expression validation.
    * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.

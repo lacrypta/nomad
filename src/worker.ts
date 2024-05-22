@@ -69,7 +69,7 @@ class BrowserWorkerBuilder implements WorkerBuilder {
 }
 
 /**
- * An wrapper for a {@link Worker}.
+ * An wrapper for a {@link !Worker}.
  *
  */
 class BrowserWorkerInstance implements WorkerInstance {
@@ -80,7 +80,7 @@ class BrowserWorkerInstance implements WorkerInstance {
   #blobURL: string | null;
 
   /**
-   * The {@link Worker} instance (or `null` if killed).
+   * The {@link !Worker} instance (or `null` if killed).
    *
    */
   #worker: Worker | null;
@@ -88,9 +88,9 @@ class BrowserWorkerInstance implements WorkerInstance {
   /**
    * Construct a new {@link BrowserWorkerBuilder} with the given parameters.
    *
-   * @param code - The code the {@link Worker} will, eventually, run.
+   * @param code - The code the {@link !Worker} will, eventually, run.
    * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
-   * @param name - The name to give to the {@link Worker}.
+   * @param name - The name to give to the {@link !Worker}.
    */
   constructor(code: string, tunnel: number, name: string) {
     this.#blobURL = URL.createObjectURL(

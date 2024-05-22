@@ -269,7 +269,7 @@ const dependencyObject = (dependency: DependencyObject): DependencyObject => {
  *
  * @param datum - The value to validate.
  * @returns The validated value.
- * @throws {Error} If the given value is not a safe integer (cf. {@link Number.isSafeInteger}).
+ * @throws {Error} If the given value is not a safe integer (cf. {@link !Number.isSafeInteger}).
  * @throws {Error} If the given value value is negative.
  */
 const nonNegativeInteger = (datum: number): number => {

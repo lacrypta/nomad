@@ -26,7 +26,7 @@ class NomadVM extends EventCaster {
   /**
    * Generate a pseudo-random string.
    *
-   * NOTE: this is NOT cryptographically-secure, it simply calls {@link Math.random}.
+   * NOTE: this is NOT cryptographically-secure, it simply calls {@link !Math.random}.
    *
    * @returns A pseudo-random string.
    */
@@ -53,9 +53,9 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
    * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
    * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
-   * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link Worker} encounters a non-fatal, yet reportable, error `error`.
-   * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link Worker} encounters a fatal error `error`.
-   * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link Worker} fails to respond to ping / pong messages for `delta` milliseconds.
+   * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link !Worker} encounters a non-fatal, yet reportable, error `error`.
+   * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link !Worker} encounters a fatal error `error`.
+   * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link !Worker} fails to respond to ping / pong messages for `delta` milliseconds.
    * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
    * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
@@ -89,11 +89,11 @@ class NomadVM extends EventCaster {
    * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
    * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link !Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
    *
-   * Internally, the {@link Worker} will cast the following events when instructed to by the VM:
+   * Internally, the {@link !Worker} will cast the following events when instructed to by the VM:
    *
-   * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link Worker} with name `EVENT` and arguments `args`.
+   * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link !Worker} with name `EVENT` and arguments `args`.
    *
    */
   static #events: Readonly<EventCaster>;
@@ -133,31 +133,31 @@ class NomadVM extends EventCaster {
   static #namesPrefix: string = 'nomadvm';
 
   /**
-   * Global mapping of VM names to VM {@link WeakRef}s.
+   * Global mapping of VM names to VM {@link !WeakRef}s.
    *
    */
   static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
 
   /**
-   * The default number of milliseconds to wait for the {@link Worker} to start.
+   * The default number of milliseconds to wait for the {@link !Worker} to start.
    *
    */
   static #defaultBootTimeout: number = 100;
 
   /**
-   * The default number of milliseconds to wait for the {@link Worker} to stop.
+   * The default number of milliseconds to wait for the {@link !Worker} to stop.
    *
    */
   static #defaultShutdownTimeout: number = 100;
 
   /**
-   * The default number of milliseconds to wait between `ping` messages to the {@link Worker}.
+   * The default number of milliseconds to wait between `ping` messages to the {@link !Worker}.
    *
    */
   static #defaultPingInterval: number = 100;
 
   /**
-   * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link Worker} "unresponsive".
+   * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link !Worker} "unresponsive".
    *
    */
   static #defaultPongLimit: number = 1000;
@@ -190,7 +190,7 @@ class NomadVM extends EventCaster {
    * The VM's state can be one of:
    *
    * - `created`: the {@link NomadVM} instance is successfully created.
-   * - `booting`: the {@link NomadVM.start} method is waiting for the {@link Worker} boot-up sequence to finish.
+   * - `booting`: the {@link NomadVM.start} method is waiting for the {@link !Worker} boot-up sequence to finish.
    * - `running`: the {@link NomadVM} instance is running and waiting for commands.
    * - `stopped`: the {@link NomadVM} instance has been stopped and no further commands are accepted.
    *
@@ -198,9 +198,9 @@ class NomadVM extends EventCaster {
    *
    * - `created --> booting`: upon calling {@link NomadVM.start}.
    * - `created --> stopped`: upon calling {@link NomadVM.stop} before {@link NomadVM.start}.
-   * - `booting --> running`: upon the {@link Worker} successfully finishing its boot up sequence.
-   * - `booting --> stopped`: upon calling {@link NomadVM.stop} after {@link NomadVM.start} but before the boot-up sequence has finished in the {@link Worker}.
-   * - `running --> stopped`: upon calling {@link NomadVM.stop} after successful boot-up sequence termination in the {@link Worker}.
+   * - `booting --> running`: upon the {@link !Worker} successfully finishing its boot up sequence.
+   * - `booting --> stopped`: upon calling {@link NomadVM.stop} after {@link NomadVM.start} but before the boot-up sequence has finished in the {@link !Worker}.
+   * - `running --> stopped`: upon calling {@link NomadVM.stop} after successful boot-up sequence termination in the {@link !Worker}.
    *
    */
   #state: 'created' | 'booting' | 'running' | 'stopped';
@@ -220,7 +220,7 @@ class NomadVM extends EventCaster {
   /**
    * A list of inter-process tunnels being used.
    *
-   * Tunnels are a way of holding on to `resolve` / `reject` {@link Promise} callbacks under a specific index number, so that both the {@link Worker} and the {@link NomadVM} can interact through these.
+   * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link !Worker} and the {@link NomadVM} can interact through these.
    *
    */
   #tunnels: {
@@ -291,7 +291,6 @@ class NomadVM extends EventCaster {
   /**
    * Assert that the VM is currently in the "created" state.
    *
-   * @returns
    * @throws {Error} If the VM is in any state other than "created".
    */
   #assertCreated(): void {
@@ -303,7 +302,6 @@ class NomadVM extends EventCaster {
   /**
    * Assert that the VM is currently in the "running" state.
    *
-   * @returns
    * @throws {Error} If the VM is in any state other than "running".
    */
   #assertRunning(): void {
@@ -319,8 +317,7 @@ class NomadVM extends EventCaster {
    *
    * @param name - Event name to cast.
    * @param args - Arguments to associate to the event in question.
-   * @returns
-   * @see {@link EventCaster.cast} for additional exceptions thrown.
+   * @see {@link EventCaster.validateEvent} for additional exceptions thrown.
    */
   #castEvent(name: string, ...args: unknown[]): void {
     const event: string = `${NomadVM.#eventPrefix}:${this.#name}:${name}`;
@@ -334,8 +331,7 @@ class NomadVM extends EventCaster {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.#filterToRegExp} for additional exceptions thrown.
-   * @see {@link Validation.callback} for additional exceptions thrown.
+   * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
    */
   onThis(filter: string, callback: EventCallback): this {
     return this.on(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
@@ -356,7 +352,7 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post a `ping` message to the {@link Worker}.
+   * Post a `ping` message to the {@link !Worker}.
    *
    * A `ping` message has the form:
    *
@@ -366,14 +362,13 @@ class NomadVM extends EventCaster {
    * }
    * ```
    *
-   * @returns
    */
   #postPingMessage(): void {
     this.#worker?.shout({ name: 'ping' });
   }
 
   /**
-   * Post a `resolve` message to the {@link Worker}.
+   * Post a `resolve` message to the {@link !Worker}.
    *
    * A `resolve` message has the form:
    *
@@ -393,14 +388,13 @@ class NomadVM extends EventCaster {
    *
    * @param tunnel - The tunnel to resolve.
    * @param payload - The payload to use for resolution.
-   * @returns
    */
   #postResolveMessage(tunnel: number, payload: unknown): void {
     this.#worker?.shout({ name: 'resolve', tunnel, payload });
   }
 
   /**
-   * Post a `reject` message to the {@link Worker}.
+   * Post a `reject` message to the {@link !Worker}.
    *
    * A `reject` message has the form:
    *
@@ -419,15 +413,14 @@ class NomadVM extends EventCaster {
    * - `error` is the rejection's error string.
    *
    * @param tunnel - The tunnel to reject.
-   * @param error - The error message to use for {@link Error} construction in the {@link Worker}.
-   * @returns
+   * @param error - The error message to use for {@link !Error} construction in the {@link !Worker}.
    */
   #postRejectMessage(tunnel: number, error: string): void {
     this.#worker?.shout({ name: 'reject', tunnel, error });
   }
 
   /**
-   * Post an `emit` message to the {@link Worker}.
+   * Post an `emit` message to the {@link !Worker}.
    *
    * An `emit` message has the form:
    *
@@ -449,7 +442,6 @@ class NomadVM extends EventCaster {
    * @param enclosure - The enclosure to use.
    * @param event - The event name to emit.
    * @param args - The arguments to associate to the given event.
-   * @returns
    */
   #postEmitMessage(enclosure: string, event: string, args: unknown[]): void {
     this.#worker?.shout({
@@ -461,7 +453,7 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post an `install` message to the {@link Worker}.
+   * Post an `install` message to the {@link !Worker}.
    *
    * An `install` message has the form:
    *
@@ -483,14 +475,13 @@ class NomadVM extends EventCaster {
    * @param enclosure - The enclosure to use.
    * @param tunnel - The tunnel index to expect a response on.
    * @param dependency - The dependency being installed.
-   * @returns
    */
   #postInstallMessage(enclosure: string, tunnel: number, dependency: DependencyObject): void {
     this.#worker?.shout({ name: 'install', enclosure, tunnel, dependency });
   }
 
   /**
-   * Post an `execute` message to the {@link Worker}.
+   * Post an `execute` message to the {@link !Worker}.
    *
    * An `execute` message has the form:
    *
@@ -517,7 +508,6 @@ class NomadVM extends EventCaster {
    * @param tunnel - The tunnel index to expect a response on.
    * @param dependency - The dependency being executed.
    * @param args - The arguments to execute the dependency with.
-   * @returns
    */
   #postExecuteMessage(
     enclosure: string,
@@ -535,7 +525,7 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post a `predefine` message to the {@link Worker}.
+   * Post a `predefine` message to the {@link !Worker}.
    *
    * A `predefine` message has the form:
    *
@@ -560,7 +550,6 @@ class NomadVM extends EventCaster {
    * @param tunnel - The tunnel index to expect a response on.
    * @param idx - The predefined function index to use.
    * @param funcName - The function name to use.
-   * @returns
    */
   #postPredefineMessage(enclosure: string, tunnel: number, idx: number, funcName: string): void {
     this.#worker?.shout({
@@ -573,7 +562,7 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post a `create` message to the {@link Worker}.
+   * Post a `create` message to the {@link !Worker}.
    *
    * A `create` message has the form:
    *
@@ -592,7 +581,6 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to create.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postCreateMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({
@@ -603,7 +591,7 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post a `delete` message to the {@link Worker}.
+   * Post a `delete` message to the {@link !Worker}.
    *
    * A `delete` message has the form:
    *
@@ -622,14 +610,13 @@ class NomadVM extends EventCaster {
    *
    * @param tunnel - The tunnel index to expect a response on.
    * @param enclosure - The enclosure to delete.
-   * @returns
    */
   #postDeleteMessage(tunnel: number, enclosure: string): void {
     this.#worker?.shout({ name: 'delete', tunnel, enclosure });
   }
 
   /**
-   * Post an `assimilate` message to the {@link Worker}.
+   * Post an `assimilate` message to the {@link !Worker}.
    *
    * An `assimilate` message has the form:
    *
@@ -648,14 +635,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to assimilate.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postAssimilateMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'assimilate', enclosure, tunnel });
   }
 
   /**
-   * Post a `link` message to the {@link Worker}.
+   * Post a `link` message to the {@link !Worker}.
    *
    * A `link` message has the form:
    *
@@ -677,14 +663,13 @@ class NomadVM extends EventCaster {
    * @param enclosure - The enclosure to use as link source.
    * @param tunnel - The tunnel index to expect a response on.
    * @param target - The enclosure to use as link target.
-   * @returns
    */
   #postLinkMessage(enclosure: string, tunnel: number, target: string): void {
     this.#worker?.shout({ name: 'link', enclosure, tunnel, target });
   }
 
   /**
-   * Post an `unlink` message to the {@link Worker}.
+   * Post an `unlink` message to the {@link !Worker}.
    *
    * An `unlink` message has the form:
    *
@@ -706,14 +691,13 @@ class NomadVM extends EventCaster {
    * @param enclosure - The enclosure to use as unlink source.
    * @param tunnel - The tunnel index to expect a response on.
    * @param target - The enclosure to use as unlink target.
-   * @returns
    */
   #postUnlinkMessage(enclosure: string, tunnel: number, target: string): void {
     this.#worker?.shout({ name: 'unlink', enclosure, tunnel, target });
   }
 
   /**
-   * Post a `mute` message to the {@link Worker}.
+   * Post a `mute` message to the {@link !Worker}.
    *
    * A `mute` message has the form:
    *
@@ -732,14 +716,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to mute.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postMuteMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'mute', enclosure, tunnel });
   }
 
   /**
-   * Post an `unmute` message to the {@link Worker}.
+   * Post an `unmute` message to the {@link !Worker}.
    *
    * An `unmute` message has the form:
    *
@@ -758,14 +741,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to unmute.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postUnmuteMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'unmute', enclosure, tunnel });
   }
 
   /**
-   * Post a `listRootEnclosures` message to the {@link Worker}.
+   * Post a `listRootEnclosures` message to the {@link !Worker}.
    *
    * A `listRootEnclosures` message has the form:
    *
@@ -781,14 +763,13 @@ class NomadVM extends EventCaster {
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postListRootEnclosuresMessage(tunnel: number): void {
     this.#worker?.shout({ name: 'listRootEnclosures', tunnel });
   }
 
   /**
-   * Post a `listInstalled` message to the {@link Worker}.
+   * Post a `listInstalled` message to the {@link !Worker}.
    *
    * A `listInstalled` message has the form:
    *
@@ -807,14 +788,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to list installed dependencies of.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postListInstalledMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'listInstalled', enclosure, tunnel });
   }
 
   /**
-   * Post a `listLinksTo` message to the {@link Worker}.
+   * Post a `listLinksTo` message to the {@link !Worker}.
    *
    * A `listLinksTo` message has the form:
    *
@@ -833,14 +813,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to list linked-to enclosures of.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postListLinksToMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'listLinksTo', enclosure, tunnel });
   }
 
   /**
-   * Post a `listLinkedFrom` message to the {@link Worker}.
+   * Post a `listLinkedFrom` message to the {@link !Worker}.
    *
    * A `listLinkedFrom` message has the form:
    *
@@ -859,14 +838,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to list linked-from enclosures of.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postListLinkedFromMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'listLinkedFrom', enclosure, tunnel });
   }
 
   /**
-   * Post a `isMuted` message to the {@link Worker}.
+   * Post a `isMuted` message to the {@link !Worker}.
    *
    * A `isMuted` message has the form:
    *
@@ -885,14 +863,13 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - The enclosure to determine mute status.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postIsMutedMessage(enclosure: string, tunnel: number): void {
     this.#worker?.shout({ name: 'isMuted', enclosure, tunnel });
   }
 
   /**
-   * Post a `getSubEnclosures` message to the {@link Worker}.
+   * Post a `getSubEnclosures` message to the {@link !Worker}.
    *
    * A `getSubEnclosures` message has the form:
    *
@@ -914,7 +891,6 @@ class NomadVM extends EventCaster {
    * @param enclosure - The enclosure to determine the sub enclosures of.
    * @param depth - The maximum enclosure depth to retrieve, or `0` for unlimited.
    * @param tunnel - The tunnel index to expect a response on.
-   * @returns
    */
   #postGetSubEnclosuresMessage(enclosure: string, depth: number, tunnel: number): void {
     this.#worker?.shout({ name: 'getSubEnclosures', enclosure, depth, tunnel });
@@ -923,7 +899,7 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Create a new tunnel (cf. {@link NomadVM.#tunnels}) with the given resolution and rejection callbacks, returning the index of the created tunnel.
+   * Create a new tunnel with the given resolution and rejection callbacks, returning the index of the created tunnel.
    *
    * @param resolve - The resolution callback.
    * @param reject - The rejection callback.
@@ -965,8 +941,7 @@ class NomadVM extends EventCaster {
    *
    * @param tunnel - Tunnel to resolve.
    * @param arg - Argument to pass on to the resolution callback.
-   * @returns
-   * @see {@link NomadVM.#removeTunnel} for additional exceptions thrown.
+   * @throws {Error} If the given tunnel index does not exist.
    */
   #resolveTunnel(tunnel: number, arg: unknown): void {
     this.#removeTunnel(tunnel).resolve(arg);
@@ -976,9 +951,8 @@ class NomadVM extends EventCaster {
    * Reject the given tunnel with the given error object, removing the tunnel from the tunnels list.
    *
    * @param tunnel - Tunnel to reject.
-   * @param error - {@link Error} to pass on to the rejection callback.
-   * @returns
-   * @see {@link NomadVM.#removeTunnel} for additional exceptions thrown.
+   * @param error - {@link !Error} to pass on to the rejection callback.
+   * @throws {Error} If the given tunnel index does not exist.
    */
   #rejectTunnel(tunnel: number, error: Error): void {
     this.#removeTunnel(tunnel).reject(error);
@@ -993,7 +967,6 @@ class NomadVM extends EventCaster {
    * @param tunnel - Tunnel to use for resolution / rejection signalling.
    * @param idx - The predefined function index to call.
    * @param args - The arguments to forward to the predefined function called.
-   * @returns
    */
   #callPredefined(enclosure: string, tunnel: number, idx: number, args: unknown[]): void {
     this.#castEvent(`${enclosure}:predefined:call`, idx, args);
@@ -1019,18 +992,15 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Handle the {@link Worker}'s `message` event.
+   * Handle the {@link !Worker}'s `message` event's data.
    *
-   * Handling a {@link Worker}'s `message` event entails:
+   * Handling a {@link !Worker}'s `message` event's data entails:
    *
-   * 1. decoding the `data` field of the `message` event.
-   * 2. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
-   * 3. executing the corresponding sub-handler.
-   * 4. if the `name` is not supported, try to signal  rejection to the tunnel index if existing, or simply emit an error message otherwise.
+   * 1. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
+   * 2. executing the corresponding sub-handler.
+   * 3. if the `name` is not supported, try to signal rejection to the tunnel index if existing, or simply emit an error message otherwise.
    *
-   * @param event - The message event itself.
-   * @param event.data - The message's `data` field, a JSON-encoded string.
-   * @returns
+   * @param data - The message's `data` field, a JSON-encoded string.
    */
   #messageHandler(data: string): void {
     try {
@@ -1104,12 +1074,11 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Handle the {@link Worker}'s `error` event.
+   * Handle the {@link !Worker}'s `error` event.
    *
-   * Handling a {@link Worker}'s `error` event simply entails casting a `worker:error` event.
+   * Handling a {@link !Worker}'s `error` event simply entails casting a `worker:error` event.
    *
    * @param error - Error to handle.
-   * @returns
    */
   #errorHandler(error: Error): void {
     this.#castEvent('worker:error', error.message);
@@ -1118,7 +1087,7 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Perform the stoppage steps on the {@link Worker} and reject all pending tunnels.
+   * Perform the stoppage steps on the {@link !Worker} and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
@@ -1126,11 +1095,10 @@ class NomadVM extends EventCaster {
    * 2. Calling {@link WorkerInstance.kill} on the VM's {@link WorkerInstance}.
    * 3. Rejecting all existing tunnels.
    *
-   * NOTE: this method does NOT return a {@link Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link Promise}.
+   * NOTE: this method does NOT return a {@link !Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link !Promise}.
    *
    * @param resolve - Resolution callback: called if shutting down completed successfully.
    * @param reject - Rejection callback: called if anything went wrong with shutting down.
-   * @returns
    */
   #doStop(resolve: () => void, reject: (error: Error) => void): void {
     this.#castEvent('stop');
@@ -1166,16 +1134,16 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Start the {@link Worker} and wait for its boot-up sequence to complete.
+   * Start the {@link !Worker} and wait for its boot-up sequence to complete.
    *
    * Starting a VM instance consists of the following:
    *
-   * 1. Initializing a {@link Worker} instance with the {@link NomadVM.#workerCode} callback.
-   * 2. Setting up the boot timeout callback (in case the {@link Worker} takes too much time to boot).
+   * 1. Initializing a {@link !Worker} instance with the worker code.
+   * 2. Setting up the boot timeout callback (in case the {@link !Worker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param timeout - Milliseconds to wait for the {@link Worker} to complete its boot-up sequence.
-   * @returns A {@link Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link Worker} respectively) if the {@link Worker} was successfully booted up, and rejects with an {@link Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link !Worker} to complete its boot-up sequence.
+   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link !Worker} respectively) if the {@link !Worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
     workerBuilder: WorkerBuilder = new BrowserWorkerBuilder(),
@@ -1251,17 +1219,17 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Shut the {@link Worker} down.
+   * Shut the {@link !Worker} down.
    *
    * Shutting a VM instance consists of the following:
    *
-   * 1. Emitting the "shutdown" event on the {@link Worker}.
+   * 1. Emitting the "shutdown" event on the {@link !Worker}.
    * 2. Waiting for the given timeout milliseconds.
    * 3. Removing all root enclosures.
    * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
    *
-   * @param timeout - Milliseconds to wait for the {@link Worker} to shut down.
-   * @returns A {@link Promise} that resolves with `void` if the {@link Worker} was successfully shut down, and rejects with an {@link Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link !Worker} to shut down.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
   shutdown(timeout: number = NomadVM.#defaultShutdownTimeout): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1301,10 +1269,15 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Stop the {@link Worker} immediately and reject all pending tunnels.
+   * Stop the {@link !Worker} immediately and reject all pending tunnels.
    *
-   * @returns A {@link Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link Error} in case errors occur.
-   * @see {@link NomadVM.#doStop} for the actual shutdown process
+   * Stopping a Vm instance entails:
+   *
+   * 1. Clearing the pinger.
+   * 2. Calling {@link WorkerInstance.kill} on the VM's {@link WorkerInstance}.
+   * 3. Rejecting all existing tunnels.
+   *
+   * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   stop(): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1318,7 +1291,7 @@ class NomadVM extends EventCaster {
    * Create a new enclosure with the given name.
    *
    * @param enclosure - Enclosure to create.
-   * @returns A {@link Promise} that resolves with a {@link NomadVMEnclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a {@link NomadVMEnclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   createEnclosure(enclosure: string): Promise<NomadVMEnclosure> {
     return new Promise<NomadVMEnclosure>(
@@ -1356,7 +1329,7 @@ class NomadVM extends EventCaster {
    * This method will reject all tunnels awaiting responses on the given enclosure.
    *
    * @param enclosure - Enclosure to delete.
-   * @returns A {@link Promise} that resolves with a list of deleted enclosures (the one given and any sub enclosures of it) if enclosure deletion completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of deleted enclosures (the one given and any sub enclosures of it) if enclosure deletion completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   deleteEnclosure(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
@@ -1390,7 +1363,7 @@ class NomadVM extends EventCaster {
    * Assimilate the given enclosure to its parent.
    *
    * @param enclosure - Enclosure to assimilate.
-   * @returns A {@link Promise} that resolves with `void` if enclosure assimilation completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure assimilation completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   assimilateEnclosure(enclosure: string): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1425,7 +1398,7 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - "Source" enclosure to use.
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   linkEnclosures(enclosure: string, target: string): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1462,7 +1435,7 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - "Source" enclosure to use.
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   unlinkEnclosures(enclosure: string, target: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (unlinked: boolean) => void, reject: (error: Error) => void): void => {
@@ -1498,7 +1471,7 @@ class NomadVM extends EventCaster {
    * Mute the given enclosure, so that events cast on it are no longer propagated to this VM.
    *
    * @param enclosure - Enclosure to mute.
-   * @returns A {@link Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   muteEnclosure(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (previous: boolean) => void, reject: (error: Error) => void): void => {
@@ -1532,7 +1505,7 @@ class NomadVM extends EventCaster {
    * Unmute the given enclosure, so that events cast on it are propagated to this VM.
    *
    * @param enclosure - Enclosure to unmute.
-   * @returns A {@link Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   unmuteEnclosure(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (prev: boolean) => void, reject: (error: Error) => void): void => {
@@ -1565,7 +1538,7 @@ class NomadVM extends EventCaster {
   /**
    * List the root enclosures created.
    *
-   * @returns A {@link Promise} that resolves with a list of root enclosures created if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of root enclosures created if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listRootEnclosures(): Promise<string[]> {
     return new Promise<string[]>(
@@ -1585,7 +1558,7 @@ class NomadVM extends EventCaster {
    * List the dependencies (user-level and predefined) installed on the given enclosure or its prefixes.
    *
    * @param enclosure - Enclosure to list installed dependencies of.
-   * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listInstalled(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (installed: string[]) => void, reject: (error: Error) => void): void => {
@@ -1605,7 +1578,7 @@ class NomadVM extends EventCaster {
    * List the enclosures the given one is linked to.
    *
    * @param enclosure - Enclosure to list linked-to enclosures of.
-   * @returns A {@link Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listLinksTo(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linksTo: string[]) => void, reject: (error: Error) => void): void => {
@@ -1625,7 +1598,7 @@ class NomadVM extends EventCaster {
    * List the enclosures that link to the given one.
    *
    * @param enclosure - Enclosure to list linked-from enclosures of.
-   * @returns A {@link Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listLinkedFrom(enclosure: string): Promise<string[]> {
     return new Promise<string[]>((resolve: (linkedFrom: string[]) => void, reject: (error: Error) => void): void => {
@@ -1645,7 +1618,7 @@ class NomadVM extends EventCaster {
    * Determine whether the given enclosure is muted.
    *
    * @param enclosure - Enclosure to determine mute status of.
-   * @returns A {@link Promise} that resolves with a boolean value indicating whether the enclosure is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value indicating whether the enclosure is muted if successful, and rejects with an {@link !Error} in case errors occur.
    */
   isMuted(enclosure: string): Promise<boolean> {
     return new Promise<boolean>((resolve: (muted: boolean) => void, reject: (error: Error) => void): void => {
@@ -1666,7 +1639,7 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - Enclosure to list the sub enclosures of.
    * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   getSubEnclosures(enclosure: string, depth: number | null = null): Promise<string[]> {
     return new Promise<string[]>((resolve: (subEnclosures: string[]) => void, reject: (error: Error) => void): void => {
@@ -1689,12 +1662,12 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Add a predefined function to the VM's list (cf. {@link NomadVM.#predefined}) under the given enclosure.
+   * Add a predefined function to the VM's list under the given enclosure.
    *
    * @param enclosure - Enclosure to use.
    * @param name - Function name to add.
-   * @param callback - {@link Function} callback to use.
-   * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   * @param callback - {@link !Function} callback to use.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    */
   predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1733,11 +1706,11 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Install the given {@link Dependency} on the {@link Worker}.
+   * Install the given {@link Dependency} on the {@link !Worker}.
    *
    * @param enclosure - Enclosure to use.
    * @param dependency - The {@link Dependency} to install.
-   * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
   install(enclosure: string, dependency: Dependency): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1772,12 +1745,12 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Execute the given {@link Dependency} with the given arguments map in the {@link Worker}.
+   * Execute the given {@link Dependency} with the given arguments map in the {@link !Worker}.
    *
    * @param enclosure - The enclosure to use.
    * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
   execute(enclosure: string, dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
@@ -1818,7 +1791,7 @@ class NomadVM extends EventCaster {
    *
    * @param enclosure - Enclosure to use.
    * @param dependencies - Dependencies to install.
-   * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
   installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1884,7 +1857,7 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Emit an event towards the {@link Worker}.
+   * Emit an event towards the {@link !Worker}.
    *
    * @param enclosure - Enclosure to use.
    * @param event - Event name to emit.
@@ -1984,7 +1957,7 @@ class NomadVMEnclosure {
    * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
    *
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.linkEnclosures} for additional exceptions thrown.
    */
   link(target: string): Promise<void> {
@@ -1995,7 +1968,7 @@ class NomadVMEnclosure {
    * Unlink the wrapped enclosure from another, so that events cast on the wrapped enclosure are no longer handled in the other.
    *
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.unlinkEnclosures} for additional exceptions thrown.
    */
   unlink(target: string): Promise<boolean> {
@@ -2005,7 +1978,7 @@ class NomadVMEnclosure {
   /**
    * Mute the wrapped enclosure, so that events cast on it are no longer propagated to the wrapped VM.
    *
-   * @returns A {@link Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.muteEnclosure} for additional exceptions thrown.
    */
   mute(): Promise<boolean> {
@@ -2015,7 +1988,7 @@ class NomadVMEnclosure {
   /**
    * Unmute the wrapped enclosure, so that events cast on it are propagated to wrapped VM.
    *
-   * @returns A {@link Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.unmuteEnclosure} for additional exceptions thrown.
    */
   unmute(): Promise<boolean> {
@@ -2025,7 +1998,7 @@ class NomadVMEnclosure {
   /**
    * List the dependencies (user-level and predefined) installed on the wrapped enclosure or its prefixes
    *
-   * @returns A {@link Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.listInstalled} for additional exceptions thrown.
    */
   listInstalled(): Promise<string[]> {
@@ -2035,7 +2008,7 @@ class NomadVMEnclosure {
   /**
    * List the enclosures the wrapped one is linked to.
    *
-   * @returns A {@link Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.listLinksTo} for additional exceptions thrown.
    */
   listLinksTo(): Promise<string[]> {
@@ -2045,7 +2018,7 @@ class NomadVMEnclosure {
   /**
    * List the enclosures that link to the wrapped one.
    *
-   * @returns A {@link Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.listLinkedFrom} for additional exceptions thrown.
    */
   listLinkedFrom(): Promise<string[]> {
@@ -2055,7 +2028,7 @@ class NomadVMEnclosure {
   /**
    * Determine whether the wrapped enclosure is muted.
    *
-   * @returns A {@link Promise} that resolves with a boolean value indicating whether the wrapped enclosure is muted if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value indicating whether the wrapped enclosure is muted if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.isMuted} for additional exceptions thrown.
    */
   isMuted(): Promise<boolean> {
@@ -2066,7 +2039,7 @@ class NomadVMEnclosure {
    * List the wrapped enclosure's sub enclosures.
    *
    * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
-   * @returns A {@link Promise} that resolves with a list of sub enclosures if successful, and rejects with an {@link Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a list of sub enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    * @see {@link NomadVM.getSubEnclosures} for additional exceptions thrown.
    */
   getSubEnclosures(depth: number | null = null): Promise<string[]> {
@@ -2077,8 +2050,8 @@ class NomadVMEnclosure {
    * Add a predefined function to the VM's list under the wrapped enclosure.
    *
    * @param name - Function name to add.
-   * @param callback - {@link Function} callback to use.
-   * @returns A {@link Promise} that resolves with `void` if the {@link Function} was correctly predefined, and rejects with an {@link Error} in case errors occurred.
+   * @param callback - {@link !Function} callback to use.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.predefine} for additional exceptions thrown.
    */
   predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
@@ -2089,7 +2062,7 @@ class NomadVMEnclosure {
    * Install the given {@link Dependency} on the wrapped VM under the wrapped enclosure.
    *
    * @param dependency - The {@link Dependency} to install.
-   * @returns A {@link Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.install} for additional exceptions thrown.
    */
   install(dependency: Dependency): Promise<void> {
@@ -2101,7 +2074,7 @@ class NomadVMEnclosure {
    *
    * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
   execute(dependency: Dependency, args: Map<string, unknown> = new Map()): Promise<unknown> {
@@ -2112,7 +2085,7 @@ class NomadVMEnclosure {
    * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
    * @param dependencies - Dependencies to install.
-   * @returns A {@link Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.installAll} for additional exceptions thrown.
    */
   installAll(dependencies: Iterable<Dependency>): Promise<void> {

@@ -80,15 +80,15 @@ class Dependency {
      * This list is used to determine native functions' prefixes and suffixes when converting them to `string`.
      * The list comprises:
      *
-     * - {@link eval},
-     * - {@link isFinite},
-     * - {@link isNaN},
-     * - {@link parseFloat},
-     * - {@link parseInt},
-     * - {@link decodeURI},
-     * - {@link decodeURIComponent},
-     * - {@link encodeURI}, and
-     * - {@link encodeURIComponent}.
+     * - {@link !eval},
+     * - {@link !isFinite},
+     * - {@link !isNaN},
+     * - {@link !parseFloat},
+     * - {@link !parseInt},
+     * - {@link !decodeURI},
+     * - {@link !decodeURIComponent},
+     * - {@link !encodeURI}, and
+     * - {@link !encodeURIComponent}.
      *
      */
     const builtin: string[] = [
@@ -174,9 +174,9 @@ class Dependency {
   /**
    * Retrieve the {@link DependencyObject} of the given function.
    *
-   * NOTE: this is a strictly SYNTACTICAL operation, it will parse the actual code of the given {@link Function}, but it will not execute it in any way nor follow references therein.
+   * NOTE: this is a strictly SYNTACTICAL operation, it will parse the actual code of the given {@link !Function}, but it will not execute it in any way nor follow references therein.
    *
-   * @param func - {@link Function} instance to extract parameters for.
+   * @param func - {@link !Function} instance to extract parameters for.
    * @returns A {@link DependencyObject} extracted from the given instance.
    * @throws {Error} If the function body cannot be determined.
    */
@@ -244,7 +244,7 @@ class Dependency {
   }
 
   /**
-   * Construct a new {@link Dependency} from the given {@link Function} instance.
+   * Construct a new {@link Dependency} from the given {@link !Function} instance.
    *
    * @param func - Function to use for constructing the {@link Dependency}.
    * @param fName - Name to use instead if given.
