@@ -27,7 +27,15 @@ type DependencyObject = {
 };
 
 /**
- * Class representing an atomic dependency the NomadVM will work with.
+ * Class representing an atomic dependency the {@link NomadVM} will work with.
+ *
+ * A "dependency" in {@link NomadVM}'s terms, is an entity comprised of three parts:
+ *
+ * - **name:** a _name_ is a way of referring to the dependency in question (these are "scoped" to the particular {@link NomadVMEnclosure} they are defined in).
+ * - **code:** a dependency's _code_ is the JavaScript [strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode) {@link !Function} body that will be executed when the dependency is executed.
+ * - **dependencies:** a dependency's _dependencies_ is a mapping that maps an {@link Validation.identifier} name to a dependency name: during execution, the given identifier name will be made available to the dependency's code with the result of executing the mapped dependency.
+ *
+ * Dependencies can be created by either providing all relevant arguments to the {@link Dependency.constructor}, or _syntactically_ by using the {@link Dependency.from} static construction method.
  *
  */
 class Dependency {
@@ -327,11 +335,13 @@ class Dependency {
   #dependencies: Map<string, string>;
 
   /**
-   * Build a new {@link Dependency}.
+   * Build a new {@link Dependency} using the given parameters.
    *
-   * @param name - The dependency name to use.
-   * @param code - The dependency code to use.
-   * @param dependencies - The dependency's dependencies map to use.
+   * The parameters will be used to construct a {@link DependencyObject} and validate it via {@link Dependency.validate}, prior to initializing the new {@link Dependency} object.
+   *
+   * @param name - The dependency name to use (defaults to `""` if not given).
+   * @param code - The dependency code to use (defaults to `""` if not given).
+   * @param dependencies - The dependency's dependencies map to use (defaults to `{}` if note given).
    * @see {@link Dependency.validate} for exceptions thrown.
    */
   constructor(name?: string, code?: string, dependencies?: Record<string, string>) {
@@ -364,6 +374,8 @@ class Dependency {
 
   /**
    * Get the {@link Dependency} dependencies.
+   *
+   * This will create a _new_ dependencies {@link !Map}, so as not to expose the {@link Dependency}'s internals to consumers.
    *
    */
   get dependencies(): Map<string, string> {
@@ -401,7 +413,7 @@ class Dependency {
   }
 
   /**
-   * Set the {@link Dependency} name (chainable).
+   * Set the {@link Dependency} name.
    *
    * @param name - The name to set.
    * @returns `this`, for chaining.
@@ -413,7 +425,7 @@ class Dependency {
   }
 
   /**
-   * Set the {@link Dependency} source code (chainable).
+   * Set the {@link Dependency} source code.
    *
    * @param code - The function source code to set.
    * @returns `this`, for chaining.
@@ -425,7 +437,7 @@ class Dependency {
   }
 
   /**
-   * Set the {@link Dependency} dependencies (chainable).
+   * Set the {@link Dependency} dependencies.
    *
    * @param dependencies - The dependencies to set.
    * @returns `this`, for chaining.

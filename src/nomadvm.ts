@@ -101,6 +101,7 @@ class NomadVM extends EventCaster {
   /**
    * Getter used to retrieve the VM's static event caster.
    *
+   * @returns This VM's _global_ {@link EventCaster}.
    */
   static get events(): Readonly<EventCaster> {
     return NomadVM.#events;
