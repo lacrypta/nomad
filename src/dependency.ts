@@ -259,7 +259,7 @@ class Dependency {
    * @returns The constructed {@link Dependency}.
    * @throws {Error} If the given argument is not a {@link !Function}.
    */
-  static from(func: (...args: unknown[]) => unknown, fName: string | null = null): Dependency {
+  static from(func: (...args: unknown[]) => unknown, fName?: string): Dependency {
     if (!Dependency.#isPlainFunction(func)) {
       throw new Error('Expected defined function');
     }
