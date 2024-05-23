@@ -2,31 +2,13 @@
   "$schema": "https://typedoc.org/schema.json",
   "includeVersion": true,
   "plugin": [
+    "typedoc-plugin-expand-object-like-types",
     "typedoc-plugin-keywords",
-    "typedoc-plugin-katex",
     "typedoc-plugin-mdn-links",
     "typedoc-plugin-mermaid",
-    "typedoc-plugin-remove-references",
     "typedoc-plugin-missing-exports",
-    "typedoc-plugin-expand-object-like-types",
-    "typedoc-plugin-reference-excluder"
+    "typedoc-plugin-remove-references"
   ],
-  "katex": {
-    "options": {
-      "delimiters": [
-        {
-          "left": "$$",
-          "right": "$$",
-          "display": true
-        },
-        {
-          "left": "$",
-          "right": "$",
-          "display": false
-        }
-      ]
-    }
-  },
   "keywords": ["NOSTR", "library", "Nomad"],
   "markedOptions": {
     "gfm": true
