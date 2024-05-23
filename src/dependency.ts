@@ -306,17 +306,6 @@ class Dependency {
   }
 
   /**
-   * Validate the given {@link DependencyObject} and return it if valid.
-   *
-   * @param dependency - The {@link DependencyObject} to validate.
-   * @returns The validated {@link DependencyObject}.
-   * @see {@link Validation.dependencyObject} for additional exceptions thrown.
-   */
-  static validate(dependency: DependencyObject): DependencyObject {
-    return Validation.dependencyObject(dependency);
-  }
-
-  /**
    * The {@link Dependency}'s name.
    *
    */
@@ -337,15 +326,15 @@ class Dependency {
   /**
    * Build a new {@link Dependency} using the given parameters.
    *
-   * The parameters will be used to construct a {@link DependencyObject} and validate it via {@link Dependency.validate}, prior to initializing the new {@link Dependency} object.
+   * The parameters will be used to construct a {@link DependencyObject} and validate it via {@link Validation.dependencyObject}, prior to initializing the new {@link Dependency} object.
    *
    * @param name - The dependency name to use (defaults to `""` if not given).
    * @param code - The dependency code to use (defaults to `""` if not given).
    * @param dependencies - The dependency's dependencies map to use (defaults to `{}` if note given).
-   * @see {@link Dependency.validate} for exceptions thrown.
+   * @see {@link Validation.dependencyObject} for exceptions thrown.
    */
   constructor(name?: string, code?: string, dependencies?: Record<string, string>) {
-    const dependency: DependencyObject = Dependency.validate({
+    const dependency: DependencyObject = Validation.dependencyObject({
       name: name ?? '',
       code: code ?? '',
       dependencies: dependencies ?? (Object.create(null) as Record<string, string>),

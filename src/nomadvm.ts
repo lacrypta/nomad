@@ -6,6 +6,7 @@ import type { WorkerInstance, WorkerBuilder } from './worker';
 
 import {
   enclosure as validateEnclosure,
+  event as validateEvent,
   timeDelta as validateTimeDelta,
   nonNegativeInteger as validateNonNegativeInteger,
   identifier as validateIdentifier,
@@ -317,7 +318,7 @@ class NomadVM extends EventCaster {
    *
    * @param name - Event name to cast.
    * @param args - Arguments to associate to the event in question.
-   * @see {@link EventCaster.validateEvent} for additional exceptions thrown.
+   * @see {@link Validation.event} for additional exceptions thrown.
    */
   #castEvent(name: string, ...args: unknown[]): void {
     const event: string = `${NomadVM.#eventPrefix}:${this.#name}:${name}`;
@@ -1863,7 +1864,7 @@ class NomadVM extends EventCaster {
    * @returns `this`, for chaining.
    */
   emit(enclosure: string, event: string, ...args: unknown[]): this {
-    this.#postEmitMessage(validateEnclosure(enclosure), EventCaster.validateEvent(event), args);
+    this.#postEmitMessage(validateEnclosure(enclosure), validateEvent(event), args);
     return this;
   }
 }

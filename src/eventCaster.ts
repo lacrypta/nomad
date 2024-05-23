@@ -1,5 +1,7 @@
 'use strict';
 
+import { event as validateEvent, filter as validateFilter } from './validation';
+
 /**
  * The type of a method injector.
  *
@@ -39,75 +41,16 @@ type EventCallback = (name: string, ...args: unknown[]) => unknown;
  */
 class EventCaster {
   /**
-   * Regular expression all event names must adhere to.
-   *
-   * All event names must adhere to the following ABNF:
-   *
-   * ```ini
-   * segment = 1*( "." / ALPHA / DIGIT / "-" )
-   * event-name = segment *( ":" segment )
-   * ```
-   *
-   */
-  static #eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
-
-  /**
-   * Validate the given event name and return it if valid.
-   *
-   * @param name - The event name to validate.
-   * @returns The validated event name.
-   * @throws {Error} If the given event name fails regular expression validation.
-   */
-  static validateEvent(name: string): string {
-    if (!EventCaster.#eventRegex.test(name)) {
-      throw new Error(`event name must adhere to ${EventCaster.#eventRegex.toString()}`);
-    }
-
-    return name;
-  }
-
-  /**
-   * Regular expression all event name filters must adhere to.
-   *
-   * All event name filters must adhere to the following ABNF:
-   *
-   * ```ini
-   * filter-segment = "*" / "**" / 1*( "." / ALPHA / DIGIT / "-" )
-   * filter = filter-segment *( ":" filter-segment )
-   * ```
-   *
-   */
-  static #filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
-
-  /**
-   * Validate the given event name filter and return it if valid.
-   *
-   * @param filter - The event name filter to validate.
-   * @returns The validated event name filter.
-   * @throws {Error} If the given event name filter fails regular expression validation.
-   * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
-   */
-  static validateFilter(filter: string): string {
-    if (!EventCaster.#filterRegex.test(filter)) {
-      throw new Error(`event name filter must adhere to ${EventCaster.#filterRegex.toString()}`);
-    } else if (-1 != filter.indexOf('**:**')) {
-      throw new Error('event name filter must not contain consecutive ** wildcards');
-    }
-
-    return filter;
-  }
-
-  /**
    * Turn an event name filter into a filtering {@link !RegExp}.
    *
    * @param filter - The event name filter to transform.
    * @returns The transformed event name filter.
-   * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
+   * @see {@link Validation.filter} for additional exceptions thrown.
    */
   static #filterToRegExp(filter: string): RegExp {
     return new RegExp(
       '^' +
-        EventCaster.validateFilter(filter)
+        validateFilter(filter)
           .split(':')
           .map((part: string): string => {
             switch (part) {
@@ -161,7 +104,7 @@ class EventCaster {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
+   * @see {@link Validation.filter} for additional exceptions thrown.
    */
   on(filter: string, callback: EventCallback): this {
     if (!this.#listeners.has(callback)) {
@@ -205,10 +148,10 @@ class EventCaster {
    * @param name - The event name to cast.
    * @param args - Any additional arguments o associate to the cast event.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.validateEvent} for additional exceptions thrown.
+   * @see {@link Validation.event} for additional exceptions thrown.
    */
   #cast(name: string, ...args: unknown[]): this {
-    EventCaster.validateEvent(name);
+    validateEvent(name);
 
     for (const [callback, filters] of this.#listeners.entries()) {
       if ([...filters.values()].some((filter: RegExp): boolean => filter.test(name))) {

@@ -265,6 +265,55 @@ const dependencyObject = (dependency: DependencyObject): DependencyObject => {
 };
 
 /**
+ * Validate the given event name and return it if valid.
+ *
+ * All event names must adhere to the following ABNF:
+ *
+ * ```ini
+ * segment = 1*( "." / ALPHA / DIGIT / "-" )
+ * event-name = segment *( ":" segment )
+ * ```
+ *
+ * @param name - The event name to validate.
+ * @returns The validated event name.
+ * @throws {Error} If the given event name fails regular expression validation.
+ */
+const event = (name: string): string => {
+  const eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
+  if (!eventRegex.test(name)) {
+    throw new Error(`event name must adhere to ${eventRegex.toString()}`);
+  }
+
+  return name;
+};
+
+/**
+ * Validate the given event name filter and return it if valid.
+ *
+ * All event name filters must adhere to the following ABNF:
+ *
+ * ```ini
+ * filter-segment = "*" / "**" / 1*( "." / ALPHA / DIGIT / "-" )
+ * filter = filter-segment *( ":" filter-segment )
+ * ```
+ *
+ * @param filter - The event name filter to validate.
+ * @returns The validated event name filter.
+ * @throws {Error} If the given event name filter fails regular expression validation.
+ * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
+ */
+const filter = (filter: string): string => {
+  const filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
+  if (!filterRegex.test(filter)) {
+    throw new Error(`event name filter must adhere to ${filterRegex.toString()}`);
+  } else if (-1 != filter.indexOf('**:**')) {
+    throw new Error('event name filter must not contain consecutive ** wildcards');
+  }
+
+  return filter;
+};
+
+/**
  * Validate the given value is non-negative.
  *
  * @param datum - The value to validate.
@@ -338,6 +387,8 @@ export {
   functionCode,
   dependencyMap,
   dependencyObject,
+  event,
+  filter,
   timeDelta,
   argumentsMap,
   enclosure,
