@@ -490,16 +490,6 @@ class Dependency {
       >,
     };
   }
-
-  /**
-   * Clone the {@link Dependency} into a completely new one.
-   *
-   * @returns The newly created {@link Dependency}.
-   */
-  clone(): Dependency {
-    const obj: DependencyObject = this.asObject();
-    return new Dependency(obj.name, obj.code, obj.dependencies);
-  }
 }
 
 export { Dependency };
