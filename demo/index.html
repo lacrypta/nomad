@@ -7,11 +7,11 @@
     <script referrerpolicy="no-referrer" src="../dist/umd/index.js"></script>
     <script type="module" referrerpolicy="no-referrer">
       'use strict';
-      const { NomadVM, Dependency } = nomadvm;
-      const vm = new NomadVM();
+      const { nomadVmCreate, dependencyFrom } = nomadvm;
+      const vm = nomadVmCreate();
       vm.on('**', (...args) => console.log(args));
-      const dbl = Dependency.from(() => (x) => 2 * x, 'dbl');
-      const qpl = Dependency.from(
+      const dbl = dependencyFrom(() => (x) => 2 * x, 'dbl');
+      const qpl = dependencyFrom(
         (duplicateA = dbl, duplicateB = dbl) =>
           (x) =>
             duplicateA(duplicateB(x)),
@@ -29,7 +29,7 @@
       await vm
         .execute(
           'root',
-          Dependency.from(function x(quad = qpl) {
+          dependencyFrom(function x(quad = qpl) {
             return quad(42);
           }),
         )
@@ -40,7 +40,7 @@
       await vm
         .execute(
           'root',
-          Dependency.from(function x() {
+          dependencyFrom(function x() {
             return new Date(0).constructor === Date;
           }),
         )
@@ -51,7 +51,7 @@
       await vm
         .execute(
           'root',
-          Dependency.from(function x() {
+          dependencyFrom(function x() {
             return [new Date(1714022362739).toDateString(), new Date(1714022362739).toTimeString()];
           }),
         )
@@ -65,7 +65,7 @@
       await vm
         .execute(
           'root',
-          Dependency.from(function x() {
+          dependencyFrom(function x() {
             return new Error('hola').stack;
           }),
         )
@@ -74,7 +74,7 @@
       await vm
         .execute(
           'root',
-          Dependency.from(function x() {
+          dependencyFrom(function x() {
             return __events__.on.toString();
           }),
         )
