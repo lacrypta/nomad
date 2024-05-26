@@ -194,8 +194,8 @@ export const _forbiddenWords: string[] = [
  *
  * @param name - The identifier to validate.
  * @returns The validated identifier.
- * @throws {Error} If the given identifier fails regular expression validation.
- * @throws {Error} If the given identifier is forbidden.
+ * @throws {@link !Error} if the given identifier fails regular expression validation.
+ * @throws {@link !Error} if the given identifier is forbidden.
  */
 export const identifier = (name: string): string => {
   if (!_identifierRegExp.test(name)) {
@@ -230,8 +230,8 @@ export const _codeAscii: number[] = [
  *
  * @param code - The function source code to validate.
  * @returns The validated function source code.
- * @throws {Error} If the given function source code contains disallowed characters.
- * @throws {Error} If the given function source code is not a valid strict mode function body.
+ * @throws {@link !Error} if the given function source code contains disallowed characters.
+ * @throws {@link !Error} if the given function source code is not a valid strict mode function body.
  */
 export const functionCode = (code: string): string => {
   if (code.split('').some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) ?? 0))) {
@@ -276,7 +276,7 @@ export const _eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
  *
  * @param name - The event name to validate.
  * @returns The validated event name.
- * @throws {Error} If the given event name fails regular expression validation.
+ * @throws {@link !Error} if the given event name fails regular expression validation.
  */
 export const event = (name: string): string => {
   if (!_eventRegex.test(name)) {
@@ -300,8 +300,8 @@ export const _filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9
  *
  * @param filter - The event name filter to validate.
  * @returns The validated event name filter.
- * @throws {Error} If the given event name filter fails regular expression validation.
- * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
+ * @throws {@link !Error} if the given event name filter fails regular expression validation.
+ * @throws {@link !Error} if the given event name filter contains an adjacent pair of `**` wildcards.
  */
 export const filter = (filter: string): string => {
   if (!_filterRegex.test(filter)) {
@@ -318,8 +318,8 @@ export const filter = (filter: string): string => {
  *
  * @param datum - The value to validate.
  * @returns The validated value.
- * @throws {Error} If the given value is not a safe integer (cf. {@link !Number.isSafeInteger}).
- * @throws {Error} If the given value value is negative.
+ * @throws {@link !Error} if the given value is not a safe integer (cf. {@link !Number.isSafeInteger}).
+ * @throws {@link !Error} if the given value value is negative.
  */
 export const nonNegativeInteger = (datum: number): number => {
   if (!Number.isSafeInteger(datum)) {
@@ -341,7 +341,7 @@ export const _timeDeltaLimit: number = 1 << 30;
  *
  * @param delta - The time delta value to validate.
  * @returns The validated time delta value.
- * @throws {Error} If the given time delta value is larger than the maximum time delta value allowed.
+ * @throws {@link !Error} if the given time delta value is larger than the maximum time delta value allowed.
  * @see {@link nonNegativeInteger} for additional exceptions thrown.
  */
 export const timeDelta = (delta: number): number => {
@@ -356,7 +356,7 @@ export const timeDelta = (delta: number): number => {
  *
  * @param args - The arguments map to validate.
  * @returns The validated arguments map (as a new object).
- * @throws {Error} If the given arguments map is not an object.
+ * @throws {@link !Error} if the given arguments map is not an object.
  * @see {@link identifier} for additional exceptions thrown.
  */
 export const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
@@ -372,7 +372,7 @@ export const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> =
  *
  * @param ns - The argument to validate.
  * @returns The validated enclosure identifier.
- * @throws {Error} If the given argument is not a valid enclosure identifier.
+ * @throws {@link !Error} if the given argument is not a valid enclosure identifier.
  * @see {@link identifier} for additional exceptions thrown.
  */
 export const enclosure = (ns: string): string => {

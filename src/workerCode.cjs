@@ -1239,8 +1239,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - Enclosure to create.
    * @returns {void}
-   * @throws {Error} If the given enclosure already exists.
-   * @throws {Error} If the given enclosure's parent does not exist.
+   * @throws {@link !Error} if the given enclosure already exists.
+   * @throws {@link !Error} if the given enclosure's parent does not exist.
    */
   const addEnclosure = (enclosure) => {
     const parent = getEnclosureBase(enclosure) || null;
@@ -1266,7 +1266,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - Enclosure to retrieve.
    * @returns {EnclosureObject} Enclosure object under the given name.
-   * @throws {Error} If the given enclosure does not exist.
+   * @throws {@link !Error} if the given enclosure does not exist.
    */
   const getEnclosure = (enclosure) => {
     if (!enclosures.has(enclosure)) {
@@ -1330,7 +1330,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - The enclosure to merge to its parent.
    * @returns {void}
-   * @throws {Error} If the given enclosure is a root enclosure.
+   * @throws {@link !Error} if the given enclosure is a root enclosure.
    */
   const mergeEnclosure = (enclosure) => {
     const { tunnels, listeners, dependencies, port } = getEnclosure(enclosure);
@@ -1489,7 +1489,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {number} tunnel - The tunnel to remove.
    * @returns {{reject: Function, resolve: Function}} The resolution / rejection callbacks that used to be at the given index.
-   * @throws {Error} If the given tunnel does not exist.
+   * @throws {@link !Error} if the given tunnel does not exist.
    */
   const removeTunnel = (tunnel) => {
     if (!(tunnel in tunnels)) {
@@ -1532,8 +1532,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} event - The event name to cast.
    * @param {...unknown} args - Any additional arguments o associate to the cast event.
    * @returns {void}
-   * @throws {Error} If the given event name is not a `string`.
-   * @throws {Error} If the given event name fails regular expression validation.
+   * @throws {@link !Error} if the given event name is not a `string`.
+   * @throws {@link !Error} if the given event name fails regular expression validation.
    */
   const cast = (enclosure, event, ...args) => {
     const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
@@ -1592,7 +1592,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {Function} callback - The callback to remove.
    * @returns {void}
-   * @throws {Error} If the given callback is not a {@link !Function} instance.
+   * @throws {@link !Error} if the given callback is not a {@link !Function} instance.
    */
   const off = (enclosure, callback) => {
     if (!(callback instanceof _Function)) {
@@ -1609,10 +1609,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {void}
-   * @throws {Error} If the given callback is not a {@link !Function} instance.
-   * @throws {Error} If the given event name filter is not a `string`.
-   * @throws {Error} If the given event name filter fails regular expression validation.
-   * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
+   * @throws {@link !Error} if the given callback is not a {@link !Function} instance.
+   * @throws {@link !Error} if the given event name filter is not a `string`.
+   * @throws {@link !Error} if the given event name filter fails regular expression validation.
+   * @throws {@link !Error} if the given event name filter contains an adjacent pair of `**` wildcards.
    */
   const on = (enclosure, filter, callback) => {
     const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
@@ -1763,8 +1763,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {DependencyObject} dependency - Dependency to execute.
    * @param {Map<string, unknown>} args - Arguments map to use.
    * @returns {unknown} The result of executing the given dependency.
-   * @throws {Error} If there are any missing dependencies.
-   * @throws {Error} If any argument would shadow an imported dependency.
+   * @throws {@link !Error} if there are any missing dependencies.
+   * @throws {@link !Error} if any argument would shadow an imported dependency.
    */
   const executeDependency = (enclosure, dependency, args) => {
     const { dependencies } = getEnclosure(enclosure);
@@ -1813,7 +1813,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
    * @returns {void}
-   * @throws {Error} If there are any missing dependencies.
+   * @throws {@link !Error} if there are any missing dependencies.
    * @see {@link NomadVM.executeDependency} for further execution context details.
    */
   const installDependency = (enclosure, dependency) => {
@@ -1832,7 +1832,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {number} idx - Function index to use for execution.
    * @param {string} name - Function name to use for registration.
    * @returns {void}
-   * @throws {Error} If the given name is already in use.
+   * @throws {@link !Error} if the given name is already in use.
    */
   const addPredefined = (enclosure, idx, name) => {
     const { dependencies, port } = getEnclosure(enclosure);
