@@ -29,9 +29,6 @@
  * @module
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { NomadInterface, NomadEnclosureInterface, NomadVM, NomadVMEnclosure } from './nomadvm';
-
 import {
   dependencyMap as validateDependencyMap,
   functionCode as validateFunctionCode,
@@ -63,11 +60,11 @@ export type DependencyObject = {
 };
 
 /**
- * Interface representing an atomic dependency the {@link NomadInterface} will work with.
+ * Interface representing an atomic dependency.
  *
- * A "dependency" in {@link NomadInterface}'s terms, is an entity comprised of three parts:
+ * A "dependency" is an entity comprised of three parts:
  *
- * - **name:** a _name_ is a way of referring to the dependency in question (these are "scoped" to the particular {@link NomadEnclosureInterface} they are defined in).
+ * - **name:** a _name_ is a way of referring to the dependency in question.
  * - **code:** a dependency's _code_ is the JavaScript [strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode) {@link !Function} body that will be executed when the dependency is executed.
  * - **dependencies:** a dependency's _dependencies_ is a mapping that maps an identifier name to a dependency name: during execution, the given identifier name will be made available to the dependency's code with the result of executing the mapped dependency.
  *
@@ -147,7 +144,7 @@ export interface DependencyInterface {
   /**
    * Add the given imported name / dependent dependency pair to this {@link DependencyInterface}'s dependencies.
    *
-   * @param importedName - Dependency name to use for importing.
+   * @param importedName - Dependency {@link DependencyInterface.name} to use for importing.
    * @param dependencyName - Dependency being depended on.
    * @returns `this`, for chaining.
    * @throws {@link !Error} if an imported name fails regular expression validation.
@@ -166,11 +163,11 @@ export interface DependencyInterface {
   removeImport(importName: string): this;
 
   /**
-   * Remove the given dependency name from this {@link DependencyInterface}'s dependencies.
+   * Remove the given dependency {@link DependencyInterface.name} from this {@link DependencyInterface}'s dependencies.
    *
    * Note that this may remove more than one dependency from this {@link DependencyInterface}'s dependencies.
    *
-   * @param dependencyName - Dependency name to remove from the dependencies.
+   * @param dependencyName - Dependency {@link DependencyInterface.name} to remove from the dependencies.
    * @returns `this`, for chaining.
    */
   removeDependency(dependencyName: string): this;
@@ -311,11 +308,11 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
 };
 
 /**
- * Construct a new {@link Dependency} from the given {@link !Function} instance.
+ * Construct a new {@link DependencyInterface} from the given {@link !Function} instance.
  *
- * @param func - Function to use for constructing the {@link Dependency}.
+ * @param func - Function to use for constructing the {@link DependencyInterface}.
  * @param fName - Name to use instead if given.
- * @returns The constructed {@link Dependency}.
+ * @returns The constructed {@link DependencyInterface}.
  * @throws {@link !Error} if the given argument is not a {@link !Function}.
  */
 export const from: (func: (...args: unknown[]) => unknown, fName?: string) => DependencyInterface = (
@@ -339,33 +336,32 @@ export const create: (name?: string, code?: string, dependencies?: Record<string
 };
 
 /**
- * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
+ * Topologically sort the given {@link DependencyInterface} iterable by their dependency tree relations, using the given pre-installed {@link DependencyInterface} names.
  *
  * @param dependencies - Dependencies to sort.
- * @param installed - Installed {@link Dependency} names to assume existing (defaults to `null`, meaning none).
- * @returns Sorted {@link Dependency} list.
+ * @param installed - Installed {@link DependencyInterface.name}s to assume existing (defaults to `null`, meaning none).
+ * @returns Sorted {@link DependencyInterface} list.
  * @throws {@link !Error} if unresolved dependencies found.
  */
-export const sort: (
-  dependencies: Iterable<DependencyInterface>,
+export const sort: <T extends DependencyInterface>(dependencies: Iterable<T>, installed?: Iterable<string>) => T[] = <
+  T extends DependencyInterface,
+>(
+  dependencies: Iterable<T>,
   installed?: Iterable<string>,
-) => DependencyInterface[] = (
-  dependencies: Iterable<DependencyInterface>,
-  installed?: Iterable<string>,
-): DependencyInterface[] => {
+): T[] => {
   const existing: Set<string> = new Set<string>(installed ?? []);
-  const pending: Set<DependencyInterface> = new Set<DependencyInterface>(dependencies);
-  const newOnes: Set<DependencyInterface> = new Set<DependencyInterface>();
-  const result: DependencyInterface[] = [];
+  const pending: Set<T> = new Set<T>(dependencies);
+  const newOnes: Set<T> = new Set<T>();
+  const result: T[] = [];
 
   do {
-    newOnes.forEach((element: DependencyInterface): void => {
+    newOnes.forEach((element: T): void => {
       pending.delete(element);
       existing.add(element.name);
       result.push(element);
     });
     newOnes.clear();
-    pending.forEach((element: DependencyInterface): void => {
+    pending.forEach((element: T): void => {
       if (Object.keys(element.dependencies).every((dep: string): boolean => existing.has(dep))) {
         newOnes.add(element);
       }
@@ -373,20 +369,18 @@ export const sort: (
   } while (0 < newOnes.size);
 
   if (0 < pending.size) {
-    throw new Error(
-      `unresolved dependencies: [${[...pending.values()].map((dep: DependencyInterface): string => dep.name).join(', ')}]`,
-    );
+    throw new Error(`unresolved dependencies: [${[...pending.values()].map((dep: T): string => dep.name).join(', ')}]`);
   }
 
   return result;
 };
 
 /**
- * Class representing an atomic dependency the {@link NomadVM} will work with.
+ * Class representing an atomic dependency.
  *
- * A "dependency" in {@link NomadVM}'s terms, is an entity comprised of three parts:
+ * A "dependency" is an entity comprised of three parts:
  *
- * - **name:** a _name_ is a way of referring to the dependency in question (these are "scoped" to the particular {@link NomadVMEnclosure} they are defined in).
+ * - **name:** a _name_ is a way of referring to the dependency in question.
  * - **code:** a dependency's _code_ is the JavaScript [strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode) {@link !Function} body that will be executed when the dependency is executed.
  * - **dependencies:** a dependency's _dependencies_ is a mapping that maps an {@link validation.identifier} name to a dependency name: during execution, the given identifier name will be made available to the dependency's code with the result of executing the mapped dependency.
  *
@@ -529,8 +523,8 @@ export class Dependency implements DependencyInterface {
   /**
    * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
    *
-   * @param importedName - Dependency name to use for importing.
-   * @param dependencyName - Dependency being depended on.
+   * @param importedName - The {@link Dependency.name} to use for importing.
+   * @param dependencyName - {@link Dependency} being depended on.
    * @returns `this`, for chaining.
    * @see {@link validation.identifier} for exceptions thrown.
    */
@@ -551,11 +545,11 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Remove the given dependency name from this {@link Dependency}'s dependencies.
+   * Remove the given dependency {@link Dependency.name} from this {@link Dependency}'s dependencies.
    *
-   * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
+   * Note that this may remove more than one {@link Dependency} from this {@link Dependency}'s dependencies.
    *
-   * @param dependencyName - Dependency name to remove from the dependencies.
+   * @param dependencyName - The {@link Dependency.name} to remove from the dependencies.
    * @returns `this`, for chaining.
    */
   removeDependency(dependencyName: string): this {
