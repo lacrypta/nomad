@@ -7,8 +7,8 @@
     <script referrerpolicy="no-referrer" src="../dist/umd/index.js"></script>
     <script type="module" referrerpolicy="no-referrer">
       'use strict';
-      const { nomadVmCreate, dependencyFrom } = nomadvm;
-      const vm = nomadVmCreate();
+      const { vmCreate, dependencyFrom } = nomadvm;
+      const vm = vmCreate();
       vm.on('**', (...args) => console.log(args));
       const dbl = dependencyFrom(() => (x) => 2 * x, 'dbl');
       const qpl = dependencyFrom(

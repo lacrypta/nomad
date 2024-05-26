@@ -69,51 +69,51 @@ export type DependencyObject = {
  * - **dependencies:** a dependency's _dependencies_ is a mapping that maps an identifier name to a dependency name: during execution, the given identifier name will be made available to the dependency's code with the result of executing the mapped dependency.
  *
  */
-export interface DependencyInterface {
+export interface Dependency {
   /**
-   * Get the {@link DependencyInterface} name.
+   * Get the {@link Dependency} name.
    *
    */
   get name(): string;
 
   /**
-   * Get the {@link DependencyInterface} source code.
+   * Get the {@link Dependency} source code.
    *
    */
   get code(): string;
 
   /**
-   * Get the {@link DependencyInterface} dependencies.
+   * Get the {@link Dependency} dependencies.
    *
    */
   get dependencies(): Map<string, string>;
 
   /**
-   * Set the {@link DependencyInterface} name.
+   * Set the {@link Dependency} name.
    *
    * @param name - The name to set.
-   * @see {@link DependencyInterface.setName} for exceptions thrown.
+   * @see {@link Dependency.setName} for exceptions thrown.
    */
   set name(name: string);
 
   /**
-   * Set the {@link DependencyInterface} source code.
+   * Set the {@link Dependency} source code.
    *
    * @param code - The function source code to set.
-   * @see {@link DependencyInterface.setCode} for exceptions thrown.
+   * @see {@link Dependency.setCode} for exceptions thrown.
    */
   set code(code: string);
 
   /**
-   * Set the {@link DependencyInterface} dependencies.
+   * Set the {@link Dependency} dependencies.
    *
    * @param dependencies - The dependencies to set.
-   * @see {@link DependencyInterface.setDependencies} for exceptions thrown.
+   * @see {@link Dependency.setDependencies} for exceptions thrown.
    */
   set dependencies(dependencies: Map<string, string>);
 
   /**
-   * Set the {@link DependencyInterface} name.
+   * Set the {@link Dependency} name.
    *
    * @param name - The name to set.
    * @returns `this`, for chaining.
@@ -123,7 +123,7 @@ export interface DependencyInterface {
   setName(name: string): this;
 
   /**
-   * Set the {@link DependencyInterface} source code.
+   * Set the {@link Dependency} source code.
    *
    * @param code - The function source code to set.
    * @returns `this`, for chaining.
@@ -133,7 +133,7 @@ export interface DependencyInterface {
   setCode(code: string): this;
 
   /**
-   * Set the {@link DependencyInterface} dependencies.
+   * Set the {@link Dependency} dependencies.
    *
    * @param dependencies - The dependencies to set.
    * @returns `this`, for chaining.
@@ -142,9 +142,9 @@ export interface DependencyInterface {
   setDependencies(dependencies: Map<string, string>): this;
 
   /**
-   * Add the given imported name / dependent dependency pair to this {@link DependencyInterface}'s dependencies.
+   * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
    *
-   * @param importedName - Dependency {@link DependencyInterface.name} to use for importing.
+   * @param importedName - Dependency {@link Dependency.name} to use for importing.
    * @param dependencyName - Dependency being depended on.
    * @returns `this`, for chaining.
    * @throws {@link !Error} if an imported name fails regular expression validation.
@@ -155,7 +155,7 @@ export interface DependencyInterface {
   addDependency(importedName: string, dependencyName: string): this;
 
   /**
-   * Remove the given import name from this {@link DependencyInterface}'s dependencies.
+   * Remove the given import name from this {@link Dependency}'s dependencies.
    *
    * @param importName - Import name to remove from the dependencies.
    * @returns `this`, for chaining.
@@ -163,19 +163,19 @@ export interface DependencyInterface {
   removeImport(importName: string): this;
 
   /**
-   * Remove the given dependency {@link DependencyInterface.name} from this {@link DependencyInterface}'s dependencies.
+   * Remove the given dependency {@link Dependency.name} from this {@link Dependency}'s dependencies.
    *
-   * Note that this may remove more than one dependency from this {@link DependencyInterface}'s dependencies.
+   * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
    *
-   * @param dependencyName - Dependency {@link DependencyInterface.name} to remove from the dependencies.
+   * @param dependencyName - Dependency {@link Dependency.name} to remove from the dependencies.
    * @returns `this`, for chaining.
    */
   removeDependency(dependencyName: string): this;
 
   /**
-   * Return the plain object representation of the {@link DependencyInterface}.
+   * Return the plain object representation of the {@link Dependency}.
    *
-   * @returns The {@link DependencyInterface}, as an independent {@link DependencyObject}.
+   * @returns The {@link Dependency}, as an independent {@link DependencyObject}.
    */
   asObject(): DependencyObject;
 }
@@ -308,43 +308,43 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
 };
 
 /**
- * Construct a new {@link DependencyInterface} from the given {@link !Function} instance.
+ * Construct a new {@link Dependency} from the given {@link !Function} instance.
  *
- * @param func - Function to use for constructing the {@link DependencyInterface}.
+ * @param func - Function to use for constructing the {@link Dependency}.
  * @param fName - Name to use instead if given.
- * @returns The constructed {@link DependencyInterface}.
+ * @returns The constructed {@link Dependency}.
  * @throws {@link !Error} if the given argument is not a {@link !Function}.
  */
-export const from: (func: (...args: unknown[]) => unknown, fName?: string) => DependencyInterface = (
+export const from: (func: (...args: unknown[]) => unknown, fName?: string) => Dependency = (
   func: (...args: unknown[]) => unknown,
   fName?: string,
-): DependencyInterface => {
+): Dependency => {
   if (Function !== func.constructor) {
     throw new Error('Expected defined function');
   }
 
   const { name, code, dependencies }: DependencyObject = _getDependencyPrimitive(func);
-  return new Dependency(fName || name, code, dependencies);
+  return new DependencyImplementation(fName || name, code, dependencies);
 };
 
-export const create: (name?: string, code?: string, dependencies?: Record<string, string>) => DependencyInterface = (
+export const create: (name?: string, code?: string, dependencies?: Record<string, string>) => Dependency = (
   name?: string,
   code?: string,
   dependencies?: Record<string, string>,
-): DependencyInterface => {
-  return new Dependency(name, code, dependencies);
+): Dependency => {
+  return new DependencyImplementation(name, code, dependencies);
 };
 
 /**
- * Topologically sort the given {@link DependencyInterface} iterable by their dependency tree relations, using the given pre-installed {@link DependencyInterface} names.
+ * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
  *
  * @param dependencies - Dependencies to sort.
- * @param installed - Installed {@link DependencyInterface.name}s to assume existing (defaults to `null`, meaning none).
- * @returns Sorted {@link DependencyInterface} list.
+ * @param installed - Installed {@link Dependency.name}s to assume existing (defaults to `null`, meaning none).
+ * @returns Sorted {@link Dependency} list.
  * @throws {@link !Error} if unresolved dependencies found.
  */
-export const sort: <T extends DependencyInterface>(dependencies: Iterable<T>, installed?: Iterable<string>) => T[] = <
-  T extends DependencyInterface,
+export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?: Iterable<string>) => T[] = <
+  T extends Dependency,
 >(
   dependencies: Iterable<T>,
   installed?: Iterable<string>,
@@ -385,32 +385,32 @@ export const sort: <T extends DependencyInterface>(dependencies: Iterable<T>, in
  * - **dependencies:** a dependency's _dependencies_ is a mapping that maps an {@link validation.identifier} name to a dependency name: during execution, the given identifier name will be made available to the dependency's code with the result of executing the mapped dependency.
  *
  */
-export class Dependency implements DependencyInterface {
+export class DependencyImplementation implements Dependency {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
   }
 
   /**
-   * The {@link Dependency}'s name.
+   * The {@link DependencyImplementation}'s name.
    *
    */
   #name: string;
 
   /**
-   * The {@link Dependency}'s function source code.
+   * The {@link DependencyImplementation}'s function source code.
    *
    */
   #code: string;
 
   /**
-   * The {@link Dependency}'s dependency map, as a mapping from imported name to dependency name.
+   * The {@link DependencyImplementation}'s dependency map, as a mapping from imported name to dependency name.
    *
    */
   #dependencies: Map<string, string>;
 
   /**
-   * Build a new {@link Dependency} using the given parameters.
+   * Build a new {@link DependencyImplementation} using the given parameters.
    *
    * @param name - The dependency name to use (defaults to `""` if not given).
    * @param code - The dependency code to use (defaults to `""` if not given).
@@ -429,7 +429,7 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Get the {@link Dependency} name.
+   * Get the {@link DependencyImplementation} name.
    *
    */
   get name(): string {
@@ -437,7 +437,7 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Get the {@link Dependency} source code.
+   * Get the {@link DependencyImplementation} source code.
    *
    */
   get code(): string {
@@ -445,9 +445,9 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Get the {@link Dependency} dependencies.
+   * Get the {@link DependencyImplementation} dependencies.
    *
-   * This will create a _new_ dependencies {@link !Map}, so as not to expose the {@link Dependency}'s internals to consumers.
+   * This will create a _new_ dependencies {@link !Map}, so as not to expose the {@link DependencyImplementation}'s internals to consumers.
    *
    */
   get dependencies(): Map<string, string> {
@@ -455,37 +455,37 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Set the {@link Dependency} name.
+   * Set the {@link DependencyImplementation} name.
    *
    * @param name - The name to set.
-   * @see {@link Dependency.setName} for exceptions thrown.
+   * @see {@link DependencyImplementation.setName} for exceptions thrown.
    */
   set name(name: string) {
     this.setName(name);
   }
 
   /**
-   * Set the {@link Dependency} source code.
+   * Set the {@link DependencyImplementation} source code.
    *
    * @param code - The function source code to set.
-   * @see {@link Dependency.setCode} for exceptions thrown.
+   * @see {@link DependencyImplementation.setCode} for exceptions thrown.
    */
   set code(code: string) {
     this.setCode(code);
   }
 
   /**
-   * Set the {@link Dependency} dependencies.
+   * Set the {@link DependencyImplementation} dependencies.
    *
    * @param dependencies - The dependencies to set.
-   * @see {@link Dependency.setDependencies} for exceptions thrown.
+   * @see {@link DependencyImplementation.setDependencies} for exceptions thrown.
    */
   set dependencies(dependencies: Map<string, string>) {
     this.setDependencies(dependencies);
   }
 
   /**
-   * Set the {@link Dependency} name.
+   * Set the {@link DependencyImplementation} name.
    *
    * @param name - The name to set.
    * @returns `this`, for chaining.
@@ -497,7 +497,7 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Set the {@link Dependency} source code.
+   * Set the {@link DependencyImplementation} source code.
    *
    * @param code - The function source code to set.
    * @returns `this`, for chaining.
@@ -509,7 +509,7 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Set the {@link Dependency} dependencies.
+   * Set the {@link DependencyImplementation} dependencies.
    *
    * @param dependencies - The dependencies to set.
    * @returns `this`, for chaining.
@@ -521,10 +521,10 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
+   * Add the given imported name / dependent dependency pair to this {@link DependencyImplementation}'s dependencies.
    *
-   * @param importedName - The {@link Dependency.name} to use for importing.
-   * @param dependencyName - {@link Dependency} being depended on.
+   * @param importedName - The {@link DependencyImplementation.name} to use for importing.
+   * @param dependencyName - {@link DependencyImplementation} being depended on.
    * @returns `this`, for chaining.
    * @see {@link validation.identifier} for exceptions thrown.
    */
@@ -534,7 +534,7 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Remove the given import name from this {@link Dependency}'s dependencies.
+   * Remove the given import name from this {@link DependencyImplementation}'s dependencies.
    *
    * @param importName - Import name to remove from the dependencies.
    * @returns `this`, for chaining.
@@ -545,11 +545,11 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Remove the given dependency {@link Dependency.name} from this {@link Dependency}'s dependencies.
+   * Remove the given dependency {@link DependencyImplementation.name} from this {@link DependencyImplementation}'s dependencies.
    *
-   * Note that this may remove more than one {@link Dependency} from this {@link Dependency}'s dependencies.
+   * Note that this may remove more than one {@link DependencyImplementation} from this {@link DependencyImplementation}'s dependencies.
    *
-   * @param dependencyName - The {@link Dependency.name} to remove from the dependencies.
+   * @param dependencyName - The {@link DependencyImplementation.name} to remove from the dependencies.
    * @returns `this`, for chaining.
    */
   removeDependency(dependencyName: string): this {
@@ -560,9 +560,9 @@ export class Dependency implements DependencyInterface {
   }
 
   /**
-   * Return the plain object representation of the {@link Dependency}.
+   * Return the plain object representation of the {@link DependencyImplementation}.
    *
-   * @returns The {@link Dependency}, as an independent object.
+   * @returns The {@link DependencyImplementation}, as an independent object.
    */
   asObject(): DependencyObject {
     return {

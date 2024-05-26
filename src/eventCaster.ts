@@ -43,9 +43,9 @@ export type MethodInjector<T> = (entries: { [Method in keyof T]: T[Method] }) =>
  */
 export type EventCallback = (name: string, ...args: unknown[]) => unknown;
 
-export type EventCasterInterface_Cast = (name: string, ...args: unknown[]) => EventCasterInterface;
+export type EventCaster_Cast = (name: string, ...args: unknown[]) => EventCaster;
 
-export type EventCasterInterface_ProtectedMethods = { cast: EventCasterInterface_Cast };
+export type EventCaster_ProtectedMethods = { cast: EventCaster_Cast };
 
 /**
  * Glob-enabled Event Caster interface.
@@ -72,9 +72,9 @@ export type EventCasterInterface_ProtectedMethods = { cast: EventCasterInterface
  * ```
  *
  */
-export interface EventCasterInterface {
+export interface EventCaster {
   /**
-   * Attach the given callback to the {@link EventCasterInterface}, triggered on events matching the given filter.
+   * Attach the given callback to the {@link EventCaster}, triggered on events matching the given filter.
    *
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
@@ -83,7 +83,7 @@ export interface EventCasterInterface {
   on(filter: string, callback: EventCallback): this;
 
   /**
-   * Attach the given callback to the {@link EventCasterInterface}, triggered on events matching the given filter, and removed upon being called once.
+   * Attach the given callback to the {@link EventCaster}, triggered on events matching the given filter, and removed upon being called once.
    *
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
@@ -153,7 +153,7 @@ export const _filterToRegExp: (filter: string) => RegExp = (filter: string): Reg
  * ```
  *
  */
-export class EventCaster implements EventCasterInterface {
+export class EventCasterImplementation implements EventCaster {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -168,7 +168,7 @@ export class EventCaster implements EventCasterInterface {
   #listeners: Map<EventCallback, Set<RegExp>> = new Map<EventCallback, Set<RegExp>>();
 
   /**
-   * Build a new {@link EventCaster}, receiving a callback to inject the "protected" methods map.
+   * Build a new {@link EventCasterImplementation}, receiving a callback to inject the "protected" methods map.
    *
    * Passing a callback to inject the "protected" methods map into allows for derived classes to have access to these whilst preventing access to outside agents.
    *
@@ -176,7 +176,7 @@ export class EventCaster implements EventCasterInterface {
    */
   constructor(
     protectedMethodInjector?: MethodInjector<{
-      cast: EventCasterInterface_Cast;
+      cast: EventCaster_Cast;
     }>,
   ) {
     protectedMethodInjector?.({
@@ -207,7 +207,7 @@ export class EventCaster implements EventCasterInterface {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.on} for additional exceptions thrown.
+   * @see {@link EventCasterImplementation.on} for additional exceptions thrown.
    */
   once(filter: string, callback: EventCallback): this {
     const wrapped: EventCallback = (name: string, ...args: unknown[]): void => {

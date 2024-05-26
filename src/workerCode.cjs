@@ -1033,7 +1033,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post a `pong` message to the host {@link NomadVM}.
+   * Post a `pong` message to the host {@link VMImplementation}.
    *
    * A `pong` message has the following form:
    *
@@ -1050,7 +1050,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `resolve` message to the host {@link NomadVM}.
+   * Post a `resolve` message to the host {@link VMImplementation}.
    *
    * A `resolve` message has the following form:
    *
@@ -1076,7 +1076,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `reject` message to the host {@link NomadVM}.
+   * Post a `reject` message to the host {@link VMImplementation}.
    *
    * A `reject` message has the following form:
    *
@@ -1094,7 +1094,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * - `error` is the rejection's error string.
    *
    * @param {number} tunnel - The tunnel index to reject.
-   * @param {string} error - The error message to use for {@link !Error} construction in the {@link NomadVM}.
+   * @param {string} error - The error message to use for {@link !Error} construction in the {@link VMImplementation}.
    * @returns {void}
    */
   const postRejectMessage = (tunnel, error) => {
@@ -1102,7 +1102,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post an `emit` message to the host {@link NomadVM}.
+   * Post an `emit` message to the host {@link VMImplementation}.
    *
    * An `emit` message has the following form:
    *
@@ -1128,7 +1128,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `call` message to the host {@link NomadVM}.
+   * Post a `call` message to the host {@link VMImplementation}.
    *
    * A `call` message has the following form:
    *
@@ -1151,7 +1151,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - The enclosure to use.
    * @param {number} tunnel - The tunnel index where the call result is expected.
-   * @param {number} idx - The function index to call in the {@link NomadVM}.
+   * @param {number} idx - The function index to call in the {@link VMImplementation}.
    * @param {Array<unknown>} args - The arguments to forward to the function call itself.
    * @returns {void}
    */
@@ -1814,7 +1814,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {DependencyObject} dependency - Dependency to execute.
    * @returns {void}
    * @throws {@link !Error} if there are any missing dependencies.
-   * @see {@link NomadVM.executeDependency} for further execution context details.
+   * @see {@link VMImplementation.executeDependency} for further execution context details.
    */
   const installDependency = (enclosure, dependency) => {
     const { dependencies } = getEnclosure(enclosure);

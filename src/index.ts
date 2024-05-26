@@ -30,29 +30,29 @@
 
 // ------------------------------------------------------------------------------------------------
 
-import type { DependencyInterface, DependencyObject } from './dependency';
-import type { EventCallback, EventCasterInterface } from './eventCaster';
-import type { NomadInterface, NomadEnclosureInterface } from './nomadvm';
+import type { Dependency, DependencyObject } from './dependency';
+import type { EventCallback, EventCaster } from './eventCaster';
+import type { VM, Enclosure } from './vm';
 import type { WorkerBuilder, WorkerInterface } from './worker';
 
 import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
-import { create as _nomadVmCreate, events as _nomadVmEvents, get as _nomadVmGet } from './nomadvm';
+import { create as _vmCreate, events as _vmEvents, get as _vmGet } from './vm';
 import { build as _workerBuild, builder as _workerBuilder } from './worker';
 
 const dependencyCreate = _dependencyCreate;
 const dependencyFrom = _dependencyFrom;
-const nomadVmCreate = _nomadVmCreate;
-const nomadVmGet = _nomadVmGet;
+const vmCreate = _vmCreate;
+const vmGet = _vmGet;
 const workerBuild = _workerBuild;
 const workerBuilder = _workerBuilder;
 
-const nomadVmEvents = _nomadVmEvents;
+const vmEvents = _vmEvents;
 
-export type { DependencyInterface, DependencyObject };
-export type { EventCallback, EventCasterInterface };
-export type { NomadInterface, NomadEnclosureInterface };
+export type { Dependency, DependencyObject };
+export type { EventCallback, EventCaster };
+export type { VM, Enclosure };
 export type { WorkerBuilder, WorkerInterface };
 
 export { dependencyCreate, dependencyFrom };
-export { nomadVmCreate, nomadVmGet, nomadVmEvents };
+export { vmCreate, vmGet, vmEvents };
 export { workerBuild, workerBuilder };

@@ -29,13 +29,8 @@
  * @module
  */
 
-import type { DependencyInterface, DependencyObject } from './dependency';
-import type {
-  EventCallback,
-  EventCasterInterface,
-  EventCasterInterface_Cast,
-  EventCasterInterface_ProtectedMethods,
-} from './eventCaster';
+import type { Dependency, DependencyObject } from './dependency';
+import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
 import type { WorkerInterface, WorkerBuilder } from './worker';
 
 import {
@@ -47,8 +42,8 @@ import {
   argumentsMap as validateArgumentsMap,
 } from './validation';
 
-import { EventCaster } from './eventCaster';
-import { Dependency, sort } from './dependency';
+import { EventCasterImplementation } from './eventCaster';
+import { DependencyImplementation, sort } from './dependency';
 import { BrowserWorker } from './worker';
 
 import workerCode from './workerCode.cjs';
@@ -57,7 +52,7 @@ import workerCode from './workerCode.cjs';
  * A safe execution environment for NOMAD code execution.
  *
  */
-export interface NomadInterface extends EventCasterInterface {
+export interface VM extends EventCaster {
   /**
    * Getter used to retrieve the VM's name.
    *
@@ -81,7 +76,7 @@ export interface NomadInterface extends EventCasterInterface {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCasterInterface.once} for additional exceptions thrown.
+   * @see {@link EventCaster.once} for additional exceptions thrown.
    */
   onceThis(filter: string, callback: EventCallback): this;
 
@@ -112,7 +107,7 @@ export interface NomadInterface extends EventCasterInterface {
    * 1. Emitting the "shutdown" event on the {@link WorkerInterface}.
    * 2. Waiting for the given timeout milliseconds.
    * 3. Removing all root enclosures.
-   * 4. Calling {@link NomadInterface.stop} to finish the shutdown process.
+   * 4. Calling {@link VM.stop} to finish the shutdown process.
    *
    * @param timeout - Milliseconds to wait for the {@link WorkerInterface} to shut down.
    * @returns A {@link !Promise} that resolves with `void` if the {@link WorkerInterface} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
@@ -136,9 +131,9 @@ export interface NomadInterface extends EventCasterInterface {
    * Create a new enclosure with the given name.
    *
    * @param enclosure - Enclosure to create.
-   * @returns A {@link !Promise} that resolves with a {@link NomadEnclosureInterface} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  createEnclosure(enclosure: string): Promise<NomadEnclosureInterface>;
+  createEnclosure(enclosure: string): Promise<Enclosure>;
 
   /**
    * Delete the enclosure with the given name.
@@ -251,32 +246,32 @@ export interface NomadInterface extends EventCasterInterface {
   predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
 
   /**
-   * Install the given {@link DependencyInterface} on the {@link WorkerInterface}.
+   * Install the given {@link Dependency} on the {@link WorkerInterface}.
    *
    * @param enclosure - Enclosure to use.
-   * @param dependency - The {@link DependencyInterface} to install.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link DependencyInterface} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  install(enclosure: string, dependency: DependencyInterface): Promise<void>;
+  install(enclosure: string, dependency: Dependency): Promise<void>;
 
   /**
-   * Execute the given {@link DependencyInterface} with the given arguments map in the {@link WorkerInterface}.
+   * Execute the given {@link Dependency} with the given arguments map in the {@link WorkerInterface}.
    *
    * @param enclosure - The enclosure to use.
-   * @param dependency - The {@link DependencyInterface} to execute.
+   * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link !Promise} that resolves with the {@link DependencyInterface}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown>;
+  execute(enclosure: string, dependency: Dependency, args?: Map<string, unknown>): Promise<unknown>;
 
   /**
-   * Install the given {@link DependencyInterface} iterable, by sorting them topologically and installing each one in turn.
+   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
    * @param enclosure - Enclosure to use.
    * @param dependencies - Dependencies to install.
-   * @returns A {@link !Promise} that resolves with `void` if every {@link DependencyInterface} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  installAll(enclosure: string, dependencies: Iterable<DependencyInterface>): Promise<void>;
+  installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void>;
 
   /**
    * Emit an event towards the {@link WorkerInterface}.
@@ -290,15 +285,15 @@ export interface NomadInterface extends EventCasterInterface {
 }
 
 /**
- * A {@link NomadInterface} enclosure interface wrapper object.
+ * A {@link VM} enclosure interface wrapper object.
  *
  */
-export interface NomadEnclosureInterface {
+export interface Enclosure {
   /**
-   * Getter used to retrieve the wrapped {@link NomadInterface}.
+   * Getter used to retrieve the wrapped {@link VM}.
    *
    */
-  get vm(): NomadInterface;
+  get vm(): VM;
 
   /**
    * Getter used to retrieve the wrapped enclosure.
@@ -400,29 +395,29 @@ export interface NomadEnclosureInterface {
   predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
 
   /**
-   * Install the given {@link DependencyInterface} on the wrapped VM under the wrapped enclosure.
+   * Install the given {@link Dependency} on the wrapped VM under the wrapped enclosure.
    *
-   * @param dependency - The {@link DependencyInterface} to install.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link DependencyInterface} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  install(dependency: DependencyInterface): Promise<void>;
+  install(dependency: Dependency): Promise<void>;
 
   /**
-   * Execute the given {@link DependencyInterface} with the given arguments map in the wrapped VM under the wrapped enclosure.
+   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped enclosure.
    *
-   * @param dependency - The {@link DependencyInterface} to execute.
+   * @param dependency - The {@link Dependency} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link !Promise} that resolves with the {@link DependencyInterface}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown>;
+  execute(dependency: Dependency, args?: Map<string, unknown>): Promise<unknown>;
 
   /**
-   * Install the given {@link DependencyInterface} iterable, by sorting them topologically and installing each one in turn.
+   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
    *
    * @param dependencies - Dependencies to install.
-   * @returns A {@link !Promise} that resolves with `void` if every {@link DependencyInterface} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  installAll(dependencies: Iterable<DependencyInterface>): Promise<void>;
+  installAll(dependencies: Iterable<Dependency>): Promise<void>;
 }
 
 /**
@@ -438,17 +433,17 @@ export const _pseudoRandomString: () => string = (): string => {
     .padStart(8, '0');
 };
 
-let __castGlobal: EventCasterInterface_Cast;
+let __castGlobal: EventCaster_Cast;
 
 /**
- * Static {@link EventCaster} that allows a single event source to be used across all VMs.
+ * Static {@link EventCasterImplementation} that allows a single event source to be used across all VMs.
  *
  * All events cast bear a first argument consisting of the VM the event originated from.
- * The events cast on the static {@link EventCaster} are:
+ * The events cast on the static {@link EventCasterImplementation} are:
  *
- * - `nomadvm:{NAME}:new(vm)`: cast on the static {@link EventCaster}, upon VM `vm` creation.
+ * - `nomadvm:{NAME}:new(vm)`: cast on the static {@link EventCasterImplementation}, upon VM `vm` creation.
  *
- * The events cast on both {@link EventCaster}s are:
+ * The events cast on both {@link EventCasterImplementation}s are:
  *
  * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
  * - `nomadvm:{NAME}:start:ok(vm)`: when the VM `vm` has been successfully started.
@@ -457,9 +452,9 @@ let __castGlobal: EventCasterInterface_Cast;
  * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
  * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
  * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
- * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link NomadVM.#worker} encounters a non-fatal, yet reportable, error `error`.
- * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link NomadVM.#worker} encounters a fatal error `error`.
- * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link NomadVM.#worker} fails to respond to ping / pong messages for `delta` milliseconds.
+ * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link VMImplementation.#worker} encounters a non-fatal, yet reportable, error `error`.
+ * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link VMImplementation.#worker} encounters a fatal error `error`.
+ * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMImplementation.#worker} fails to respond to ping / pong messages for `delta` milliseconds.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
@@ -493,24 +488,24 @@ let __castGlobal: EventCasterInterface_Cast;
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link NomadVM.#worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link VMImplementation.#worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
  *
- * Internally, the {@link NomadVM.#worker} will cast the following events when instructed to by the VM:
+ * Internally, the {@link VMImplementation.#worker} will cast the following events when instructed to by the VM:
  *
- * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link NomadVM.#worker} with name `EVENT` and arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link VMImplementation.#worker} with name `EVENT` and arguments `args`.
  *
  */
-export const events: Readonly<EventCasterInterface> = Object.freeze(
-  new EventCaster((protectedMethods: EventCasterInterface_ProtectedMethods): void => {
+export const events: Readonly<EventCaster> = Object.freeze(
+  new EventCasterImplementation((protectedMethods: EventCaster_ProtectedMethods): void => {
     __castGlobal = protectedMethods.cast;
   }),
 );
 
 /**
- * The {@link EventCaster} casting function for all he VMs.
+ * The {@link EventCasterImplementation} casting function for all he VMs.
  *
  */
-export const _castGlobal: EventCasterInterface_Cast =
+export const _castGlobal: EventCaster_Cast =
   // @ts-expect-error: Variable '__castGlobal' is used before being assigned.
   __castGlobal;
 
@@ -530,28 +525,28 @@ export const _namesPrefix: Readonly<string> = 'nomadvm';
  * Global mapping of VM names to VM {@link !WeakRef}s.
  *
  */
-export const _names: Map<string, WeakRef<NomadInterface>> = new Map<string, WeakRef<NomadInterface>>();
+export const _names: Map<string, WeakRef<VM>> = new Map<string, WeakRef<VM>>();
 
 /**
- * The default number of milliseconds to wait for the {@link NomadVM.#worker} to start.
+ * The default number of milliseconds to wait for the {@link VMImplementation.#worker} to start.
  *
  */
 export const _defaultBootTimeout: Readonly<number> = 200;
 
 /**
- * The default number of milliseconds to wait for the {@link NomadVM.#worker} to stop.
+ * The default number of milliseconds to wait for the {@link VMImplementation.#worker} to stop.
  *
  */
 export const _defaultShutdownTimeout: Readonly<number> = 100;
 
 /**
- * The default number of milliseconds to wait between `ping` messages to the {@link NomadVM.#worker}.
+ * The default number of milliseconds to wait between `ping` messages to the {@link VMImplementation.#worker}.
  *
  */
 export const _defaultPingInterval: Readonly<number> = 100;
 
 /**
- * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link NomadVM.#worker} "unresponsive".
+ * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link VMImplementation.#worker} "unresponsive".
  *
  */
 export const _defaultPongLimit: Readonly<number> = 1000;
@@ -562,9 +557,7 @@ export const _defaultPongLimit: Readonly<number> = 1000;
  * @param name - VM name to retrieve.
  * @returns The VM registered under the given name, or `undefined` if none found.
  */
-export const get: (name: string) => WeakRef<NomadInterface> | undefined = (
-  name: string,
-): WeakRef<NomadInterface> | undefined => {
+export const get: (name: string) => WeakRef<VM> | undefined = (name: string): WeakRef<VM> | undefined => {
   return _names.get(name);
 };
 
@@ -572,12 +565,12 @@ export const get: (name: string) => WeakRef<NomadInterface> | undefined = (
  * A safe execution environment for NOMAD code execution.
  *
  */
-export class NomadVM extends EventCaster implements NomadInterface {
+export class VMImplementation extends EventCasterImplementation implements VM {
   /**
-   * The {@link EventCaster} casting function for the current VM.
+   * The {@link EventCasterImplementation} casting function for the current VM.
    *
    */
-  #castLocal: EventCasterInterface_Cast;
+  #castLocal: EventCaster_Cast;
 
   /**
    * The VM name to use.
@@ -590,18 +583,18 @@ export class NomadVM extends EventCaster implements NomadInterface {
    *
    * The VM's state can be one of:
    *
-   * - `created`: the {@link NomadVM} instance is successfully created.
-   * - `booting`: the {@link NomadVM.start} method is waiting for the {@link NomadVM.#worker} boot-up sequence to finish.
-   * - `running`: the {@link NomadVM} instance is running and waiting for commands.
-   * - `stopped`: the {@link NomadVM} instance has been stopped and no further commands are accepted.
+   * - `created`: the {@link VMImplementation} instance is successfully created.
+   * - `booting`: the {@link VMImplementation.start} method is waiting for the {@link VMImplementation.#worker} boot-up sequence to finish.
+   * - `running`: the {@link VMImplementation} instance is running and waiting for commands.
+   * - `stopped`: the {@link VMImplementation} instance has been stopped and no further commands are accepted.
    *
    * These states may transition like so:
    *
-   * - `created --> booting`: upon calling {@link NomadVM.start}.
-   * - `created --> stopped`: upon calling {@link NomadVM.stop} before {@link NomadVM.start}.
-   * - `booting --> running`: upon the {@link NomadVM.#worker} successfully finishing its boot up sequence.
-   * - `booting --> stopped`: upon calling {@link NomadVM.stop} after {@link NomadVM.start} but before the boot-up sequence has finished in the {@link NomadVM.#worker}.
-   * - `running --> stopped`: upon calling {@link NomadVM.stop} after successful boot-up sequence termination in the {@link NomadVM.#worker}.
+   * - `created --> booting`: upon calling {@link VMImplementation.start}.
+   * - `created --> stopped`: upon calling {@link VMImplementation.stop} before {@link VMImplementation.start}.
+   * - `booting --> running`: upon the {@link VMImplementation.#worker} successfully finishing its boot up sequence.
+   * - `booting --> stopped`: upon calling {@link VMImplementation.stop} after {@link VMImplementation.start} but before the boot-up sequence has finished in the {@link VMImplementation.#worker}.
+   * - `running --> stopped`: upon calling {@link VMImplementation.stop} after successful boot-up sequence termination in the {@link VMImplementation.#worker}.
    *
    */
   #state: 'created' | 'booting' | 'running' | 'stopped';
@@ -621,7 +614,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   /**
    * A list of inter-process tunnels being used.
    *
-   * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link NomadVM.#worker} and the {@link NomadVM} can interact through these.
+   * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link VMImplementation.#worker} and the {@link VMImplementation} can interact through these.
    *
    */
   #tunnels: {
@@ -648,7 +641,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   #lastPong?: number;
 
   /**
-   * Construct a new {@link NomadVM} instance, using the given name.
+   * Construct a new {@link VMImplementation} instance, using the given name.
    *
    * @param name - The VM's name to use, or `null` to have one generated randomly.
    * @throws {@link !Error} if the given name already exists.
@@ -663,8 +656,8 @@ export class NomadVM extends EventCaster implements NomadInterface {
     }
 
     {
-      let castLocal: EventCasterInterface_Cast;
-      super((protectedMethods: { cast: EventCasterInterface_Cast }): void => {
+      let castLocal: EventCaster_Cast;
+      super((protectedMethods: { cast: EventCaster_Cast }): void => {
         castLocal = protectedMethods.cast;
       });
       // @ts-expect-error: Variable 'castLocal' is used before being assigned.
@@ -672,7 +665,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
     }
 
     this.#name = name;
-    _names.set(this.#name, new WeakRef<NomadVM>(this));
+    _names.set(this.#name, new WeakRef<VMImplementation>(this));
     this.#state = 'created';
 
     _castGlobal(`${_eventPrefix}:${this.#name}:new`, this);
@@ -713,7 +706,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Cast an event both from the static {@link EventCaster} at {@link events}, and from the current instance.
+   * Cast an event both from the static {@link EventCasterImplementation} at {@link events}, and from the current instance.
    *
    * @param name - Event name to cast.
    * @param args - Arguments to associate to the event in question.
@@ -743,7 +736,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.once} for additional exceptions thrown.
+   * @see {@link EventCasterImplementation.once} for additional exceptions thrown.
    */
   onceThis(filter: string, callback: EventCallback): this {
     return this.once(`${_eventPrefix}:${this.name}:${filter}`, callback);
@@ -752,7 +745,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post a `ping` message to the {@link NomadVM.#worker}.
+   * Post a `ping` message to the {@link VMImplementation.#worker}.
    *
    * A `ping` message has the form:
    *
@@ -768,7 +761,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `resolve` message to the {@link NomadVM.#worker}.
+   * Post a `resolve` message to the {@link VMImplementation.#worker}.
    *
    * A `resolve` message has the form:
    *
@@ -794,7 +787,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `reject` message to the {@link NomadVM.#worker}.
+   * Post a `reject` message to the {@link VMImplementation.#worker}.
    *
    * A `reject` message has the form:
    *
@@ -813,14 +806,14 @@ export class NomadVM extends EventCaster implements NomadInterface {
    * - `error` is the rejection's error string.
    *
    * @param tunnel - The tunnel to reject.
-   * @param error - The error message to use for {@link !Error} construction in the {@link NomadVM.#worker}.
+   * @param error - The error message to use for {@link !Error} construction in the {@link VMImplementation.#worker}.
    */
   #postRejectMessage(tunnel: number, error: string): void {
     this.#worker?.shout({ name: 'reject', tunnel, error });
   }
 
   /**
-   * Post an `emit` message to the {@link NomadVM.#worker}.
+   * Post an `emit` message to the {@link VMImplementation.#worker}.
    *
    * An `emit` message has the form:
    *
@@ -853,7 +846,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post an `install` message to the {@link NomadVM.#worker}.
+   * Post an `install` message to the {@link VMImplementation.#worker}.
    *
    * An `install` message has the form:
    *
@@ -881,7 +874,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post an `execute` message to the {@link NomadVM.#worker}.
+   * Post an `execute` message to the {@link VMImplementation.#worker}.
    *
    * An `execute` message has the form:
    *
@@ -925,7 +918,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `predefine` message to the {@link NomadVM.#worker}.
+   * Post a `predefine` message to the {@link VMImplementation.#worker}.
    *
    * A `predefine` message has the form:
    *
@@ -962,7 +955,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `create` message to the {@link NomadVM.#worker}.
+   * Post a `create` message to the {@link VMImplementation.#worker}.
    *
    * A `create` message has the form:
    *
@@ -991,7 +984,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `delete` message to the {@link NomadVM.#worker}.
+   * Post a `delete` message to the {@link VMImplementation.#worker}.
    *
    * A `delete` message has the form:
    *
@@ -1016,7 +1009,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `merge` message to the {@link NomadVM.#worker}.
+   * Post a `merge` message to the {@link VMImplementation.#worker}.
    *
    * A `merge` message has the form:
    *
@@ -1041,7 +1034,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `link` message to the {@link NomadVM.#worker}.
+   * Post a `link` message to the {@link VMImplementation.#worker}.
    *
    * A `link` message has the form:
    *
@@ -1069,7 +1062,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post an `unlink` message to the {@link NomadVM.#worker}.
+   * Post an `unlink` message to the {@link VMImplementation.#worker}.
    *
    * An `unlink` message has the form:
    *
@@ -1097,7 +1090,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `mute` message to the {@link NomadVM.#worker}.
+   * Post a `mute` message to the {@link VMImplementation.#worker}.
    *
    * A `mute` message has the form:
    *
@@ -1122,7 +1115,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post an `unmute` message to the {@link NomadVM.#worker}.
+   * Post an `unmute` message to the {@link VMImplementation.#worker}.
    *
    * An `unmute` message has the form:
    *
@@ -1147,7 +1140,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `listRootEnclosures` message to the {@link NomadVM.#worker}.
+   * Post a `listRootEnclosures` message to the {@link VMImplementation.#worker}.
    *
    * A `listRootEnclosures` message has the form:
    *
@@ -1169,7 +1162,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `listInstalled` message to the {@link NomadVM.#worker}.
+   * Post a `listInstalled` message to the {@link VMImplementation.#worker}.
    *
    * A `listInstalled` message has the form:
    *
@@ -1194,7 +1187,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `listLinksTo` message to the {@link NomadVM.#worker}.
+   * Post a `listLinksTo` message to the {@link VMImplementation.#worker}.
    *
    * A `listLinksTo` message has the form:
    *
@@ -1219,7 +1212,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `listLinkedFrom` message to the {@link NomadVM.#worker}.
+   * Post a `listLinkedFrom` message to the {@link VMImplementation.#worker}.
    *
    * A `listLinkedFrom` message has the form:
    *
@@ -1244,7 +1237,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `isMuted` message to the {@link NomadVM.#worker}.
+   * Post a `isMuted` message to the {@link VMImplementation.#worker}.
    *
    * A `isMuted` message has the form:
    *
@@ -1269,7 +1262,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Post a `getSubEnclosures` message to the {@link NomadVM.#worker}.
+   * Post a `getSubEnclosures` message to the {@link VMImplementation.#worker}.
    *
    * A `getSubEnclosures` message has the form:
    *
@@ -1392,9 +1385,9 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Handle the {@link NomadVM.#worker}'s `message` event's data.
+   * Handle the {@link VMImplementation.#worker}'s `message` event's data.
    *
-   * Handling a {@link NomadVM.#worker}'s `message` event's data entails:
+   * Handling a {@link VMImplementation.#worker}'s `message` event's data entails:
    *
    * 1. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
    * 2. executing the corresponding sub-handler.
@@ -1474,9 +1467,9 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Handle the {@link NomadVM.#worker}'s `error` event.
+   * Handle the {@link VMImplementation.#worker}'s `error` event.
    *
-   * Handling a {@link NomadVM.#worker}'s `error` event simply entails casting a `worker:error` event.
+   * Handling a {@link VMImplementation.#worker}'s `error` event simply entails casting a `worker:error` event.
    *
    * @param error - Error to handle.
    */
@@ -1487,7 +1480,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Perform the stoppage steps on the {@link NomadVM.#worker} and reject all pending tunnels.
+   * Perform the stoppage steps on the {@link VMImplementation.#worker} and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
@@ -1534,16 +1527,16 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Start the {@link NomadVM.#worker} and wait for its boot-up sequence to complete.
+   * Start the {@link VMImplementation.#worker} and wait for its boot-up sequence to complete.
    *
    * Starting a VM instance consists of the following:
    *
-   * 1. Initializing a {@link NomadVM.#worker} instance with the worker code.
-   * 2. Setting up the boot timeout callback (in case the {@link NomadVM.#worker} takes too much time to boot).
+   * 1. Initializing a {@link VMImplementation.#worker} instance with the worker code.
+   * 2. Setting up the boot timeout callback (in case the {@link VMImplementation.#worker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param timeout - Milliseconds to wait for the {@link NomadVM.#worker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link NomadVM.#worker} respectively) if the {@link NomadVM.#worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMImplementation.#worker} to complete its boot-up sequence.
+   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMImplementation.#worker} respectively) if the {@link VMImplementation.#worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
     workerBuilder?: WorkerBuilder,
@@ -1620,17 +1613,17 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Shut the {@link NomadVM.#worker} down.
+   * Shut the {@link VMImplementation.#worker} down.
    *
    * Shutting a VM instance consists of the following:
    *
-   * 1. Emitting the "shutdown" event on the {@link NomadVM.#worker}.
+   * 1. Emitting the "shutdown" event on the {@link VMImplementation.#worker}.
    * 2. Waiting for the given timeout milliseconds.
    * 3. Removing all root enclosures.
-   * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
+   * 4. Calling {@link VMImplementation.stop} to finish the shutdown process.
    *
-   * @param timeout - Milliseconds to wait for the {@link NomadVM.#worker} to shut down.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link NomadVM.#worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMImplementation.#worker} to shut down.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link VMImplementation.#worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
   shutdown(timeout?: number): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1670,7 +1663,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Stop the {@link NomadVM.#worker} immediately and reject all pending tunnels.
+   * Stop the {@link VMImplementation.#worker} immediately and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
@@ -1692,11 +1685,11 @@ export class NomadVM extends EventCaster implements NomadInterface {
    * Create a new enclosure with the given name.
    *
    * @param enclosure - Enclosure to create.
-   * @returns A {@link !Promise} that resolves with a {@link NomadVMEnclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a {@link EnclosureImplementation} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  createEnclosure(enclosure: string): Promise<NomadVMEnclosure> {
-    return new Promise<NomadVMEnclosure>(
-      (resolve: (nomadVmEnclosure: NomadVMEnclosure) => void, reject: (error: Error) => void): void => {
+  createEnclosure(enclosure: string): Promise<EnclosureImplementation> {
+    return new Promise<EnclosureImplementation>(
+      (resolve: (enclosureImplementation: EnclosureImplementation) => void, reject: (error: Error) => void): void => {
         this.#castEvent(`${enclosure}:create`);
         try {
           validateEnclosure(enclosure);
@@ -1708,7 +1701,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
             this.#addTunnel(
               (): void => {
                 this.#castEvent(`${enclosure}:create:ok`);
-                resolve(new NomadVMEnclosure(this, enclosure));
+                resolve(new EnclosureImplementation(this, enclosure));
               },
               (error: Error): void => {
                 this.#castEvent(`${enclosure}:create:error`, error);
@@ -2104,13 +2097,13 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Install the given {@link Dependency} on the {@link NomadVM.#worker}.
+   * Install the given {@link DependencyImplementation} on the {@link VMImplementation.#worker}.
    *
    * @param enclosure - Enclosure to use.
-   * @param dependency - The {@link Dependency} to install.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @param dependency - The {@link DependencyImplementation} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link DependencyImplementation} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  install(enclosure: string, dependency: Dependency): Promise<void> {
+  install(enclosure: string, dependency: DependencyImplementation): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${enclosure}:install`, dependency);
       try {
@@ -2139,14 +2132,14 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Execute the given {@link Dependency} with the given arguments map in the {@link NomadVM.#worker}.
+   * Execute the given {@link DependencyImplementation} with the given arguments map in the {@link VMImplementation.#worker}.
    *
    * @param enclosure - The enclosure to use.
-   * @param dependency - The {@link Dependency} to execute.
+   * @param dependency - The {@link DependencyImplementation} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link DependencyImplementation}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
+  execute(enclosure: string, dependency: DependencyImplementation, args?: Map<string, unknown>): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
         validateEnclosure(enclosure);
@@ -2179,21 +2172,21 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 
   /**
-   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
+   * Install the given {@link DependencyImplementation} iterable, by sorting them topologically and installing each one in turn.
    *
    * @param enclosure - Enclosure to use.
    * @param dependencies - Dependencies to install.
-   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link DependencyImplementation} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void> {
+  installAll(enclosure: string, dependencies: Iterable<DependencyImplementation>): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       try {
         this.createEnclosure(`${enclosure}.tmp_${_pseudoRandomString()}`).then(
-          (wrapper: NomadVMEnclosure): void => {
+          (wrapper: EnclosureImplementation): void => {
             wrapper.listInstalled().then(
               (installed: string[]): void => {
                 Promise.all(
-                  sort<Dependency>(dependencies, installed).map((dependency: Dependency) =>
+                  sort<DependencyImplementation>(dependencies, installed).map((dependency: DependencyImplementation) =>
                     wrapper.install(dependency),
                   ),
                 ).then(
@@ -2251,7 +2244,7 @@ export class NomadVM extends EventCaster implements NomadInterface {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Emit an event towards the {@link NomadVM.#worker}.
+   * Emit an event towards the {@link VMImplementation.#worker}.
    *
    * @param enclosure - Enclosure to use.
    * @param event - Event name to emit.
@@ -2264,25 +2257,25 @@ export class NomadVM extends EventCaster implements NomadInterface {
   }
 }
 
-export const create = (name?: string): NomadInterface => {
-  return new NomadVM(name);
+export const create = (name?: string): VM => {
+  return new VMImplementation(name);
 };
 
 /**
- * A {@link NomadVM} enclosure interface wrapper object.
+ * A {@link VMImplementation} enclosure interface wrapper object.
  *
  */
-export class NomadVMEnclosure implements NomadEnclosureInterface {
+export class EnclosureImplementation implements Enclosure {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
   }
 
   /**
-   * The {@link NomadVM} instance to wrap.
+   * The {@link VMImplementation} instance to wrap.
    *
    */
-  #vm: NomadVM;
+  #vm: VMImplementation;
 
   /**
    * The enclosure to wrap for.
@@ -2291,13 +2284,13 @@ export class NomadVMEnclosure implements NomadEnclosureInterface {
   #enclosure: string;
 
   /**
-   * Create a new {@link NomadVMEnclosure} wrapper around the given {@link NomadVM} for the given enclosure.
+   * Create a new {@link EnclosureImplementation} wrapper around the given {@link VMImplementation} for the given enclosure.
    *
    * @param vm - The VM instance to wrap.
    * @param enclosure - The enclosure to wrap for.
    * @throws {@link !Error} if the given enclosure is not a string.
    */
-  constructor(vm: NomadVM, enclosure: string) {
+  constructor(vm: VMImplementation, enclosure: string) {
     if ('string' !== typeof enclosure) {
       throw new Error('expected enclosure to be a string');
     }
@@ -2307,10 +2300,10 @@ export class NomadVMEnclosure implements NomadEnclosureInterface {
   }
 
   /**
-   * Getter used to retrieve the wrapped {@link NomadVM}.
+   * Getter used to retrieve the wrapped {@link VMImplementation}.
    *
    */
-  get vm(): NomadVM {
+  get vm(): VMImplementation {
     return this.#vm;
   }
 
@@ -2442,33 +2435,33 @@ export class NomadVMEnclosure implements NomadEnclosureInterface {
   }
 
   /**
-   * Install the given {@link Dependency} on the wrapped VM under the wrapped enclosure.
+   * Install the given {@link DependencyImplementation} on the wrapped VM under the wrapped enclosure.
    *
-   * @param dependency - The {@link Dependency} to install.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @param dependency - The {@link DependencyImplementation} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link DependencyImplementation} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  install(dependency: Dependency): Promise<void> {
+  install(dependency: DependencyImplementation): Promise<void> {
     return this.vm.install(this.enclosure, dependency);
   }
 
   /**
-   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped enclosure.
+   * Execute the given {@link DependencyImplementation} with the given arguments map in the wrapped VM under the wrapped enclosure.
    *
-   * @param dependency - The {@link Dependency} to execute.
+   * @param dependency - The {@link DependencyImplementation} to execute.
    * @param args - The arguments map to execute with.
-   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with the {@link DependencyImplementation}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
+  execute(dependency: DependencyImplementation, args?: Map<string, unknown>): Promise<unknown> {
     return this.vm.execute(this.enclosure, dependency, args);
   }
 
   /**
-   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
+   * Install the given {@link DependencyImplementation} iterable, by sorting them topologically and installing each one in turn.
    *
    * @param dependencies - Dependencies to install.
-   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link DependencyImplementation} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  installAll(dependencies: Iterable<Dependency>): Promise<void> {
+  installAll(dependencies: Iterable<DependencyImplementation>): Promise<void> {
     return this.vm.installAll(this.enclosure, dependencies);
   }
 }
