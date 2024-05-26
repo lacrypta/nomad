@@ -282,8 +282,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
   args.split(',').forEach((part) => {
     currentArg.push(part);
     try {
-      const thisArg: string = currentArg.join(',');
-      const [name, ...defs]: string[] = thisArg.split('=');
+      const [name, ...defs]: string[] = currentArg.join(',').split('=');
       const nameS: string = (name ?? '').trim();
       const defsS: string = defs.join('=').trim();
       const testArg: number = Math.trunc(Math.random() * 4294967296);
