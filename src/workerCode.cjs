@@ -22,6 +22,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// ------------------------------------------------------------------------------------------------
+
 'use strict';
 
 /* eslint-disable */
@@ -1191,7 +1193,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   /**
    * Back-references from "port number" to enclosure name.
    *
-   * This device is in place so as to allow for transparent assimilation of enclosures.
+   * This device is in place so as to allow for transparent merging of enclosures.
    *
    * @type {Array<string>}
    */
@@ -1318,19 +1320,19 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Assimilate the given enclosure into its parent.
+   * Merge the given enclosure into its parent.
    *
-   * Assimilation merges an enclosure's dependencies with those of its parent, as does its tunnels and event listeners.
+   * Merging merges an enclosure's dependencies with those of its parent, as does its tunnels and event listeners.
    * The given enclosure's parent adopts all of the given enclosure's sub enclosures.
    * Finally, the given enclosure's port is redirected to its parent.
    *
-   * NOTE: we can never get rid of assimilated ports because the wrapped event caster may have been cached dependency-side.
+   * NOTE: we can never get rid of merged ports because the wrapped event caster may have been cached dependency-side.
    *
-   * @param {string} enclosure - The enclosure to assimilate to its parent.
+   * @param {string} enclosure - The enclosure to merge to its parent.
    * @returns {void}
    * @throws {Error} If the given enclosure is a root enclosure.
    */
-  const assimilateEnclosure = (enclosure) => {
+  const mergeEnclosure = (enclosure) => {
     const { tunnels, listeners, dependencies, port } = getEnclosure(enclosure);
 
     const parent = getEnclosureBase(enclosure) || null;
@@ -1668,7 +1670,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Create a wrapped event caster for the given enclosure (that will survive the enclosure being assimilated).
+   * Create a wrapped event caster for the given enclosure (that will survive the enclosure being merged).
    *
    * @param {string} enclosure - Enclosure to use.
    * @returns {{ on: Function, once: Function, off: Function, cast: Function }} The wrapped event caster created.
@@ -2784,11 +2786,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             }
           }
           break;
-        case 'assimilate':
+        case 'merge':
           {
             const { enclosure, tunnel } = parsedData;
             try {
-              assimilateEnclosure(enclosure);
+              mergeEnclosure(enclosure);
               postResolveMessage(tunnel, undefined);
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));

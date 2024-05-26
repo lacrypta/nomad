@@ -22,7 +22,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import type { DependencyObject } from './dependency';
+/**
+ * ...
+ *
+ * @packageDocumentation
+ * @module
+ */
 
 /**
  * Regular expression all identifiers must adhere to.
@@ -30,7 +35,7 @@ import type { DependencyObject } from './dependency';
  * Only 7-bit ASCII alphanumeric characters and underscores are allowed, underscores may not start an identifier name.
  *
  */
-const identifierRegExp: RegExp = /^[a-z][_a-z0-9]*$/i;
+export const _identifierRegExp: RegExp = /^[a-z][_a-z0-9]*$/i;
 
 /**
  * Forbidden identifier names.
@@ -43,7 +48,7 @@ const identifierRegExp: RegExp = /^[a-z][_a-z0-9]*$/i;
  * - [standard built-in objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects).
  *
  */
-const forbiddenWords: string[] = [
+export const _forbiddenWords: string[] = [
   'AggregateError',
   'Array',
   'ArrayBuffer',
@@ -192,10 +197,10 @@ const forbiddenWords: string[] = [
  * @throws {Error} If the given identifier fails regular expression validation.
  * @throws {Error} If the given identifier is forbidden.
  */
-const identifier = (name: string): string => {
-  if (!identifierRegExp.test(name)) {
-    throw new Error(`identifier must adhere to '${identifierRegExp.toString()}'`);
-  } else if (forbiddenWords.includes(name)) {
+export const identifier = (name: string): string => {
+  if (!_identifierRegExp.test(name)) {
+    throw new Error(`identifier must adhere to '${_identifierRegExp.toString()}'`);
+  } else if (_forbiddenWords.includes(name)) {
     throw new Error('identifier must not be a forbidden word');
   }
   return name;
@@ -211,7 +216,7 @@ const identifier = (name: string): string => {
  * - additional printable symbols: ` !"#$%&'()*+,-./:;<=>?@[\]^_\`{|}~`.
  *
  */
-const codeAscii: number[] = [
+export const _codeAscii: number[] = [
   0x09, 0x0a, 0x0c, 0x0d, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e,
   0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f, 0x40, 0x41,
   0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, 0x51, 0x52, 0x53, 0x54,
@@ -228,8 +233,8 @@ const codeAscii: number[] = [
  * @throws {Error} If the given function source code contains disallowed characters.
  * @throws {Error} If the given function source code is not a valid strict mode function body.
  */
-const functionCode = (code: string): string => {
-  if (code.split('').some((c: string): boolean => !codeAscii.includes(c.codePointAt(0) ?? 0))) {
+export const functionCode = (code: string): string => {
+  if (code.split('').some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) ?? 0))) {
     throw new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR');
   }
   try {
@@ -248,7 +253,7 @@ const functionCode = (code: string): string => {
  * @returns The validated dependency map (as a new object).
  * @see {@link identifier} for additional exceptions thrown.
  */
-const dependencyMap = (dependencies: Map<string, string>): Map<string, string> => {
+export const dependencyMap = (dependencies: Map<string, string>): Map<string, string> => {
   [...dependencies.entries()].forEach(([key, value]: [string, string]): void => {
     identifier(key);
     identifier(value);
@@ -257,34 +262,7 @@ const dependencyMap = (dependencies: Map<string, string>): Map<string, string> =
   return new Map<string, string>(dependencies.entries());
 };
 
-/**
- * Validate the given dependency object and return it if valid.
- *
- * @param dependency - The dependency object to validate.
- * @returns The validated dependency object.
- * @throws {Error} If the given dependency object is not a non-`null` `object`.
- * @throws {Error} If the given dependency object does not contain a `name` property.
- * @throws {Error} If the given dependency object does not contain a `code` property.
- * @throws {Error} If the given dependency object does not contain a `dependencies` property.
- * @see {@link identifier} for additional exceptions thrown.
- * @see {@link functionCode} for additional exceptions thrown.
- * @see {@link dependencyMap} for additional exceptions thrown.
- */
-const dependencyObject = (dependency: DependencyObject): DependencyObject => {
-  return {
-    name: identifier(dependency.name),
-    code: functionCode(dependency.code),
-    dependencies: Object.setPrototypeOf(
-      Object.fromEntries(
-        Object.entries(dependency.dependencies).map(([key, value]: [string, string]): [string, string] => [
-          identifier(key),
-          identifier(value),
-        ]),
-      ),
-      null,
-    ) as Record<string, string>,
-  };
-};
+export const _eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
 
 /**
  * Validate the given event name and return it if valid.
@@ -300,14 +278,15 @@ const dependencyObject = (dependency: DependencyObject): DependencyObject => {
  * @returns The validated event name.
  * @throws {Error} If the given event name fails regular expression validation.
  */
-const event = (name: string): string => {
-  const eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
-  if (!eventRegex.test(name)) {
-    throw new Error(`event name must adhere to ${eventRegex.toString()}`);
+export const event = (name: string): string => {
+  if (!_eventRegex.test(name)) {
+    throw new Error(`event name must adhere to ${_eventRegex.toString()}`);
   }
 
   return name;
 };
+
+export const _filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
 
 /**
  * Validate the given event name filter and return it if valid.
@@ -324,10 +303,9 @@ const event = (name: string): string => {
  * @throws {Error} If the given event name filter fails regular expression validation.
  * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
  */
-const filter = (filter: string): string => {
-  const filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
-  if (!filterRegex.test(filter)) {
-    throw new Error(`event name filter must adhere to ${filterRegex.toString()}`);
+export const filter = (filter: string): string => {
+  if (!_filterRegex.test(filter)) {
+    throw new Error(`event name filter must adhere to ${_filterRegex.toString()}`);
   } else if (-1 != filter.indexOf('**:**')) {
     throw new Error('event name filter must not contain consecutive ** wildcards');
   }
@@ -343,7 +321,7 @@ const filter = (filter: string): string => {
  * @throws {Error} If the given value is not a safe integer (cf. {@link !Number.isSafeInteger}).
  * @throws {Error} If the given value value is negative.
  */
-const nonNegativeInteger = (datum: number): number => {
+export const nonNegativeInteger = (datum: number): number => {
   if (!Number.isSafeInteger(datum)) {
     throw new Error('expected datum to be a safe integer');
   } else if (datum < 0) {
@@ -356,7 +334,7 @@ const nonNegativeInteger = (datum: number): number => {
  * The time delta value to allow.
  *
  */
-const timeDeltaLimit: number = 1 << 30;
+export const _timeDeltaLimit: number = 1 << 30;
 
 /**
  * Validate the given time delta value.
@@ -366,9 +344,9 @@ const timeDeltaLimit: number = 1 << 30;
  * @throws {Error} If the given time delta value is larger than the maximum time delta value allowed.
  * @see {@link nonNegativeInteger} for additional exceptions thrown.
  */
-const timeDelta = (delta: number): number => {
-  if (timeDeltaLimit < nonNegativeInteger(delta)) {
-    throw new Error(`expected time delta to be at most ${timeDeltaLimit.toString()}`);
+export const timeDelta = (delta: number): number => {
+  if (_timeDeltaLimit < nonNegativeInteger(delta)) {
+    throw new Error(`expected time delta to be at most ${_timeDeltaLimit.toString()}`);
   }
   return delta;
 };
@@ -381,7 +359,7 @@ const timeDelta = (delta: number): number => {
  * @throws {Error} If the given arguments map is not an object.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
+export const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
   [...args.keys()].forEach(identifier);
 
   return args;
@@ -397,22 +375,9 @@ const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
  * @throws {Error} If the given argument is not a valid enclosure identifier.
  * @see {@link identifier} for additional exceptions thrown.
  */
-const enclosure = (ns: string): string => {
+export const enclosure = (ns: string): string => {
   return ns
     .split('.')
     .map((part: string): string => identifier(part))
     .join('.');
-};
-
-export {
-  identifier,
-  functionCode,
-  dependencyMap,
-  dependencyObject,
-  event,
-  filter,
-  timeDelta,
-  argumentsMap,
-  enclosure,
-  nonNegativeInteger,
 };

@@ -23,25 +23,19 @@
 // SOFTWARE.
 
 /**
- * A builder for a {@link WorkerInstance}.
+ * ...
  *
+ * @packageDocumentation
+ * @module
  */
-interface WorkerBuilder {
-  /**
-   * Get the {@link WorkerInstance} constructed using the given parameters.
-   *
-   * @param code - Code to set the {@link WorkerInstance} up with.
-   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
-   * @param name - Name to use for the {@link WorkerInstance}.
-   */
-  build(code: string, tunnel: number, name: string): WorkerInstance;
-}
+
+export type WorkerBuilder = (code: string, tunnel: number, name: string) => WorkerInterface;
 
 /**
  * An instance of an environment-agnostic worker.
  *
  */
-interface WorkerInstance {
+export interface WorkerInterface {
   /**
    * Stop the worker instance immediately.
    *
@@ -50,12 +44,12 @@ interface WorkerInstance {
   kill(): this;
 
   /**
-   * Send the given data to the {@link WorkerInstance}.
+   * Send the given data to the {@link WorkerInterface}.
    *
    * > [!warning]
    * > The given `data` object **MUST** be serializable via `JSON.serialize`.
    *
-   * @param data - object to send to the {@link WorkerInstance}.
+   * @param data - object to send to the {@link WorkerInterface}.
    * @returns `this`, for chaining.
    */
   shout(data: object): this;
@@ -70,48 +64,33 @@ interface WorkerInstance {
   listen(messageCallback: (data: string) => void, errorCallback: (error: Error) => void): this;
 }
 
-// ------------------------------------------------------------------------------------------------
-
-/**
- * A builder for a {@link BrowserWorkerInstance}.
- *
- */
-class BrowserWorkerBuilder implements WorkerBuilder {
-  /**
-   * Get the {@link BrowserWorkerInstance} constructed using the given parameters.
-   *
-   * @param code - Code to set the {@link BrowserWorkerInstance} up with.
-   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
-   * @param name - Name to use for the {@link BrowserWorkerInstance}.
-   * @returns The constructed {@link BrowserWorkerInstance}.
-   */
-  build(code: string, tunnel: number, name: string): WorkerInstance {
-    return new BrowserWorkerInstance(code, tunnel, name);
-  }
-}
-
 /**
  * An wrapper for a {@link !Worker}.
  *
  */
-class BrowserWorkerInstance implements WorkerInstance {
+export class BrowserWorker implements WorkerInterface {
+  static {
+    // ref: https://stackoverflow.com/a/77741904
+    Object.setPrototypeOf(this.prototype, null);
+  }
+
   /**
    * A [`blob:`-URL](https://en.wikipedia.org/wiki/Blob_URI_scheme) containing the worker code (or `null` if killed).
    *
    */
-  #blobURL: string | null;
+  #blobURL?: string | undefined;
 
   /**
    * The {@link !Worker} instance (or `null` if killed).
    *
    */
-  #worker: Worker | null;
+  #worker?: Worker | undefined;
 
   /**
-   * Construct a new {@link BrowserWorkerBuilder} with the given parameters.
+   * Construct a new {@link BrowserWorker} with the given parameters.
    *
    * @param code - The code the {@link !Worker} will, eventually, run.
-   * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
+   * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
    * @param name - The name to give to the {@link !Worker}.
    */
   constructor(code: string, tunnel: number, name: string) {
@@ -154,24 +133,22 @@ class BrowserWorkerInstance implements WorkerInstance {
    * @returns `this`, for chaining.
    */
   kill(): this {
-    if (null !== this.#worker) {
-      this.#worker.terminate();
-      this.#worker = null;
-    }
-    if (null !== this.#blobURL) {
+    this.#worker?.terminate();
+    if (undefined !== this.#blobURL) {
       URL.revokeObjectURL(this.#blobURL);
-      this.#blobURL = null;
     }
+    this.#worker = undefined;
+    this.#blobURL = undefined;
     return this;
   }
 
   /**
-   * Send the given data to the {@link BrowserWorkerInstance}.
+   * Send the given data to the {@link BrowserWorker}.
    *
    * > [!warning]
    * > The given `data` object **MUST** be serializable via `JSON.serialize`.
    *
-   * @param data - object to send to the {@link BrowserWorkerInstance}.
+   * @param data - object to send to the {@link BrowserWorker}.
    * @returns `this`, for chaining.
    */
   shout(data: object): this {
@@ -187,7 +164,7 @@ class BrowserWorkerInstance implements WorkerInstance {
    * @returns `this`, for chaining.
    */
   listen(messageCallback: (data: string) => void, errorCallback: (error: Error) => void): this {
-    if (null === this.#worker) {
+    if (undefined === this.#worker) {
       throw new Error('worker terminated');
     }
     this.#worker.addEventListener('message', (message: MessageEvent): void => {
@@ -204,22 +181,20 @@ class BrowserWorkerInstance implements WorkerInstance {
   }
 }
 
-// ------------------------------------------------------------------------------------------------
-
 /**
  * Get the {@link WorkerBuilder} to use under the current environment.
  *
  * @returns The {@link WorkerBuilder} to use under the current environment.
  * @see {@link https://stackoverflow.com/a/31090240}
  */
-function builder(): WorkerBuilder {
+export function builder(): WorkerBuilder {
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const isBrowser: boolean = new Function('try { return this === window; } catch { return false; }')() as boolean;
   // eslint-disable-next-line @typescript-eslint/no-implied-eval
   const isNode: boolean = new Function('try { return this === global; } catch { return false; }')() as boolean;
 
   if (isBrowser) {
-    return new BrowserWorkerBuilder();
+    return (code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name);
   } else if (isNode) {
     throw new Error('Unsupported execution environment');
   } else {
@@ -228,18 +203,13 @@ function builder(): WorkerBuilder {
 }
 
 /**
- * Get the {@link WorkerInstance} constructed for the current environment using the given parameters.
+ * Get the {@link WorkerInterface} constructed for the current environment using the given parameters.
  *
- * @param code - Code to set the {@link WorkerInstance} up with.
- * @param tunnel - Tunnel id tell the {@link WorkerInstance} to announce boot-up on.
- * @param name - Name to use for the {@link WorkerInstance}.
- * @returns A {@link WorkerInstance} constructed via the {@link WorkerInstance} for the current environment.
+ * @param code - Code to set the {@link WorkerInterface} up with.
+ * @param tunnel - Tunnel id tell the {@link WorkerInterface} to announce boot-up on.
+ * @param name - Name to use for the {@link WorkerInterface}.
+ * @returns A {@link WorkerInterface} constructed via the {@link WorkerInterface} for the current environment.
  */
-function build(code: string, tunnel: number, name: string): WorkerInstance {
-  return builder().build(code, tunnel, name);
+export function build(code: string, tunnel: number, name: string): WorkerInterface {
+  return builder()(code, tunnel, name);
 }
-
-// ------------------------------------------------------------------------------------------------
-
-export type { WorkerBuilder, WorkerInstance };
-export { BrowserWorkerBuilder, BrowserWorkerInstance, builder, build };

@@ -22,9 +22,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import type { DependencyObject } from './dependency';
-import type { Cast, EventCallback, ProtectedMethods } from './eventCaster';
-import type { WorkerInstance, WorkerBuilder } from './worker';
+/**
+ * ...
+ *
+ * @packageDocumentation
+ * @module
+ */
+
+import type { DependencyInterface, DependencyObject } from './dependency';
+import type {
+  EventCallback,
+  EventCasterInterface,
+  EventCasterInterface_Cast,
+  EventCasterInterface_ProtectedMethods,
+} from './eventCaster';
+import type { WorkerInterface, WorkerBuilder } from './worker';
 
 import {
   enclosure as validateEnclosure,
@@ -36,8 +48,8 @@ import {
 } from './validation';
 
 import { EventCaster } from './eventCaster';
-import { Dependency } from './dependency';
-import { BrowserWorkerBuilder } from './worker';
+import { Dependency, sort } from './dependency';
+import { BrowserWorker } from './worker';
 
 import workerCode from './workerCode.cjs';
 
@@ -45,162 +57,542 @@ import workerCode from './workerCode.cjs';
  * A safe execution environment for NOMAD code execution.
  *
  */
-class NomadVM extends EventCaster {
+export interface NomadInterface extends EventCasterInterface {
   /**
-   * Generate a pseudo-random string.
-   *
-   * NOTE: this is NOT cryptographically-secure, it simply calls {@link !Math.random}.
-   *
-   * @returns A pseudo-random string.
-   */
-  static #pseudoRandomString(): string {
-    return Math.trunc(Math.random() * 4294967296)
-      .toString(16)
-      .padStart(8, '0');
-  }
-
-  /**
-   * Static {@link EventCaster} that allows a single event source to be used across all VMs.
-   *
-   * All events cast bear a first argument consisting of the VM the event originated from.
-   * The events cast on the static {@link EventCaster} are:
-   *
-   * - `nomadvm:{NAME}:new(vm)`: cast on the static {@link EventCaster}, upon VM `vm` creation.
-   *
-   * The events cast on both {@link EventCaster}s are:
-   *
-   * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
-   * - `nomadvm:{NAME}:start:ok(vm)`: when the VM `vm` has been successfully started.
-   * - `nomadvm:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
-   * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
-   * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
-   * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
-   * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
-   * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link !Worker} encounters a non-fatal, yet reportable, error `error`.
-   * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link !Worker} encounters a fatal error `error`.
-   * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link !Worker} fails to respond to ping / pong messages for `delta` milliseconds.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
-   * - `nomadvm:{NAME}:{ENCLOSURE}:create(vm)`: when a new enclosure is being created on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:create:ok(vm)`: when a new enclosure has been successfully created on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when an enclosure has failed to be deleted from VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate(vm, enclosure)`: when an enclosure `enclosure` is being assimilated to its parent from VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully assimilated to its parent on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:assimilate:error(vm, enclosure, error)`: when an enclosure `enclosure` has failed to be assimilated to its parent in VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when an enclosure is being linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when an enclosure has been successfully linked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when an enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when an enclosure is being unlinked to the `target` one on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when an enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when an enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when an enclosure is being muted on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when an enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
-   * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when an enclosure has failed to be muted on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when an enclosure is being unmuted on VM `vm`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when an enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when an enclosure has failed to be unmuted on VM `vm` with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
-   * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link !Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
-   *
-   * Internally, the {@link !Worker} will cast the following events when instructed to by the VM:
-   *
-   * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link !Worker} with name `EVENT` and arguments `args`.
+   * Getter used to retrieve the VM's name.
    *
    */
-  static #events: Readonly<EventCaster>;
+  get name(): string;
 
   /**
-   * Getter used to retrieve the VM's static event caster.
+   * Attach the given callback to this particular VM's event caster, triggered on events matching the given filter.
    *
-   * @returns This VM's _global_ {@link EventCaster}.
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   * @throws {Error} If the given event name filter fails regular expression validation.
+   * @throws {Error} If the given event name filter contains an adjacent pair of `**` wildcards.
    */
-  static get events(): Readonly<EventCaster> {
-    return NomadVM.#events;
-  }
+  onThis(filter: string, callback: EventCallback): this;
 
   /**
-   * Prefix to use for all events emitted.
+   * Attach the given callback to this particular VM's caster, triggered on events matching the given filter, and removed upon being called once.
    *
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   * @see {@link EventCaster.once} for additional exceptions thrown.
    */
-  static #eventPrefix: string = 'nomadvm';
+  onceThis(filter: string, callback: EventCallback): this;
 
   /**
-   * The {@link EventCaster} casting function for all he VMs.
+   * Start the {@link !Worker} and wait for its boot-up sequence to complete.
    *
+   * Starting a VM instance consists of the following:
+   *
+   * 1. Initializing a {@link !Worker} instance with the worker code.
+   * 2. Setting up the boot timeout callback (in case the {@link !Worker} takes too much time to boot).
+   * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
+   *
+   * @param timeout - Milliseconds to wait for the {@link !Worker} to complete its boot-up sequence.
+   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link !Worker} respectively) if the {@link !Worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  static #castGlobal: Cast;
-
-  static {
-    this.#events = Object.freeze(
-      new EventCaster((protectedMethods: ProtectedMethods): void => {
-        this.#castGlobal = protectedMethods.cast;
-      }),
-    );
-  }
+  start(
+    workerBuilder?: WorkerBuilder,
+    timeout?: number,
+    pingInterval?: number,
+    pongLimit?: number,
+  ): Promise<[number, number]>;
 
   /**
-   * Prefix to use for all names generated.
+   * Shut the {@link !Worker} down.
    *
+   * Shutting a VM instance consists of the following:
+   *
+   * 1. Emitting the "shutdown" event on the {@link !Worker}.
+   * 2. Waiting for the given timeout milliseconds.
+   * 3. Removing all root enclosures.
+   * 4. Calling {@link NomadVM.stop} to finish the shutdown process.
+   *
+   * @param timeout - Milliseconds to wait for the {@link !Worker} to shut down.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
-  static #namesPrefix: string = 'nomadvm';
+  shutdown(timeout?: number): Promise<void>;
 
   /**
-   * Global mapping of VM names to VM {@link !WeakRef}s.
+   * Stop the {@link !Worker} immediately and reject all pending tunnels.
    *
+   * Stopping a Vm instance entails:
+   *
+   * 1. Clearing the pinger.
+   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
+   * 3. Rejecting all existing tunnels.
+   *
+   * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static #names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
+  stop(): Promise<void>;
 
   /**
-   * The default number of milliseconds to wait for the {@link !Worker} to start.
+   * Create a new enclosure with the given name.
    *
+   * @param enclosure - Enclosure to create.
+   * @returns A {@link !Promise} that resolves with a {@link NomadVMEnclosure} wrapper if enclosure creation completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static #defaultBootTimeout: number = 200;
+  createEnclosure(enclosure: string): Promise<NomadEnclosureInterface>;
 
   /**
-   * The default number of milliseconds to wait for the {@link !Worker} to stop.
+   * Delete the enclosure with the given name.
    *
+   * This method will reject all tunnels awaiting responses on the given enclosure.
+   *
+   * @param enclosure - Enclosure to delete.
+   * @returns A {@link !Promise} that resolves with a list of deleted enclosures (the one given and any sub enclosures of it) if enclosure deletion completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static #defaultShutdownTimeout: number = 100;
+  deleteEnclosure(enclosure: string): Promise<string[]>;
 
   /**
-   * The default number of milliseconds to wait between `ping` messages to the {@link !Worker}.
+   * Merge the given enclosure to its parent.
    *
+   * @param enclosure - Enclosure to merge.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure merging completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static #defaultPingInterval: number = 100;
+  mergeEnclosure(enclosure: string): Promise<void>;
 
   /**
-   * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link !Worker} "unresponsive".
+   * Link one enclosure to another, so that events cast on the first are also handled in the second.
    *
+   * @param enclosure - "Source" enclosure to use.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static #defaultPongLimit: number = 1000;
+  linkEnclosures(enclosure: string, target: string): Promise<void>;
 
   /**
-   * Retrieve the VM registered under the given name.
+   * Unlink one enclosure from another, so that events cast on the first are no longer handled in the second.
    *
-   * @param name - VM name to retrieve.
-   * @returns The VM registered under the given name, or `undefined` if none found.
+   * @param enclosure - "Source" enclosure to use.
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link !Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  static get(name: string): WeakRef<NomadVM> | undefined {
-    return this.#names.get(name);
-  }
+  unlinkEnclosures(enclosure: string, target: string): Promise<boolean>;
 
+  /**
+   * Mute the given enclosure, so that events cast on it are no longer propagated to this VM.
+   *
+   * @param enclosure - Enclosure to mute.
+   * @returns A {@link !Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link !Error} in case errors occur.
+   */
+  muteEnclosure(enclosure: string): Promise<boolean>;
+
+  /**
+   * Unmute the given enclosure, so that events cast on it are propagated to this VM.
+   *
+   * @param enclosure - Enclosure to unmute.
+   * @returns A {@link !Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link !Error} in case errors occur.
+   */
+  unmuteEnclosure(enclosure: string): Promise<boolean>;
+
+  /**
+   * List the root enclosures created.
+   *
+   * @returns A {@link !Promise} that resolves with a list of root enclosures created if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  listRootEnclosures(): Promise<string[]>;
+
+  /**
+   * List the dependencies (user-level and predefined) installed on the given enclosure or its prefixes.
+   *
+   * @param enclosure - Enclosure to list installed dependencies of.
+   * @returns A {@link !Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  listInstalled(enclosure: string): Promise<string[]>;
+
+  /**
+   * List the enclosures the given one is linked to.
+   *
+   * @param enclosure - Enclosure to list linked-to enclosures of.
+   * @returns A {@link !Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  listLinksTo(enclosure: string): Promise<string[]>;
+
+  /**
+   * List the enclosures that link to the given one.
+   *
+   * @param enclosure - Enclosure to list linked-from enclosures of.
+   * @returns A {@link !Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  listLinkedFrom(enclosure: string): Promise<string[]>;
+
+  /**
+   * Determine whether the given enclosure is muted.
+   *
+   * @param enclosure - Enclosure to determine mute status of.
+   * @returns A {@link !Promise} that resolves with a boolean value indicating whether the enclosure is muted if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  isMuted(enclosure: string): Promise<boolean>;
+
+  /**
+   * List the given enclosure's sub enclosures.
+   *
+   * @param enclosure - Enclosure to list the sub enclosures of.
+   * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link !Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   */
+  getSubEnclosures(enclosure: string, depth?: number): Promise<string[]>;
+
+  /**
+   * Add a predefined function to the VM's list under the given enclosure.
+   *
+   * @param enclosure - Enclosure to use.
+   * @param name - Function name to add.
+   * @param callback - {@link !Function} callback to use.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
+   */
+  predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
+
+  /**
+   * Install the given {@link Dependency} on the {@link !Worker}.
+   *
+   * @param enclosure - Enclosure to use.
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   */
+  install(enclosure: string, dependency: DependencyInterface): Promise<void>;
+
+  /**
+   * Execute the given {@link Dependency} with the given arguments map in the {@link !Worker}.
+   *
+   * @param enclosure - The enclosure to use.
+   * @param dependency - The {@link Dependency} to execute.
+   * @param args - The arguments map to execute with.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   */
+  execute(enclosure: string, dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown>;
+
+  /**
+   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
+   *
+   * @param enclosure - Enclosure to use.
+   * @param dependencies - Dependencies to install.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   */
+  installAll(enclosure: string, dependencies: Iterable<DependencyInterface>): Promise<void>;
+
+  /**
+   * Emit an event towards the {@link !Worker}.
+   *
+   * @param enclosure - Enclosure to use.
+   * @param event - Event name to emit.
+   * @param args - Associated arguments to emit alongside the event.
+   * @returns `this`, for chaining.
+   */
+  emit(enclosure: string, event: string, ...args: unknown[]): this;
+}
+
+/**
+ * A {@link NomadVM} enclosure interface wrapper object.
+ *
+ */
+export interface NomadEnclosureInterface {
+  /**
+   * Getter used to retrieve the wrapped {@link NomadVM}.
+   *
+   */
+  get vm(): NomadInterface;
+
+  /**
+   * Getter used to retrieve the wrapped enclosure.
+   *
+   */
+  get enclosure(): string;
+
+  /**
+   * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped enclosure.
+   *
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   * @see {@link NomadVM.onThis} for additional exceptions thrown.
+   */
+  onThis(filter: string, callback: (...args: unknown[]) => void): this;
+
+  /**
+   * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped enclosure, and removed upon being called once.
+   *
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   * @see {@link NomadVM.onThis} for additional exceptions thrown.
+   */
+  onceThis(filter: string, callback: (...args: unknown[]) => void): this;
+
+  /**
+   * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
+   *
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.linkEnclosures} for additional exceptions thrown.
+   */
+  link(target: string): Promise<void>;
+
+  /**
+   * Unlink the wrapped enclosure from another, so that events cast on the wrapped enclosure are no longer handled in the other.
+   *
+   * @param target - "Destination" enclosure to use.
+   * @returns A {@link !Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.unlinkEnclosures} for additional exceptions thrown.
+   */
+  unlink(target: string): Promise<boolean>;
+
+  /**
+   * Mute the wrapped enclosure, so that events cast on it are no longer propagated to the wrapped VM.
+   *
+   * @returns A {@link !Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.muteEnclosure} for additional exceptions thrown.
+   */
+  mute(): Promise<boolean>;
+
+  /**
+   * Unmute the wrapped enclosure, so that events cast on it are propagated to wrapped VM.
+   *
+   * @returns A {@link !Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.unmuteEnclosure} for additional exceptions thrown.
+   */
+  unmute(): Promise<boolean>;
+
+  /**
+   * List the dependencies (user-level and predefined) installed on the wrapped enclosure or its prefixes
+   *
+   * @returns A {@link !Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.listInstalled} for additional exceptions thrown.
+   */
+  listInstalled(): Promise<string[]>;
+
+  /**
+   * List the enclosures the wrapped one is linked to.
+   *
+   * @returns A {@link !Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.listLinksTo} for additional exceptions thrown.
+   */
+  listLinksTo(): Promise<string[]>;
+
+  /**
+   * List the enclosures that link to the wrapped one.
+   *
+   * @returns A {@link !Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.listLinkedFrom} for additional exceptions thrown.
+   */
+  listLinkedFrom(): Promise<string[]>;
+
+  /**
+   * Determine whether the wrapped enclosure is muted.
+   *
+   * @returns A {@link !Promise} that resolves with a boolean value indicating whether the wrapped enclosure is muted if successful, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.isMuted} for additional exceptions thrown.
+   */
+  isMuted(): Promise<boolean>;
+
+  /**
+   * List the wrapped enclosure's sub enclosures.
+   *
+   * @param depth - Maximum enclosure depth to retrieve results for, defaults to retrieving all.
+   * @returns A {@link !Promise} that resolves with a list of sub enclosures if successful, and rejects with an {@link !Error} in case errors occur.
+   * @see {@link NomadVM.getSubEnclosures} for additional exceptions thrown.
+   */
+  getSubEnclosures(depth?: number): Promise<string[]>;
+
+  /**
+   * Add a predefined function to the VM's list under the wrapped enclosure.
+   *
+   * @param name - Function name to add.
+   * @param callback - {@link !Function} callback to use.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
+   * @see {@link NomadVM.predefine} for additional exceptions thrown.
+   */
+  predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
+
+  /**
+   * Install the given {@link Dependency} on the wrapped VM under the wrapped enclosure.
+   *
+   * @param dependency - The {@link Dependency} to install.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @see {@link NomadVM.install} for additional exceptions thrown.
+   */
+  install(dependency: DependencyInterface): Promise<void>;
+
+  /**
+   * Execute the given {@link Dependency} with the given arguments map in the wrapped VM under the wrapped enclosure.
+   *
+   * @param dependency - The {@link Dependency} to execute.
+   * @param args - The arguments map to execute with.
+   * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
+   * @see {@link NomadVM.execute} for additional exceptions thrown.
+   */
+  execute(dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown>;
+
+  /**
+   * Install the given {@link Dependency} iterable, by sorting them topologically and installing each one in turn.
+   *
+   * @param dependencies - Dependencies to install.
+   * @returns A {@link !Promise} that resolves with `void` if every {@link Dependency} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
+   * @see {@link NomadVM.installAll} for additional exceptions thrown.
+   */
+  installAll(dependencies: Iterable<DependencyInterface>): Promise<void>;
+}
+
+/**
+ * Generate a pseudo-random string.
+ *
+ * NOTE: this is NOT cryptographically-secure, it simply calls {@link !Math.random}.
+ *
+ * @returns A pseudo-random string.
+ */
+export const _pseudoRandomString: () => string = (): string => {
+  return Math.trunc(Math.random() * 4294967296)
+    .toString(16)
+    .padStart(8, '0');
+};
+
+let __castGlobal: EventCasterInterface_Cast;
+
+/**
+ * Static {@link EventCaster} that allows a single event source to be used across all VMs.
+ *
+ * All events cast bear a first argument consisting of the VM the event originated from.
+ * The events cast on the static {@link EventCaster} are:
+ *
+ * - `nomadvm:{NAME}:new(vm)`: cast on the static {@link EventCaster}, upon VM `vm` creation.
+ *
+ * The events cast on both {@link EventCaster}s are:
+ *
+ * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
+ * - `nomadvm:{NAME}:start:ok(vm)`: when the VM `vm` has been successfully started.
+ * - `nomadvm:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
+ * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
+ * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
+ * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
+ * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
+ * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link !Worker} encounters a non-fatal, yet reportable, error `error`.
+ * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link !Worker} encounters a fatal error `error`.
+ * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link !Worker} fails to respond to ping / pong messages for `delta` milliseconds.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
+ * - `nomadvm:{NAME}:{ENCLOSURE}:create(vm)`: when a new enclosure is being created on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:create:ok(vm)`: when a new enclosure has been successfully created on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when an enclosure has failed to be deleted from VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:merge(vm, enclosure)`: when an enclosure `enclosure` is being merged to its parent from VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:merge:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully merged to its parent on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:merge:error(vm, enclosure, error)`: when an enclosure `enclosure` has failed to be merged to its parent in VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when an enclosure is being linked to the `target` one on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when an enclosure has been successfully linked to the `target` one on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when an enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when an enclosure is being unlinked to the `target` one on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when an enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when an enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when an enclosure is being muted on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when an enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
+ * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when an enclosure has failed to be muted on VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when an enclosure is being unmuted on VM `vm`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when an enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when an enclosure has failed to be unmuted on VM `vm` with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link !Worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+ *
+ * Internally, the {@link !Worker} will cast the following events when instructed to by the VM:
+ *
+ * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link !Worker} with name `EVENT` and arguments `args`.
+ *
+ */
+export const events: Readonly<EventCasterInterface> = Object.freeze(
+  new EventCaster((protectedMethods: EventCasterInterface_ProtectedMethods): void => {
+    __castGlobal = protectedMethods.cast;
+  }),
+);
+
+/**
+ * The {@link EventCaster} casting function for all he VMs.
+ *
+ */
+export const _castGlobal: EventCasterInterface_Cast =
+  // @ts-expect-error: Variable '__castGlobal' is used before being assigned.
+  __castGlobal;
+
+/**
+ * Prefix to use for all events emitted.
+ *
+ */
+export const _eventPrefix: string = 'nomadvm';
+
+/**
+ * Prefix to use for all names generated.
+ *
+ */
+export const _namesPrefix: string = 'nomadvm';
+
+/**
+ * Global mapping of VM names to VM {@link !WeakRef}s.
+ *
+ */
+export const _names: Map<string, WeakRef<NomadVM>> = new Map<string, WeakRef<NomadVM>>();
+
+/**
+ * The default number of milliseconds to wait for the {@link !Worker} to start.
+ *
+ */
+export const _defaultBootTimeout: number = 200;
+
+/**
+ * The default number of milliseconds to wait for the {@link !Worker} to stop.
+ *
+ */
+export const _defaultShutdownTimeout: number = 100;
+
+/**
+ * The default number of milliseconds to wait between `ping` messages to the {@link !Worker}.
+ *
+ */
+export const _defaultPingInterval: number = 100;
+
+/**
+ * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link !Worker} "unresponsive".
+ *
+ */
+export const _defaultPongLimit: number = 1000;
+
+/**
+ * Retrieve the VM registered under the given name.
+ *
+ * @param name - VM name to retrieve.
+ * @returns The VM registered under the given name, or `undefined` if none found.
+ */
+export const get: (name: string) => WeakRef<NomadInterface> | undefined = (
+  name: string,
+): WeakRef<NomadVM> | undefined => {
+  return _names.get(name);
+};
+
+/**
+ * A safe execution environment for NOMAD code execution.
+ *
+ */
+export class NomadVM extends EventCaster implements NomadInterface {
   /**
    * The {@link EventCaster} casting function for the current VM.
    *
    */
-  #castLocal: Cast;
+  #castLocal: EventCasterInterface_Cast;
 
   /**
    * The VM name to use.
@@ -230,10 +622,10 @@ class NomadVM extends EventCaster {
   #state: 'created' | 'booting' | 'running' | 'stopped';
 
   /**
-   * The {@link WorkerInstance} this VM is using for secure execution, or `null` if none create or stopped.
+   * The {@link WorkerInterface} this VM is using for secure execution, or `null` if none create or stopped.
    *
    */
-  #worker?: WorkerInstance | undefined;
+  #worker?: WorkerInterface | undefined;
 
   /**
    * A list of predefined functions.
@@ -279,15 +671,15 @@ class NomadVM extends EventCaster {
   constructor(name?: string) {
     if (undefined === name) {
       do {
-        name = `${NomadVM.#namesPrefix}-${NomadVM.#pseudoRandomString()}`;
-      } while (NomadVM.#names.has(name));
-    } else if (NomadVM.#names.has(name)) {
+        name = `${_namesPrefix}-${_pseudoRandomString()}`;
+      } while (_names.has(name));
+    } else if (_names.has(name)) {
       throw new Error(`duplicate name ${name}`);
     }
 
     {
-      let castLocal: Cast;
-      super((protectedMethods: { cast: Cast }): void => {
+      let castLocal: EventCasterInterface_Cast;
+      super((protectedMethods: { cast: EventCasterInterface_Cast }): void => {
         castLocal = protectedMethods.cast;
       });
       // @ts-expect-error: Variable 'castLocal' is used before being assigned.
@@ -295,10 +687,10 @@ class NomadVM extends EventCaster {
     }
 
     this.#name = name;
-    NomadVM.#names.set(this.#name, new WeakRef<NomadVM>(this));
+    _names.set(this.#name, new WeakRef<NomadVM>(this));
     this.#state = 'created';
 
-    NomadVM.#castGlobal(`${NomadVM.#eventPrefix}:${this.#name}:new`, this);
+    _castGlobal(`${_eventPrefix}:${this.#name}:new`, this);
   }
 
   /**
@@ -336,16 +728,16 @@ class NomadVM extends EventCaster {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Cast an event both from the static {@link EventCaster} at {@link NomadVM.events}, and from the current instance.
+   * Cast an event both from the static {@link EventCaster} at {@link events}, and from the current instance.
    *
    * @param name - Event name to cast.
    * @param args - Arguments to associate to the event in question.
-   * @see {@link Validation.event} for additional exceptions thrown.
+   * @see {@link validation.event} for additional exceptions thrown.
    */
   #castEvent(name: string, ...args: unknown[]): void {
-    const event: string = `${NomadVM.#eventPrefix}:${this.#name}:${name}`;
+    const event: string = `${_eventPrefix}:${this.#name}:${name}`;
     this.#castLocal(event, this, ...args);
-    NomadVM.#castGlobal(event, this, ...args);
+    _castGlobal(event, this, ...args);
   }
 
   /**
@@ -354,10 +746,10 @@ class NomadVM extends EventCaster {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link EventCaster.validateFilter} for additional exceptions thrown.
+   * @see {@link validation.filter} for additional exceptions thrown.
    */
   onThis(filter: string, callback: EventCallback): this {
-    return this.on(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
+    return this.on(`${_eventPrefix}:${this.name}:${filter}`, callback);
   }
 
   /**
@@ -369,7 +761,7 @@ class NomadVM extends EventCaster {
    * @see {@link EventCaster.once} for additional exceptions thrown.
    */
   onceThis(filter: string, callback: EventCallback): this {
-    return this.once(`${NomadVM.#eventPrefix}:${this.name}:${filter}`, callback);
+    return this.once(`${_eventPrefix}:${this.name}:${filter}`, callback);
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -639,13 +1031,13 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Post an `assimilate` message to the {@link !Worker}.
+   * Post a `merge` message to the {@link !Worker}.
    *
-   * An `assimilate` message has the form:
+   * A `merge` message has the form:
    *
    * ```json
    * {
-   *   name: "assimilate",
+   *   name: "merge",
    *   enclosure: <string>,
    *   tunnel: <int>,
    * }
@@ -653,14 +1045,14 @@ class NomadVM extends EventCaster {
    *
    * Where:
    *
-   * - `enclosure` is the WW-side enclosure to assimilate.
+   * - `enclosure` is the WW-side enclosure to merge.
    * - `tunnel` is the VM-side tunnel index awaiting a response.
    *
-   * @param enclosure - The enclosure to assimilate.
+   * @param enclosure - The enclosure to merge.
    * @param tunnel - The tunnel index to expect a response on.
    */
-  #postAssimilateMessage(enclosure: string, tunnel: number): void {
-    this.#worker?.shout({ name: 'assimilate', enclosure, tunnel });
+  #postMergeMessage(enclosure: string, tunnel: number): void {
+    this.#worker?.shout({ name: 'merge', enclosure, tunnel });
   }
 
   /**
@@ -1115,7 +1507,7 @@ class NomadVM extends EventCaster {
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link WorkerInstance.kill} on the VM's {@link WorkerInstance}.
+   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
    * 3. Rejecting all existing tunnels.
    *
    * NOTE: this method does NOT return a {@link !Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link !Promise}.
@@ -1180,10 +1572,11 @@ class NomadVM extends EventCaster {
         try {
           this.#assertCreated();
 
-          const theWorkerBuilder: WorkerBuilder = workerBuilder ?? new BrowserWorkerBuilder();
-          const theTimeout: number = validateTimeDelta(timeout ?? NomadVM.#defaultBootTimeout);
-          const thePingInterval: number = validateTimeDelta(pingInterval ?? NomadVM.#defaultPingInterval);
-          const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? NomadVM.#defaultPongLimit);
+          const theWorkerBuilder: WorkerBuilder =
+            workerBuilder ?? ((code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name));
+          const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
+          const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
+          const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
 
           this.#state = 'booting';
 
@@ -1225,7 +1618,7 @@ class NomadVM extends EventCaster {
             this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
           }, theTimeout);
 
-          this.#worker = theWorkerBuilder.build(workerCode.toString(), bootTunnel, this.name).listen(
+          this.#worker = theWorkerBuilder(workerCode.toString(), bootTunnel, this.name).listen(
             (data: string): void => {
               this.#messageHandler(data);
             },
@@ -1256,7 +1649,7 @@ class NomadVM extends EventCaster {
    */
   shutdown(timeout?: number): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      const theTimeout: number = validateTimeDelta(timeout ?? NomadVM.#defaultShutdownTimeout);
+      const theTimeout: number = validateTimeDelta(timeout ?? _defaultShutdownTimeout);
 
       this.listRootEnclosures().then(
         (rootEnclosures: string[]) => {
@@ -1297,7 +1690,7 @@ class NomadVM extends EventCaster {
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link WorkerInstance.kill} on the VM's {@link WorkerInstance}.
+   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
    * 3. Rejecting all existing tunnels.
    *
    * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
@@ -1383,34 +1776,34 @@ class NomadVM extends EventCaster {
   }
 
   /**
-   * Assimilate the given enclosure to its parent.
+   * Merge the given enclosure to its parent.
    *
-   * @param enclosure - Enclosure to assimilate.
-   * @returns A {@link !Promise} that resolves with `void` if enclosure assimilation completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @param enclosure - Enclosure to merge.
+   * @returns A {@link !Promise} that resolves with `void` if enclosure merging completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
-  assimilateEnclosure(enclosure: string): Promise<void> {
+  mergeEnclosure(enclosure: string): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:assimilate`, enclosure);
+      this.#castEvent(`${enclosure}:merge`, enclosure);
       try {
         validateEnclosure(enclosure);
 
         this.#assertRunning();
 
-        this.#postAssimilateMessage(
+        this.#postMergeMessage(
           enclosure,
           this.#addTunnel(
             (): void => {
-              this.#castEvent(`${enclosure}:assimilate:ok`, enclosure);
+              this.#castEvent(`${enclosure}:merge:ok`, enclosure);
               resolve();
             },
             (error: Error): void => {
-              this.#castEvent(`${enclosure}:assimilate:error`, enclosure, error);
+              this.#castEvent(`${enclosure}:merge:error`, enclosure, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`"${enclosure}:assimilate:error`, enclosure, e);
+        this.#castEvent(`"${enclosure}:merge:error`, enclosure, e);
         reject(e instanceof Error ? e : new Error('unknown error'));
       }
     });
@@ -1732,7 +2125,7 @@ class NomadVM extends EventCaster {
    * @param dependency - The {@link Dependency} to install.
    * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
-  install(enclosure: string, dependency: Dependency): Promise<void> {
+  install(enclosure: string, dependency: DependencyInterface): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       this.#castEvent(`${enclosure}:install`, dependency);
       try {
@@ -1772,7 +2165,7 @@ class NomadVM extends EventCaster {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
+  execute(enclosure: string, dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown> {
     return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
       try {
         validateEnclosure(enclosure);
@@ -1817,15 +2210,15 @@ class NomadVM extends EventCaster {
   installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
       try {
-        this.createEnclosure(`${enclosure}.tmp_${NomadVM.#pseudoRandomString()}`).then(
+        this.createEnclosure(`${enclosure}.tmp_${_pseudoRandomString()}`).then(
           (wrapper: NomadVMEnclosure): void => {
             wrapper.listInstalled().then(
               (installed: string[]): void => {
                 Promise.all(
-                  Dependency.sort(dependencies, installed).map((dependency: Dependency) => wrapper.install(dependency)),
+                  sort(dependencies, installed).map((dependency: DependencyInterface) => wrapper.install(dependency)),
                 ).then(
                   (): void => {
-                    this.assimilateEnclosure(wrapper.enclosure).then(
+                    this.mergeEnclosure(wrapper.enclosure).then(
                       (): void => {
                         resolve();
                       },
@@ -1891,11 +2284,15 @@ class NomadVM extends EventCaster {
   }
 }
 
+export const create = (name?: string): NomadInterface => {
+  return new NomadVM(name);
+};
+
 /**
  * A {@link NomadVM} enclosure interface wrapper object.
  *
  */
-class NomadVMEnclosure {
+export class NomadVMEnclosure implements NomadEnclosureInterface {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -1905,7 +2302,7 @@ class NomadVMEnclosure {
    * The {@link NomadVM} instance to wrap.
    *
    */
-  #vm: NomadVM;
+  #vm: NomadInterface;
 
   /**
    * The enclosure to wrap for.
@@ -1921,10 +2318,8 @@ class NomadVMEnclosure {
    * @throws {Error} If the given VM is not a {@link NomadVM} instance.
    * @throws {Error} If the given enclosure is not a string.
    */
-  constructor(vm: NomadVM, enclosure: string) {
-    if (!(vm instanceof NomadVM)) {
-      throw new Error('expected vm to be an instance of NomadVM');
-    } else if ('string' !== typeof enclosure) {
+  constructor(vm: NomadInterface, enclosure: string) {
+    if ('string' !== typeof enclosure) {
       throw new Error('expected enclosure to be a string');
     }
 
@@ -1936,7 +2331,7 @@ class NomadVMEnclosure {
    * Getter used to retrieve the wrapped {@link NomadVM}.
    *
    */
-  get vm(): NomadVM {
+  get vm(): NomadInterface {
     return this.#vm;
   }
 
@@ -2086,7 +2481,7 @@ class NomadVMEnclosure {
    * @returns A {@link !Promise} that resolves with `void` if the {@link Dependency} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.install} for additional exceptions thrown.
    */
-  install(dependency: Dependency): Promise<void> {
+  install(dependency: DependencyInterface): Promise<void> {
     return this.vm.install(this.enclosure, dependency);
   }
 
@@ -2098,7 +2493,7 @@ class NomadVMEnclosure {
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    * @see {@link NomadVM.execute} for additional exceptions thrown.
    */
-  execute(dependency: Dependency, args?: Map<string, unknown>): Promise<unknown> {
+  execute(dependency: DependencyInterface, args?: Map<string, unknown>): Promise<unknown> {
     return this.vm.execute(this.enclosure, dependency, args);
   }
 
@@ -2113,5 +2508,3 @@ class NomadVMEnclosure {
     return this.vm.installAll(this.enclosure, dependencies);
   }
 }
-
-export { NomadVM, NomadVMEnclosure };

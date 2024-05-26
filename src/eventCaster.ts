@@ -22,19 +22,111 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/**
+ * ...
+ *
+ * @packageDocumentation
+ * @module
+ */
+
 import { event as validateEvent, filter as validateFilter } from './validation';
 
 /**
  * The type of a method injector.
  *
  */
-type MethodInjector<T> = (entries: { [Method in keyof T]: T[Method] }) => void;
+export type MethodInjector<T> = (entries: { [Method in keyof T]: T[Method] }) => void;
 
 /**
  * The type of an event callback.
  *
  */
-type EventCallback = (name: string, ...args: unknown[]) => unknown;
+export type EventCallback = (name: string, ...args: unknown[]) => unknown;
+
+export type EventCasterInterface_Cast = (name: string, ...args: unknown[]) => EventCasterInterface;
+
+export type EventCasterInterface_ProtectedMethods = { cast: EventCasterInterface_Cast };
+
+/**
+ * Glob-enabled Event Caster interface.
+ *
+ * This event caster allows listeners to be attached to "glob" expressions.
+ * All event names must adhere to the following ABNF:
+ *
+ * ```ini
+ * segment = 1*( "." / ALPHA / DIGIT / "-" )
+ * event-name = segment *( ":" segment )
+ * ```
+ * .
+ *
+ * An event name filter may use the following wildcards in lieu of a segment, with the restriction that no two consecutive filter segment may contain a "**" wildcard.
+ * Their expected meanings are as follows:
+ *
+ * - `*`: matches any single `segment`, cannot be empty.
+ * - `**`: matches zero or more `segment`s, may be empty.
+ *
+ * This yields the following ABNF for a filter proper:
+ *
+ * ```ini
+ * filter = ( ( segment / "*" ) [ ":" filter ] / "**" [ ":" segment [ ":" filter ] ] )
+ * ```
+ *
+ */
+export interface EventCasterInterface {
+  /**
+   * Attach the given callback to the {@link EventCasterInterface}, triggered on events matching the given filter.
+   *
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   */
+  on(filter: string, callback: EventCallback): this;
+
+  /**
+   * Attach the given callback to the {@link EventCasterInterface}, triggered on events matching the given filter, and removed upon being called once.
+   *
+   * @param filter - Event name filter to assign the listener to.
+   * @param callback - Callback to call on a matching event being cast.
+   * @returns `this`, for chaining.
+   */
+  once(filter: string, callback: EventCallback): this;
+
+  /**
+   * Remove the given callback from the listeners set.
+   *
+   * @param callback - The callback to remove.
+   * @returns `this`, for chaining.
+   */
+  off(callback: EventCallback): this;
+}
+
+/**
+ * Turn an event name filter into a filtering {@link !RegExp}.
+ *
+ * @param filter - The event name filter to transform.
+ * @returns The transformed event name filter.
+ * @see {@link validation.filter} for additional exceptions thrown.
+ */
+export const _filterToRegExp: (filter: string) => RegExp = (filter: string): RegExp => {
+  return new RegExp(
+    '^' +
+      validateFilter(filter)
+        .split(':')
+        .map((part: string): string => {
+          switch (part) {
+            case '*':
+              return '[.A-Za-z0-9-]+';
+            case '**':
+              return '?[.A-Za-z0-9-]+(?::[.A-Za-z0-9-]+)*';
+            default:
+              return part.replace(/\./g, '\\.');
+          }
+        })
+        .join(':')
+        .replace(/^\?/g, '') +
+      '$',
+  );
+};
 
 /**
  * Glob-enabled Event Caster.
@@ -61,35 +153,7 @@ type EventCallback = (name: string, ...args: unknown[]) => unknown;
  * ```
  *
  */
-class EventCaster {
-  /**
-   * Turn an event name filter into a filtering {@link !RegExp}.
-   *
-   * @param filter - The event name filter to transform.
-   * @returns The transformed event name filter.
-   * @see {@link Validation.filter} for additional exceptions thrown.
-   */
-  static #filterToRegExp(filter: string): RegExp {
-    return new RegExp(
-      '^' +
-        validateFilter(filter)
-          .split(':')
-          .map((part: string): string => {
-            switch (part) {
-              case '*':
-                return '[.A-Za-z0-9-]+';
-              case '**':
-                return '?[.A-Za-z0-9-]+(?::[.A-Za-z0-9-]+)*';
-              default:
-                return part.replace(/\./g, '\\.');
-            }
-          })
-          .join(':')
-          .replace(/^\?/g, '') +
-        '$',
-    );
-  }
-
+export class EventCaster implements EventCasterInterface {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -112,7 +176,7 @@ class EventCaster {
    */
   constructor(
     protectedMethodInjector?: MethodInjector<{
-      cast: Cast;
+      cast: EventCasterInterface_Cast;
     }>,
   ) {
     protectedMethodInjector?.({
@@ -126,13 +190,13 @@ class EventCaster {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link Validation.filter} for additional exceptions thrown.
+   * @see {@link validation.filter} for additional exceptions thrown.
    */
   on(filter: string, callback: EventCallback): this {
     if (!this.#listeners.has(callback)) {
       this.#listeners.set(callback, new Set());
     }
-    this.#listeners.get(callback)?.add(EventCaster.#filterToRegExp(filter));
+    this.#listeners.get(callback)?.add(_filterToRegExp(filter));
 
     return this;
   }
@@ -170,7 +234,7 @@ class EventCaster {
    * @param name - The event name to cast.
    * @param args - Any additional arguments o associate to the cast event.
    * @returns `this`, for chaining.
-   * @see {@link Validation.event} for additional exceptions thrown.
+   * @see {@link validation.event} for additional exceptions thrown.
    */
   #cast(name: string, ...args: unknown[]): this {
     validateEvent(name);
@@ -186,10 +250,3 @@ class EventCaster {
     return this;
   }
 }
-
-type Cast = (name: string, ...args: unknown[]) => EventCaster;
-
-type ProtectedMethods = { cast: Cast };
-
-export { EventCaster };
-export type { MethodInjector, EventCallback, Cast, ProtectedMethods };
