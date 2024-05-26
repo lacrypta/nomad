@@ -245,7 +245,7 @@ export const _removeComments: (code: string) => string = (code: string): string 
 export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) => DependencyObject = (
   func: (...args: unknown[]) => unknown,
 ): DependencyObject => {
-  const str: string = _removeComments(func.toString()).replace(/^\s+|(?<!\s)\s+$/g, '');
+  const str: string = _removeComments(func.toString()).trim();
   let body: string | null = null;
   let code: string = '';
   if (str.endsWith('}')) {
@@ -254,7 +254,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
         code = str.substring(i + 1, str.length - 1);
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
         void new Function(code);
-        body = code.replace(/^\s+|(?<!\s)\s+$/g, '');
+        body = code.trim();
         code = `{${code}}`;
         break;
       } catch {
@@ -266,8 +266,8 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
       try {
         code = str.substring(i + 2);
         // eslint-disable-next-line @typescript-eslint/no-implied-eval
-        void new Function(`return ${code.replace(/^\s+|(?<!\s)\s+$/g, '')};`);
-        body = `return ${code.replace(/^\s+|(?<!\s)\s+$/g, '')};`;
+        void new Function(`return ${code.trim()};`);
+        body = `return ${code.trim()};`;
         break;
       } catch {
         // NOP
@@ -275,22 +275,26 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
     }
   }
 
-  const head: string = str.substring(0, str.length - code.length).replace(/^\s+|(?<!\s)\s+$/g, '');
+  const head: string = str.substring(0, str.length - code.length).trim();
   const args: string = head.substring(head.indexOf('(') + 1, head.lastIndexOf(')'));
   const argsResult: [string, string][] = [];
   let currentArg: string[] = [];
   args.split(',').forEach((part) => {
     currentArg.push(part);
     try {
+      const thisArg: string = currentArg.join(',');
+      const [name, ...defs]: string[] = thisArg.split('=');
+      const nameS: string = (name ?? '').trim();
+      const defsS: string = defs.join('=').trim();
+      const testArg: number = Math.trunc(Math.random() * 4294967296);
       // eslint-disable-next-line @typescript-eslint/no-implied-eval
-      void new Function(currentArg.join(','), '');
-      const [name, ...defs]: string[] = currentArg.join(',').split('=');
-      const nameS: string = (name ?? '').replace(/^\s+|(?<!\s)\s+$/g, '');
-      const defsS: string = defs.join('=').replace(/^\s+|(?<!\s)\s+$/g, '');
-      if (nameS.length && defs.length) {
+      const nameOk: boolean = testArg === new Function(nameS, `return ${nameS};`)(testArg);
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      const defsOk: boolean = defsS === new Function(`${nameS} = ${JSON.stringify(defsS)}`, `return ${nameS};`)();
+      if (nameOk && defsOk) {
         argsResult.push([nameS, defsS]);
+        currentArg = [];
       }
-      currentArg = [];
     } catch {
       // NOP
     }
