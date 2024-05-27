@@ -48,7 +48,7 @@
  * The type of a shouter that will convey messages to the host.
  *
  * @callback Shouter
- * @param {string} message - Message to shout to the host.
+ * @param {object} message - Message to shout to the host.
  * @return {void}
  */
 
@@ -65,6 +65,57 @@
  * @callback Scheduler
  * @param {SchedulerCallback} callback - The callback to schedule for execution.
  */
+
+/**
+ * @typedef TunnelDescriptor
+ * @type {object}
+ * @property {Function} resolve
+ * @property {Function} reject
+ * @property {number} port
+ */
+
+/**
+ * @typedef DependencyObject
+ * @type {object}
+ * @property {string} name
+ * @property {string} code
+ * @property {Record<string, string>} dependencies
+ */
+
+/**
+ * The type of an Enclosure object.
+ *
+ * @typedef EnclosureObject
+ * @type {object}
+ * @property {Set<number>} tunnels - Set of tunnels associated to this enclosure.
+ * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this enclosure, mapping listener proper to a set of filter {@link !RegExp}s.
+ * @property {Set<string>} linked - Set of linked enclosures to forward events to.
+ * @property {boolean} muted - Whether this enclosure is inhibited from emitting events on the host.
+ * @property {Record<string, unknown>} dependencies - The installed dependencies object.
+ * @property {number} port - The port number where to find this enclosure's back-reference.
+ */
+
+/**
+ * @callback SetLike_has
+ * @param {any} value
+ * @returns {boolean}
+ */
+
+/**
+ * @template T
+ * @callback SetLike_keys
+ * @returns {IterableIterator<T>}
+ */
+
+/**
+ * @template T
+ * @typedef SetLike
+ * @property {Readonly<number>} size
+ * @property {SetLike_has} has
+ * @property {SetLike_keys<T>} keys
+ */
+
+// ------------------------------------------------------------------------------------------------
 
 /**
  * The code the {@link !Worker} will end up executing.
@@ -138,6 +189,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const _Map = Map;
   const _Object = Object;
   const _Promise = Promise;
+  const _Proxy = Proxy;
   const _RegExp = RegExp;
   const _Set = Set;
   const _Symbol = Symbol;
@@ -162,9 +214,39 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimArrayFromAsync = () => {
     if (undefined === _this.Array.fromAsync) {
       // ref: https://github.com/es-shims/array-from-async/blob/main/index.mjs
+
+      /**
+       * @template T
+       * @template U
+       * @callback Array_fromAsync_mapFn
+       * @param {T} element
+       * @param {number} index
+       * @return {Promise<U>}
+       */
+
+      /**
+       * @template T
+       * @param {AsyncIterable<T>} items
+       * @returns {Promise<T[]>}
+       */
+      /**
+       * @template T
+       * @template U
+       * @param {AsyncIterable<T>} items
+       * @param {Array_fromAsync_mapFn<T, U>} mapfn
+       * @param {any} thisArg
+       * @returns {Promise<U[]>}
+       */
       _this.Array.fromAsync = async function (items, mapfn, thisArg) {
+        /**
+         * @param {any} obj
+         * @returns {boolean}
+         */
         const isConstructor = (obj) => {
-          const prox = new Proxy(obj, {
+          /**
+           * @type {any}
+           */
+          const prox = new _Proxy(obj, {
             construct() {
               return prox;
             },
@@ -207,7 +289,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
               throw TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
             }
 
-            const v = await items[i];
+            const v = items[i];
             if (mapfn) {
               result[i] = await mapfn.call(thisArg, v, i);
             } else {
@@ -408,6 +490,22 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimMapGroupBy = () => {
     if (undefined === _this.Map.groupBy) {
+      /**
+       * @template T
+       * @template K
+       * @callback Map_groupBy_callbackFn
+       * @param {T} element
+       * @param {number} index
+       * @returns {K}
+       */
+
+      /**
+       * @template T
+       * @template K
+       * @param {Iterable<T>} items
+       * @param {Map_groupBy_callbackFn<T, K>} callbackFn
+       * @returns {Map<K, T[]>}
+       */
       _this.Map.groupBy = function (items, callbackFn) {
         const result = new Map();
         let i = 0;
@@ -434,14 +532,39 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimPromiseWithResolvers = () => {
     if (undefined === _this.Promise.withResolvers) {
       // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers#description
+      /**
+       * @template T
+       * @returns {PromiseWithResolvers<T>}
+       */
       _this.Promise.withResolvers = function () {
-        let resolve, reject;
+        /**
+         * @template T
+         * @callback Promise_withResolvers_resolve
+         * @param {T | PromiseLike<T>} value
+         */
+
+        /**
+         * @callback Promise_withResolvers_reject
+         * @param {any | undefined} reason
+         */
+
+        /**
+         * @type {Promise_withResolvers_resolve<T>}
+         */
+        let resolve;
+        /**
+         * @type {Promise_withResolvers_reject}
+         */
+        let reject;
+
         return {
           promise: new Promise((res, rej) => {
             resolve = res;
             reject = rej;
           }),
+          // @ts-expect-error: Variable 'resolve' is used before being assigned.
           resolve,
+          // @ts-expect-error: Variable 'reject' is used before being assigned.
           reject,
         };
       };
@@ -457,6 +580,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeDifference = () => {
     if (undefined === _this.Set.prototype.difference) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {Set<T>}
+       */
       _this.Set.prototype.difference = function (other) {
         const result = new Set();
         for (const element of this) {
@@ -478,6 +606,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeIntersection = () => {
     if (undefined === _this.Set.prototype.intersection) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {Set<T>}
+       */
       _this.Set.prototype.intersection = function (other) {
         const result = new Set();
         for (const element of this) {
@@ -499,6 +632,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeIsDisjointFrom = () => {
     if (undefined === _this.Set.prototype.isDisjointFrom) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {boolean}
+       */
       _this.Set.prototype.isDisjointFrom = function (other) {
         for (const element of this) {
           if (other.has(element)) {
@@ -519,6 +657,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeIsSubsetOf = () => {
     if (undefined === _this.Set.prototype.isSubsetOf) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {boolean}
+       */
       _this.Set.prototype.isSubsetOf = function (other) {
         for (const element of this) {
           if (!other.has(element)) {
@@ -539,6 +682,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeIsSupersetOf = () => {
     if (undefined === _this.Set.prototype.isSupersetOf) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {boolean}
+       */
       _this.Set.prototype.isSupersetOf = function (other) {
         for (const element of other.keys()) {
           if (!this.has(element)) {
@@ -559,6 +707,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeSymmetricDifference = () => {
     if (undefined === _this.Set.prototype.symmetricDifference) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {Set<T>}
+       */
       _this.Set.prototype.symmetricDifference = function (other) {
         const result = new Set();
         for (const element of this) {
@@ -585,6 +738,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const shimSetPrototypeUnion = () => {
     if (undefined === _this.Set.prototype.union) {
+      /**
+       * @template T
+       * @param {SetLike<T>} other
+       * @returns {Set<T>}
+       */
       _this.Set.prototype.union = function (other) {
         const result = new Set();
         for (const element of this) {
@@ -740,7 +898,17 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
      */
     _this.Date = function Date(...args) {
+      /**
+       * @param {number} left
+       * @param {number} mid
+       * @param {number} right
+       * @returns {boolean}
+       */
       const between = (left, mid, right) => left <= mid && mid <= right;
+      /**
+       * @param {number} ts
+       * @returns {boolean}
+       */
       const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
 
       let ts = NaN;
@@ -754,10 +922,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             break;
           case 'string':
             {
+              /**
+               * @param {string | undefined} str
+               * @param {number} def
+               * @returns {number}
+               */
               const parse = (str, def) => {
                 const num = Number.parseInt(str ?? '', 10);
                 return Number.isNaN(num) ? def : num;
               };
+              /**
+               * @param {number} num
+               * @param {number} padding
+               * @param {boolean} withSign
+               * @returns {string}
+               */
               const toPaddedDecimal = (num, padding, withSign = false) =>
                 (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
 
@@ -842,7 +1021,23 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     });
     _Date.prototype.constructor = _this.Date;
     _this.Date.prototype = _Date.prototype;
+    /**
+     *
+     * @param {string} str
+     * @returns {number}
+     */
     _this.Date.parse = (str) => _Date.parse(str);
+    /**
+     *
+     * @param {number} year
+     * @param {number | undefined} monthIndex
+     * @param {number | undefined} date
+     * @param {number | undefined} hours
+     * @param {number | undefined} minutes
+     * @param {number | undefined} seconds
+     * @param {number | undefined} ms
+     * @returns {number}
+     */
     _this.Date.UTC = (
       year,
       monthIndex = undefined,
@@ -893,6 +1088,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const patchString = () => {
+    /**
+     * @param {string} compareString
+     * @returns {number}
+     */
     _this.String.prototype.localeCompare = function (compareString) {
       return this < compareString ? -1 : compareString < this ? 1 : 0;
     };
@@ -1009,16 +1208,19 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         processed.add(current);
         _Object.freeze(current);
 
+        /**
+         * @type {Record<string | symbol, PropertyDescriptor>}
+         */
         const descriptors = _Object.getOwnPropertyDescriptors(current);
         for (const key of [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)]) {
-          if ('get' in descriptors[key]) {
-            _Object.freeze(descriptors[key].get);
+          if ('get' in (descriptors[key] ?? {})) {
+            _Object.freeze(descriptors[key]?.get);
           }
-          if ('set' in descriptors[key]) {
-            _Object.freeze(descriptors[key].set);
+          if ('set' in (descriptors[key] ?? {})) {
+            _Object.freeze(descriptors[key]?.set);
           }
-          if ('value' in descriptors[key]) {
-            deepFreeze(descriptors[key].value, processed);
+          if ('value' in (descriptors[key] ?? {})) {
+            deepFreeze(descriptors[key]?.value, processed);
           }
         }
         current = _Object.getPrototypeOf(current);
@@ -1170,20 +1372,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * The type of an Enclosure object.
-   *
-   * @typedef EnclosureObject
-   * @type {object}
-   * @internal
-   * @property {Set<number>} tunnels - Set of tunnels associated to this enclosure.
-   * @property {Map<Function, Set<RegExp>>} listeners - Listeners map for this enclosure, mapping listener proper to a set of filter {@link !RegExp}s.
-   * @property {Set<string>} linked - Set of linked enclosures to forward events to.
-   * @property {boolean} muted - Whether this enclosure is inhibited from emitting events on the host.
-   * @property {object} dependencies - The installed dependencies object.
-   * @property {number} port - The port number where to find this enclosure's back-reference.
-   */
-
-  /**
    * Mapping from enclosure name to {@link EnclosureObject}.
    *
    * @type {Map<string, EnclosureObject>}
@@ -1202,7 +1390,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   /**
    * A list of inter-process tunnels being used, alongside with enclosure port number.
    *
-   * @type {Array<{ resolve: Function, reject: Function, port: number }>}
+   * @type {TunnelDescriptor[]}
    */
   const tunnels = [];
 
@@ -1239,8 +1427,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - Enclosure to create.
    * @returns {void}
-   * @throws {@link !Error} if the given enclosure already exists.
-   * @throws {@link !Error} if the given enclosure's parent does not exist.
+   * @throws {Error} if the given enclosure already exists.
+   * @throws {Error} if the given enclosure's parent does not exist.
    */
   const addEnclosure = (enclosure) => {
     const parent = getEnclosureBase(enclosure) || null;
@@ -1266,7 +1454,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - Enclosure to retrieve.
    * @returns {EnclosureObject} Enclosure object under the given name.
-   * @throws {@link !Error} if the given enclosure does not exist.
+   * @throws {Error} if the given enclosure does not exist.
    */
   const getEnclosure = (enclosure) => {
     if (!enclosures.has(enclosure)) {
@@ -1301,6 +1489,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {Array<string>} A list of enclosures that actually got removed (this includes the one given, and all of its sub enclosures).
    */
   const removeEnclosure = (enclosure) => {
+    /**
+     * @type {number[]}
+     */
     let toReject = [];
 
     const removed = [enclosure, ...enclosureSubEnclosures(enclosure)].sort();
@@ -1308,7 +1499,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       const { tunnels, port } = getEnclosure(toRemove);
       toReject = [...toReject, ...tunnels];
       delete enclosurePorts[port];
-      delete enclosures[toRemove];
+      enclosures.delete(toRemove);
     });
 
     const error = new _Error('deleting enclosure');
@@ -1330,7 +1521,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - The enclosure to merge to its parent.
    * @returns {void}
-   * @throws {@link !Error} if the given enclosure is a root enclosure.
+   * @throws {Error} if the given enclosure is a root enclosure.
    */
   const mergeEnclosure = (enclosure) => {
     const { tunnels, listeners, dependencies, port } = getEnclosure(enclosure);
@@ -1366,7 +1557,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         parentListeners.set(callback, new _Set());
       }
       const callbackFilters = parentListeners.get(callback);
-      [...filters].forEach((filter) => callbackFilters.add(filter));
+      [...filters].forEach((filter) => callbackFilters?.add(filter));
     });
 
     _Object.entries(dependencies).forEach(([name, value]) => {
@@ -1489,7 +1680,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {number} tunnel - The tunnel to remove.
    * @returns {{reject: Function, resolve: Function}} The resolution / rejection callbacks that used to be at the given index.
-   * @throws {@link !Error} if the given tunnel does not exist.
+   * @throws {Error} if the given tunnel does not exist.
    */
   const removeTunnel = (tunnel) => {
     if (!(tunnel in tunnels)) {
@@ -1532,8 +1723,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} event - The event name to cast.
    * @param {...unknown} args - Any additional arguments o associate to the cast event.
    * @returns {void}
-   * @throws {@link !Error} if the given event name is not a `string`.
-   * @throws {@link !Error} if the given event name fails regular expression validation.
+   * @throws {Error} if the given event name is not a `string`.
+   * @throws {Error} if the given event name fails regular expression validation.
    */
   const cast = (enclosure, event, ...args) => {
     const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
@@ -1592,7 +1783,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {Function} callback - The callback to remove.
    * @returns {void}
-   * @throws {@link !Error} if the given callback is not a {@link !Function} instance.
+   * @throws {Error} if the given callback is not a {@link !Function} instance.
    */
   const off = (enclosure, callback) => {
     if (!(callback instanceof _Function)) {
@@ -1609,10 +1800,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {unknown} callback - Callback to call on a matching event being cast.
    * @returns {void}
-   * @throws {@link !Error} if the given callback is not a {@link !Function} instance.
-   * @throws {@link !Error} if the given event name filter is not a `string`.
-   * @throws {@link !Error} if the given event name filter fails regular expression validation.
-   * @throws {@link !Error} if the given event name filter contains an adjacent pair of `**` wildcards.
+   * @throws {Error} if the given callback is not a {@link !Function} instance.
+   * @throws {Error} if the given event name filter is not a `string`.
+   * @throws {Error} if the given event name filter fails regular expression validation.
+   * @throws {Error} if the given event name filter contains an adjacent pair of `**` wildcards.
    */
   const on = (enclosure, filter, callback) => {
     const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
@@ -1763,8 +1954,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {DependencyObject} dependency - Dependency to execute.
    * @param {Map<string, unknown>} args - Arguments map to use.
    * @returns {unknown} The result of executing the given dependency.
-   * @throws {@link !Error} if there are any missing dependencies.
-   * @throws {@link !Error} if any argument would shadow an imported dependency.
+   * @throws {Error} if there are any missing dependencies.
+   * @throws {Error} if any argument would shadow an imported dependency.
    */
   const executeDependency = (enclosure, dependency, args) => {
     const { dependencies } = getEnclosure(enclosure);
@@ -1813,7 +2004,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
    * @returns {void}
-   * @throws {@link !Error} if there are any missing dependencies.
+   * @throws {Error} if there are any missing dependencies.
    * @see {@link VMImplementation.executeDependency} for further execution context details.
    */
   const installDependency = (enclosure, dependency) => {
@@ -1832,7 +2023,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {number} idx - Function index to use for execution.
    * @param {string} name - Function name to use for registration.
    * @returns {void}
-   * @throws {@link !Error} if the given name is already in use.
+   * @throws {Error} if the given name is already in use.
    */
   const addPredefined = (enclosure, idx, name) => {
     const { dependencies, port } = getEnclosure(enclosure);
@@ -2534,6 +2725,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'setPrototypeOf',
       ];
 
+      /**
+       * @type {string[]}
+       */
       const failed = [];
 
       /**
@@ -2675,7 +2869,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       prune(_this.Reflect, 'this.Reflect', 'Reflect');
 
       if (0 < failed.length) {
-        postEmitMessage(`worker:warning`, `failed to prune [${failed.join(', ')}]`);
+        postEmitMessage(`worker:warning`, [`failed to prune [${failed.join(', ')}]`]);
       }
     }
 
