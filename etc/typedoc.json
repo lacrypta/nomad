@@ -34,5 +34,31 @@
   "logLevel": "Verbose",
   "disableSources": false,
   "tsconfig": "./tsconfig.build.json",
-  "customCss": "./typedoc-tweaks.css"
+  "customCss": "./typedoc-tweaks.css",
+  "sort": ["static-first", "visibility", "kind", "alphabetical"],
+  "kindSortOrder": [
+    "Reference",
+    "Project",
+    "Module",
+    "Namespace",
+    "TypeAlias",
+    "TypeParameter",
+    "TypeLiteral",
+    "Enum",
+    "EnumMember",
+    "Interface",
+    "CallSignature",
+    "IndexSignature",
+    "Class",
+    "Constructor",
+    "ConstructorSignature",
+    "Accessor",
+    "GetSignature",
+    "SetSignature",
+    "Method",
+    "Property",
+    "Function",
+    "Variable",
+    "Parameter"
+  ]
 }
