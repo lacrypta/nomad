@@ -31,7 +31,7 @@
 
 import type { Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
-import type { WorkerInterface, WorkerBuilder } from './worker';
+import type { WorkerInterface, WorkerBuilder, MessageCallback, ErrorCallback } from './worker';
 
 import {
   enclosure as validateEnclosure,
@@ -1417,7 +1417,7 @@ export class VMImplementation implements VM {
    *
    * @param data - The message's `data` field, a JSON-encoded string.
    */
-  #messageHandler(data: string): void {
+  #messageHandler: MessageCallback = (data: string): void => {
     try {
       const parsedData: Record<string, unknown> = JSON.parse(data) as Record<string, unknown>;
       switch (parsedData.name) {
@@ -1486,7 +1486,7 @@ export class VMImplementation implements VM {
     } catch (e) {
       this.#castEvent('worker:error', e);
     }
-  }
+  };
 
   /**
    * Handle the {@link VMImplementation.#worker}'s `error` event.
@@ -1495,9 +1495,9 @@ export class VMImplementation implements VM {
    *
    * @param error - Error to handle.
    */
-  #errorHandler(error: Error): void {
+  #errorHandler: ErrorCallback = (error: Error): void => {
     this.#castEvent('worker:error', error.message);
-  }
+  };
 
   // ----------------------------------------------------------------------------------------------
 

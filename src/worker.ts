@@ -31,6 +31,10 @@
 
 export type WorkerBuilder = (code: string, tunnel: number, name: string) => WorkerInterface;
 
+export type MessageCallback = (data: string) => void;
+
+export type ErrorCallback = (error: Error) => void;
+
 /**
  * An instance of an environment-agnostic worker.
  *
@@ -61,7 +65,7 @@ export interface WorkerInterface {
    * @param errorCallback - Callback to use for message errors.
    * @returns `this`, for chaining.
    */
-  listen(messageCallback: (data: string) => void, errorCallback: (error: Error) => void): this;
+  listen(messageCallback: MessageCallback, errorCallback: ErrorCallback): this;
 }
 
 /**
@@ -163,7 +167,7 @@ export class BrowserWorker implements WorkerInterface {
    * @param errorCallback - Callback to use for message errors.
    * @returns `this`, for chaining.
    */
-  listen(messageCallback: (data: string) => void, errorCallback: (error: Error) => void): this {
+  listen(messageCallback: MessageCallback, errorCallback: ErrorCallback): this {
     if (undefined === this.#worker) {
       throw new Error('worker terminated');
     }
