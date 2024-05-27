@@ -66,7 +66,7 @@
         .execute(
           'root',
           dependencyFrom(function x() {
-            return new Error('hola').stack;
+            return new Error('hello').stack;
           }),
         )
         .then((result) => console.log(`>>> ${result}`));
