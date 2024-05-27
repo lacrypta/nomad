@@ -31,15 +31,15 @@
 
 import type { Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
-import type { WorkerInterface, WorkerBuilder, MessageCallback, ErrorCallback } from './worker';
+import type { ErrorCallback, MessageCallback, WorkerBuilder, WorkerInterface } from './worker';
 
 import {
+  argumentsMap as validateArgumentsMap,
   enclosure as validateEnclosure,
   event as validateEvent,
-  timeDelta as validateTimeDelta,
-  nonNegativeInteger as validateNonNegativeInteger,
   identifier as validateIdentifier,
-  argumentsMap as validateArgumentsMap,
+  nonNegativeInteger as validateNonNegativeInteger,
+  timeDelta as validateTimeDelta,
 } from './validation';
 
 import { EventCasterImplementation } from './eventCaster';

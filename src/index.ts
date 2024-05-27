@@ -32,7 +32,7 @@
 
 import type { Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster } from './eventCaster';
-import type { VM, Enclosure } from './vm';
+import type { Enclosure, VM } from './vm';
 import type { WorkerBuilder, WorkerInterface } from './worker';
 
 import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
@@ -50,9 +50,9 @@ const vmEvents = _vmEvents;
 
 export type { Dependency, DependencyObject };
 export type { EventCallback, EventCaster };
-export type { VM, Enclosure };
+export type { Enclosure, VM };
 export type { WorkerBuilder, WorkerInterface };
 
 export { dependencyCreate, dependencyFrom };
-export { vmCreate, vmGet, vmEvents };
+export { vmCreate, vmEvents, vmGet };
 export { workerBuild, workerBuilder };
