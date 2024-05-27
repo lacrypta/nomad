@@ -546,6 +546,10 @@ export const get: (name: string) => WeakRef<VM> | undefined = (name: string): We
   return _names.get(name);
 };
 
+export const create: (name?: string) => VM = (name?: string): VM => {
+  return new VMImplementation(name);
+};
+
 /**
  * A safe execution environment for NOMAD code execution.
  *
@@ -2274,10 +2278,6 @@ export class VMImplementation implements VM {
     return this;
   }
 }
-
-export const create = (name?: string): VM => {
-  return new VMImplementation(name);
-};
 
 /**
  * A {@link VMImplementation} enclosure interface wrapper object.
