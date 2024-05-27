@@ -60,25 +60,28 @@ export interface VM extends EventCaster {
   get name(): string;
 
   /**
-   * Attach the given callback to this particular VM's event caster, triggered on events matching the given filter.
+   * Getter used to determine if the VM is in the "created" state.
    *
-   * @param filter - Event name filter to assign the listener to.
-   * @param callback - Callback to call on a matching event being cast.
-   * @returns `this`, for chaining.
-   * @throws {@link !Error} if the given event name filter fails regular expression validation.
-   * @throws {@link !Error} if the given event name filter contains an adjacent pair of `**` wildcards.
    */
-  onThis(filter: string, callback: EventCallback): this;
+  get isCreated(): boolean;
 
   /**
-   * Attach the given callback to this particular VM's caster, triggered on events matching the given filter, and removed upon being called once.
+   * Getter used to determine if the VM is in the "booting" state.
    *
-   * @param filter - Event name filter to assign the listener to.
-   * @param callback - Callback to call on a matching event being cast.
-   * @returns `this`, for chaining.
-   * @see {@link EventCaster.once} for additional exceptions thrown.
    */
-  onceThis(filter: string, callback: EventCallback): this;
+  get isBooting(): boolean;
+
+  /**
+   * Getter used to determine if the VM is in the "running" state.
+   *
+   */
+  get isRunning(): boolean;
+
+  /**
+   * Getter used to determine if the VM is in the "stopped" state.
+   *
+   */
+  get isStopped(): boolean;
 
   /**
    * Start the {@link WorkerInterface} and wait for its boot-up sequence to complete.
@@ -288,7 +291,7 @@ export interface VM extends EventCaster {
  * A {@link VM} enclosure interface wrapper object.
  *
  */
-export interface Enclosure {
+export interface Enclosure extends EventCaster {
   /**
    * Getter used to retrieve the wrapped {@link VM}.
    *
@@ -300,24 +303,6 @@ export interface Enclosure {
    *
    */
   get enclosure(): string;
-
-  /**
-   * Attach the given callback to the wrapped VM's event caster, triggered on events matching the given filter on the wrapped enclosure.
-   *
-   * @param filter - Event name filter to assign the listener to.
-   * @param callback - Callback to call on a matching event being cast.
-   * @returns `this`, for chaining.
-   */
-  onThis(filter: string, callback: (...args: unknown[]) => void): this;
-
-  /**
-   * Attach the given callback to the wrapped VM's caster, triggered on events matching the given filter on the wrapped enclosure, and removed upon being called once.
-   *
-   * @param filter - Event name filter to assign the listener to.
-   * @param callback - Callback to call on a matching event being cast.
-   * @returns `this`, for chaining.
-   */
-  onceThis(filter: string, callback: (...args: unknown[]) => void): this;
 
   /**
    * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
@@ -433,7 +418,7 @@ export const _pseudoRandomString: () => string = (): string => {
     .padStart(8, '0');
 };
 
-let __castGlobal: EventCaster_Cast;
+let __cast: EventCaster_Cast;
 
 /**
  * Static {@link EventCasterImplementation} that allows a single event source to be used across all VMs.
@@ -497,7 +482,7 @@ let __castGlobal: EventCaster_Cast;
  */
 export const events: Readonly<EventCaster> = Object.freeze(
   new EventCasterImplementation((protectedMethods: EventCaster_ProtectedMethods): void => {
-    __castGlobal = protectedMethods.cast;
+    __cast = protectedMethods.cast;
   }),
 );
 
@@ -505,9 +490,9 @@ export const events: Readonly<EventCaster> = Object.freeze(
  * The {@link EventCasterImplementation} casting function for all he VMs.
  *
  */
-export const _castGlobal: EventCaster_Cast =
-  // @ts-expect-error: Variable '__castGlobal' is used before being assigned.
-  __castGlobal;
+export const _cast: EventCaster_Cast =
+  // @ts-expect-error: Variable '__cast' is used before being assigned.
+  __cast;
 
 /**
  * Prefix to use for all events emitted.
@@ -565,12 +550,11 @@ export const get: (name: string) => WeakRef<VM> | undefined = (name: string): We
  * A safe execution environment for NOMAD code execution.
  *
  */
-export class VMImplementation extends EventCasterImplementation implements VM {
-  /**
-   * The {@link EventCasterImplementation} casting function for the current VM.
-   *
-   */
-  #castLocal: EventCaster_Cast;
+export class VMImplementation implements VM {
+  static {
+    // ref: https://stackoverflow.com/a/77741904
+    Object.setPrototypeOf(this.prototype, null);
+  }
 
   /**
    * The VM name to use.
@@ -655,20 +639,11 @@ export class VMImplementation extends EventCasterImplementation implements VM {
       throw new Error(`duplicate name ${name}`);
     }
 
-    {
-      let castLocal: EventCaster_Cast;
-      super((protectedMethods: { cast: EventCaster_Cast }): void => {
-        castLocal = protectedMethods.cast;
-      });
-      // @ts-expect-error: Variable 'castLocal' is used before being assigned.
-      this.#castLocal = castLocal;
-    }
-
     this.#name = name;
     _names.set(this.#name, new WeakRef<VMImplementation>(this));
     this.#state = 'created';
 
-    _castGlobal(`${_eventPrefix}:${this.#name}:new`, this);
+    this.#castEvent('new', this);
   }
 
   /**
@@ -679,6 +654,38 @@ export class VMImplementation extends EventCasterImplementation implements VM {
     return this.#name;
   }
 
+  /**
+   * Getter used to determine if the VM is in the "created" state.
+   *
+   */
+  get isCreated(): boolean {
+    return 'created' === this.#state;
+  }
+
+  /**
+   * Getter used to determine if the VM is in the "booting" state.
+   *
+   */
+  get isBooting(): boolean {
+    return 'booting' === this.#state;
+  }
+
+  /**
+   * Getter used to determine if the VM is in the "running" state.
+   *
+   */
+  get isRunning(): boolean {
+    return 'running' === this.#state;
+  }
+
+  /**
+   * Getter used to determine if the VM is in the "stopped" state.
+   *
+   */
+  get isStopped(): boolean {
+    return 'stopped' === this.#state;
+  }
+
   // ----------------------------------------------------------------------------------------------
 
   /**
@@ -687,7 +694,7 @@ export class VMImplementation extends EventCasterImplementation implements VM {
    * @throws {@link !Error} if the VM is in any state other than "created".
    */
   #assertCreated(): void {
-    if ('created' !== this.#state) {
+    if (!this.isCreated) {
       throw new Error("expected state to be 'created'");
     }
   }
@@ -698,7 +705,7 @@ export class VMImplementation extends EventCasterImplementation implements VM {
    * @throws {@link !Error} if the VM is in any state other than "running".
    */
   #assertRunning(): void {
-    if ('running' !== this.#state) {
+    if (!this.isRunning) {
       throw new Error("expected state to be 'running'");
     }
   }
@@ -713,9 +720,7 @@ export class VMImplementation extends EventCasterImplementation implements VM {
    * @see {@link validation.event} for additional exceptions thrown.
    */
   #castEvent(name: string, ...args: unknown[]): void {
-    const event: string = `${_eventPrefix}:${this.#name}:${name}`;
-    this.#castLocal(event, this, ...args);
-    _castGlobal(event, this, ...args);
+    _cast(`${_eventPrefix}:${this.#name}:${name}`, this, ...args);
   }
 
   /**
@@ -724,10 +729,11 @@ export class VMImplementation extends EventCasterImplementation implements VM {
    * @param filter - Event name filter to assign the listener to.
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
-   * @see {@link validation.filter} for additional exceptions thrown.
+   * @see {@link EventCaster.on} for additional exceptions thrown.
    */
-  onThis(filter: string, callback: EventCallback): this {
-    return this.on(`${_eventPrefix}:${this.name}:${filter}`, callback);
+  on(filter: string, callback: EventCallback): this {
+    events.on(`${_eventPrefix}:${this.name}:${filter}`, callback);
+    return this;
   }
 
   /**
@@ -738,8 +744,20 @@ export class VMImplementation extends EventCasterImplementation implements VM {
    * @returns `this`, for chaining.
    * @see {@link EventCasterImplementation.once} for additional exceptions thrown.
    */
-  onceThis(filter: string, callback: EventCallback): this {
-    return this.once(`${_eventPrefix}:${this.name}:${filter}`, callback);
+  once(filter: string, callback: EventCallback): this {
+    events.once(`${_eventPrefix}:${this.name}:${filter}`, callback);
+    return this;
+  }
+
+  /**
+   * Remove the given callback from the listeners set.
+   *
+   * @param callback - The callback to remove.
+   * @returns `this`, for chaining.
+   */
+  off(callback: EventCallback): this {
+    events.off(callback);
+    return this;
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -2322,8 +2340,8 @@ export class EnclosureImplementation implements Enclosure {
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
    */
-  onThis(filter: string, callback: (...args: unknown[]) => void): this {
-    this.vm.onThis(`${this.enclosure}:${filter}`, callback);
+  on(filter: string, callback: EventCallback): this {
+    this.vm.on(`${this.enclosure}:${filter}`, callback);
     return this;
   }
 
@@ -2334,8 +2352,19 @@ export class EnclosureImplementation implements Enclosure {
    * @param callback - Callback to call on a matching event being cast.
    * @returns `this`, for chaining.
    */
-  onceThis(filter: string, callback: (...args: unknown[]) => void): this {
-    this.vm.onceThis(`${this.enclosure}:${filter}`, callback);
+  once(filter: string, callback: EventCallback): this {
+    this.vm.once(`${this.enclosure}:${filter}`, callback);
+    return this;
+  }
+
+  /**
+   * Remove the given callback from the listeners set.
+   *
+   * @param callback - The callback to remove.
+   * @returns `this`, for chaining.
+   */
+  off(callback: EventCallback): this {
+    this.vm.off(callback);
     return this;
   }
 
