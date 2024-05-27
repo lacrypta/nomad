@@ -300,11 +300,14 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
     throw new Error('could not determine function body');
   }
 
-  return {
-    name: func.name,
-    code: body,
-    dependencies: Object.setPrototypeOf(Object.fromEntries(argsResult), null) as Record<string, string>,
-  };
+  return Object.setPrototypeOf(
+    {
+      name: func.name,
+      code: body,
+      dependencies: Object.setPrototypeOf(Object.fromEntries(argsResult), null) as Record<string, string>,
+    },
+    null,
+  ) as DependencyObject;
 };
 
 /**
@@ -565,13 +568,16 @@ export class DependencyImplementation implements Dependency {
    * @returns The {@link DependencyImplementation}, as an independent object.
    */
   asObject(): DependencyObject {
-    return {
-      name: this.name,
-      code: this.code,
-      dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
-        string,
-        string
-      >,
-    };
+    return Object.setPrototypeOf(
+      {
+        name: this.name,
+        code: this.code,
+        dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
+          string,
+          string
+        >,
+      },
+      null,
+    ) as DependencyObject;
   }
 }
