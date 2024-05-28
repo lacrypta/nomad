@@ -301,7 +301,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           let i = 0;
           for await (const v of items) {
             if (Number.MAX_SAFE_INTEGER < i) {
-              throw TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
+              throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
             }
 
             if (mapfn) {
@@ -322,7 +322,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
           while (i < length) {
             if (Number.MAX_SAFE_INTEGER < i) {
-              throw TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
+              throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
             }
 
             const v = items[i];
