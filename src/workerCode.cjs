@@ -24,6 +24,8 @@
 
 // ------------------------------------------------------------------------------------------------
 
+// @ts-check
+
 'use strict';
 
 /* eslint-disable */
@@ -96,6 +98,35 @@
  */
 
 /**
+ * @template T
+ * @template U
+ * @callback Array_fromAsync_mapFn
+ * @param {T} element
+ * @param {number} index
+ * @return {Promise<U>}
+ */
+
+/**
+ * @template T
+ * @template K
+ * @callback Map_groupBy_callbackFn
+ * @param {T} element
+ * @param {number} index
+ * @returns {K}
+ */
+
+/**
+ * @template T
+ * @callback Promise_withResolvers_resolve
+ * @param {T | PromiseLike<T>} value
+ */
+
+/**
+ * @callback Promise_withResolvers_reject
+ * @param {any | undefined} reason
+ */
+
+/**
  * @callback SetLike_has
  * @param {any} value
  * @returns {boolean}
@@ -113,6 +144,13 @@
  * @property {Readonly<number>} size
  * @property {SetLike_has} has
  * @property {SetLike_keys<T>} keys
+ */
+
+/**
+ * @callback EventCallback
+ * @param {string} name
+ * @param {...unknown} args
+ * @returns {unknown}
  */
 
 // ------------------------------------------------------------------------------------------------
@@ -210,20 +248,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * Needed because: Samsung, and NodeJS have no support.
    *
    * @returns {void}
+   * @see {@link https://github.com/es-shims/array-from-async/blob/main/index.mjs}
    */
   const shimArrayFromAsync = () => {
     if (undefined === _this.Array.fromAsync) {
-      // ref: https://github.com/es-shims/array-from-async/blob/main/index.mjs
-
-      /**
-       * @template T
-       * @template U
-       * @callback Array_fromAsync_mapFn
-       * @param {T} element
-       * @param {number} index
-       * @return {Promise<U>}
-       */
-
       /**
        * @template T
        * @param {AsyncIterable<T>} items
@@ -493,15 +521,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       /**
        * @template T
        * @template K
-       * @callback Map_groupBy_callbackFn
-       * @param {T} element
-       * @param {number} index
-       * @returns {K}
-       */
-
-      /**
-       * @template T
-       * @template K
        * @param {Iterable<T>} items
        * @param {Map_groupBy_callbackFn<T, K>} callbackFn
        * @returns {Map<K, T[]>}
@@ -537,17 +556,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
        * @returns {PromiseWithResolvers<T>}
        */
       _this.Promise.withResolvers = function () {
-        /**
-         * @template T
-         * @callback Promise_withResolvers_resolve
-         * @param {T | PromiseLike<T>} value
-         */
-
-        /**
-         * @callback Promise_withResolvers_reject
-         * @param {any | undefined} reason
-         */
-
         /**
          * @type {Promise_withResolvers_resolve<T>}
          */
@@ -888,16 +896,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const patchDate = () => {
     /**
-     * Either construct a new {@link !Date} instance or use as a function to obtain the {@link !Date.toISOString} output.
-     *
-     * This patch is intended to remove access to the current date / time.
-     * It strives to remove any implementation-dependent behavior from the {@link !Date} constructor.
-     *
-     * @param {...unknown} args - Construction / execution arguments.
-     * @returns {string | Date} The {@link !Date.toISOString} output (if called as a function), or the constructed {@link !Date} instance (if used as a constructor).
+     * @param {number | string | Date | undefined} valueDateStringDateObjectYear
+     * @param {number | undefined} monthIndex
+     * @param {number | undefined} day
+     * @param {number | undefined} hours
+     * @param {number | undefined} minutes
+     * @param {number | undefined} seconds
+     * @param {number | undefined} milliseconds
+     * @returns {string | Date}
      * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
      */
-    _this.Date = function Date(...args) {
+    _this.Date = function Date(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds) {
+      if (!new.target || undefined === valueDateStringDateObjectYear) {
+        return new _Date(NaN).toISOString();
+      }
+
       /**
        * @param {number} left
        * @param {number} mid
@@ -912,12 +925,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
 
       let ts = NaN;
-      if (1 === args.length) {
-        const [arg] = args;
-        switch (typeof arg) {
+      if (undefined === monthIndex) {
+        switch (typeof valueDateStringDateObjectYear) {
           case 'number':
-            if (validTs(arg)) {
-              ts = arg;
+            if (validTs(valueDateStringDateObjectYear)) {
+              ts = valueDateStringDateObjectYear;
             }
             break;
           case 'string':
@@ -940,7 +952,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
               const toPaddedDecimal = (num, padding, withSign = false) =>
                 (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
 
-              const match = arg.match(
+              const match = valueDateStringDateObjectYear.match(
                 /^(?<year>\d{4}|[+-]\d{6})(?:-(?<month>\d\d)(?:-(?<day>\d\d))?)?(?:T(?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d)(?:\.(?<milliseconds>\d{1,3}))?)?)?(?:Z|(?<tzHours>[+-]\d\d):(?<tzMinutes>\d\d))?$/,
               );
               if (null !== match && '-000000' !== match.groups?.year) {
@@ -999,8 +1011,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             }
             break;
           case 'object':
-            if (arg instanceof Date) {
-              const time = arg.getTime();
+            if (valueDateStringDateObjectYear instanceof Date) {
+              const time = valueDateStringDateObjectYear.getTime();
               if (validTs(time)) {
                 ts = time;
               }
@@ -1008,12 +1020,14 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             break;
         }
       } else {
-        const utc = _Date.UTC(...args);
-        if (validTs(utc)) {
-          ts = utc;
+        if ('number' === typeof valueDateStringDateObjectYear) {
+          const utc = _Date.UTC(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds);
+          if (validTs(utc)) {
+            ts = utc;
+          }
         }
       }
-      return new.target ? _Reflect.construct(new.target === Date ? _Date : new.target, [ts]) : new _Date(ts).toString();
+      return _Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
     };
     _Object.defineProperty(_this.Date, 'length', {
       value: _Date.length,
@@ -1028,7 +1042,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      */
     _this.Date.parse = (str) => _Date.parse(str);
     /**
-     *
      * @param {number} year
      * @param {number | undefined} monthIndex
      * @param {number | undefined} date
@@ -1159,13 +1172,14 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const patchRegExp = () => {
     /**
-     * Wrapper around {@link !RegExp} constructor so as to hide deprecated static properties (needed in Firefox).
-     *
-     * @param {...any} args - Constructor arguments.
-     * @returns {RegExp} The constructed {@link !RegExp}.
+     * @param {RegExp | string} pattern
+     * @param {string | undefined} flags
+     * @returns {RegExp}
      */
-    _this.RegExp = function RegExp(...args) {
-      return new.target ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, args) : _RegExp(...args);
+    _this.RegExp = function RegExp(pattern, flags) {
+      return new.target
+        ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, [pattern, flags])
+        : _RegExp(pattern, flags);
     };
     _Object.defineProperty(_this.RegExp, 'length', {
       value: _RegExp.length,
@@ -1411,15 +1425,14 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {string[]} An array of enclosure names.
    */
   const enclosurePrefixes = (enclosure) => {
-    return getEnclosureBase(enclosure)
-      .split('.')
-      .reduce(
-        ([all, prev], part) => [
-          [[...prev, part].join('.'), ...all],
-          [...prev, part],
-        ],
-        [[], []],
-      )[0];
+    const parts = getEnclosureBase(enclosure).split('.');
+    const result = [];
+    const last = [];
+    for (const part in parts) {
+      last.push(part);
+      result.push(last.join('.'));
+    }
+    return result.reverse();
   };
 
   /**
@@ -1457,11 +1470,12 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @throws {Error} if the given enclosure does not exist.
    */
   const getEnclosure = (enclosure) => {
-    if (!enclosures.has(enclosure)) {
+    const result = enclosures.get(enclosure);
+    if (undefined === result) {
       throw new _Error(`enclosure ${enclosure} does not exist`);
     }
 
-    return enclosures.get(enclosure);
+    return result;
   };
 
   /**
@@ -1683,13 +1697,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @throws {Error} if the given tunnel does not exist.
    */
   const removeTunnel = (tunnel) => {
-    if (!(tunnel in tunnels)) {
+    const theTunnel = tunnels[tunnel];
+    if (undefined === theTunnel) {
       throw new _Error(`tunnel ${tunnel.toString()} does not exist`);
     }
 
-    const { resolve, reject, port } = tunnels[tunnel];
-
-    getEnclosure(enclosurePorts[port]).tunnels.delete(tunnel);
+    const { resolve, reject, port } = theTunnel;
+    getEnclosure(enclosurePorts[port] ?? '').tunnels.delete(tunnel);
 
     return { resolve, reject };
   };
@@ -1818,11 +1832,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       throw new _Error('event name filter must not contain consecutive ** wildcards');
     }
 
-    const { listeners } = getEnclosure(enclosure);
-    if (!listeners.has(callback)) {
-      listeners.set(callback, new _Set());
+    const listeners = getEnclosure(enclosure).listeners;
+    let filters = listeners.get(callback);
+    if (undefined === filters) {
+      filters = new _Set();
+      listeners.set(callback, filters);
     }
-    listeners.get(callback).add(
+    filters.add(
       _RegExp(
         '^' +
           filter
@@ -1853,6 +1869,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const once = (enclosure, filter, callback) => {
+    /**
+     * @param  {...unknown} args
+     */
     const wrapped = (...args) => {
       callback.apply(undefined, args);
       off(enclosure, wrapped);
@@ -1870,26 +1889,72 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     const { port } = getEnclosure(enclosure);
 
     const eventCaster = _Object.create(null);
+    /**
+     * @param {string} filter
+     * @param {EventCallback} callback
+     * @returns {object}
+     */
     const __on = (filter, callback) => {
-      on(enclosurePorts[port], filter, callback);
+      on(enclosurePorts[port] ?? '', filter, callback);
       return eventCaster;
     };
+    /**
+     * @param {string} filter
+     * @param {EventCallback} callback
+     * @returns {object}
+     */
     const __once = (filter, callback) => {
-      once(enclosurePorts[port], filter, callback);
+      once(enclosurePorts[port] ?? '', filter, callback);
       return eventCaster;
     };
+    /**
+     * @param {EventCallback} callback
+     * @returns {object}
+     */
     const __off = (callback) => {
-      off(enclosurePorts[port], callback);
+      off(enclosurePorts[port] ?? '', callback);
       return eventCaster;
     };
+    /**
+     * @param {string} event
+     * @param  {...unknown} args
+     * @returns {object}
+     */
     const __cast = (event, ...args) => {
-      castUser(enclosurePorts[port], event, ...args);
+      castUser(enclosurePorts[port] ?? '', event, ...args);
       return eventCaster;
     };
-    eventCaster.on = _Object.freeze((filter, callback) => __on(filter, callback));
-    eventCaster.once = _Object.freeze((filter, callback) => __once(filter, callback));
-    eventCaster.off = _Object.freeze((callback) => __off(callback));
-    eventCaster.cast = _Object.freeze((event, ...args) => __cast(event, ...args));
+    eventCaster.on = _Object.freeze(
+      /**
+       * @param {string} filter
+       * @param {EventCallback} callback
+       * @returns {object}
+       */
+      (filter, callback) => __on(filter, callback),
+    );
+    eventCaster.once = _Object.freeze(
+      /**
+       * @param {string} filter
+       * @param {EventCallback} callback
+       * @returns {object}
+       */
+      (filter, callback) => __once(filter, callback),
+    );
+    eventCaster.off = _Object.freeze(
+      /**
+       * @param {EventCallback} callback
+       * @returns {object}
+       */
+      (callback) => __off(callback),
+    );
+    eventCaster.cast = _Object.freeze(
+      /**
+       * @param {string} event
+       * @param  {...unknown} args
+       * @returns {object}
+       */
+      (event, ...args) => __cast(event, ...args),
+    );
 
     return _Object.freeze(eventCaster);
   };
@@ -1964,7 +2029,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       if (IMPORT_LIMIT < importedNames.length) {
         throw new _Error(`too many imports 1024 < ${importedNames.length.toString()}`);
       }
-      const missing = importedNames.filter((name) => !(dependency.dependencies[name] in dependencies));
+      const missing = importedNames.filter((name) => !((dependency.dependencies[name] ?? '') in dependencies));
       if (0 !== missing.length) {
         throw new _Error(
           `missing dependencies: [${[...new _Set(missing.map((name) => dependency.dependencies[name]))].join(', ')}]`,
@@ -1993,7 +2058,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     ).call(
       undefined,
       eventCaster(enclosure),
-      ...importedNames.map((importedName) => dependencies[dependency.dependencies[importedName]]),
+      ...importedNames.map((importedName) => dependencies[dependency.dependencies[importedName] ?? '']),
       ...argumentNames.map((argumentName) => args.get(argumentName)),
     );
   };
@@ -2031,11 +2096,19 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       throw new _Error(`duplicate dependency ${name}`);
     }
     const __predefined = _Object.freeze(
+      /**
+       * @param  {...unknown} args
+       * @returns {Promise<unknown>}
+       */
       (...args) =>
         new _Promise((resolve, reject) => {
-          postCallMessage(enclosurePorts[port], addTunnel(enclosure, resolve, reject), idx, args);
+          postCallMessage(enclosurePorts[port] ?? '', addTunnel(enclosure, resolve, reject), idx, args);
         }),
     );
+    /**
+     * @param  {...unknown} args
+     * @returns {Promise<unknown>}
+     */
     dependencies[name] = (...args) => __predefined(...args);
   };
 
@@ -2735,7 +2808,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
        *
        * NOTE: errors on deletion are ignored.
        *
-       * @param {object} start - Object to start the pruning from.
+       * @param {{ [key: string | symbol ]: unknown }} start - Object to start the pruning from.
        * @param {string} name - Name to use for failure reporting.
        * @param {string} toKeep - Label of properties to keep.
        * @returns {void}
