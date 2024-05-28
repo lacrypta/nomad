@@ -6,6 +6,7 @@ import eslint_plugin_import from 'eslint-plugin-import';
 import eslint_plugin_jsdoc from 'eslint-plugin-jsdoc';
 import sonarjs from 'eslint-plugin-sonarjs';
 import arrayFunc from 'eslint-plugin-array-func';
+import * as regexpPlugin from 'eslint-plugin-regexp';
 
 export default [
   eslint_js.configs.recommended,
@@ -13,6 +14,7 @@ export default [
   eslint_plugin_jsdoc.configs['flat/recommended'],
   sonarjs.configs.recommended,
   arrayFunc.configs.all,
+  regexpPlugin.configs['flat/recommended'],
   {
     plugins: {
       import: eslint_plugin_import,

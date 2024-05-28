@@ -6,6 +6,7 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import sonarjs from 'eslint-plugin-sonarjs';
 import arrayFunc from 'eslint-plugin-array-func';
+import * as regexpPlugin from 'eslint-plugin-regexp';
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -13,6 +14,7 @@ export default tseslint.config(
   eslintConfigPrettier,
   sonarjs.configs.recommended,
   arrayFunc.configs.all,
+  regexpPlugin.configs['flat/recommended'],
   {
     plugins: { import: importPlugin },
     ignores: ['pnpm-lock.yaml', 'dist/**'],

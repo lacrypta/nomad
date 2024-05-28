@@ -35,7 +35,7 @@
  * Only 7-bit ASCII alphanumeric characters and underscores are allowed, underscores may not start an identifier name.
  *
  */
-export const _identifierRegExp: RegExp = /^[a-z][_a-z0-9]*$/i;
+export const _identifierRegExp: RegExp = /^[a-z]\w*$/i;
 
 /**
  * Forbidden identifier names.
