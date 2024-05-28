@@ -198,6 +198,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const DEFAULT_NAMESPACE_NAME = 'root';
 
+  /**
+   * Name to use for the event caster parameter.
+   *
+   * @type {string}
+   */
+  const EVENT_CASTER_NAME = '__events__';
+
   // ----------------------------------------------------------------------------------------------
   // -- Expose Standard Classes -------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
@@ -2049,7 +2056,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     // ref: https://stackoverflow.com/a/34523915
     return new _Function(
-      '__events__',
+      EVENT_CASTER_NAME,
       ...importedNames,
       ...argumentNames,
       //
