@@ -29,7 +29,7 @@
  * @module
  */
 
-export type WorkerBuilder = (code: string, tunnel: number, name: string) => WorkerInterface;
+export type WorkerBuilder = (code: string, tunnel: number, name: string) => VMWorker;
 
 export type MessageCallback = (data: string) => void;
 
@@ -39,7 +39,7 @@ export type ErrorCallback = (error: Error) => void;
  * An instance of an environment-agnostic worker.
  *
  */
-export interface WorkerInterface {
+export interface VMWorker {
   /**
    * Stop the worker instance immediately.
    *
@@ -48,12 +48,12 @@ export interface WorkerInterface {
   kill(): this;
 
   /**
-   * Send the given data to the {@link WorkerInterface}.
+   * Send the given data to the {@link VMWorker}.
    *
    * > [!warning]
    * > The given `data` object **MUST** be serializable via `JSON.serialize`.
    *
-   * @param data - object to send to the {@link WorkerInterface}.
+   * @param data - object to send to the {@link VMWorker}.
    * @returns `this`, for chaining.
    */
   shout(data: object): this;
@@ -72,7 +72,7 @@ export interface WorkerInterface {
  * An wrapper for a {@link !Worker}.
  *
  */
-export class BrowserWorker implements WorkerInterface {
+export class BrowserWorker implements VMWorker {
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -207,13 +207,13 @@ export function builder(): WorkerBuilder {
 }
 
 /**
- * Get the {@link WorkerInterface} constructed for the current environment using the given parameters.
+ * Get the {@link VMWorker} constructed for the current environment using the given parameters.
  *
- * @param code - Code to set the {@link WorkerInterface} up with.
- * @param tunnel - Tunnel id tell the {@link WorkerInterface} to announce boot-up on.
- * @param name - Name to use for the {@link WorkerInterface}.
- * @returns A {@link WorkerInterface} constructed via the {@link WorkerInterface} for the current environment.
+ * @param code - Code to set the {@link VMWorker} up with.
+ * @param tunnel - Tunnel id tell the {@link VMWorker} to announce boot-up on.
+ * @param name - Name to use for the {@link VMWorker}.
+ * @returns A {@link VMWorker} constructed via the {@link VMWorker} for the current environment.
  */
-export function build(code: string, tunnel: number, name: string): WorkerInterface {
+export function build(code: string, tunnel: number, name: string): VMWorker {
   return builder()(code, tunnel, name);
 }

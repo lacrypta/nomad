@@ -31,7 +31,7 @@
 
 import type { Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
-import type { ErrorCallback, MessageCallback, WorkerBuilder, WorkerInterface } from './worker';
+import type { ErrorCallback, MessageCallback, WorkerBuilder, VMWorker } from './worker';
 
 import {
   argumentsMap as validateArgumentsMap,
@@ -84,16 +84,16 @@ export interface VM extends EventCaster {
   get isStopped(): boolean;
 
   /**
-   * Start the {@link WorkerInterface} and wait for its boot-up sequence to complete.
+   * Start the {@link VMWorker} and wait for its boot-up sequence to complete.
    *
    * Starting a VM instance consists of the following:
    *
-   * 1. Initializing a {@link WorkerInterface} instance with the worker code.
-   * 2. Setting up the boot timeout callback (in case the {@link WorkerInterface} takes too much time to boot).
+   * 1. Initializing a {@link VMWorker} instance with the worker code.
+   * 2. Setting up the boot timeout callback (in case the {@link VMWorker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param timeout - Milliseconds to wait for the {@link WorkerInterface} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link WorkerInterface} respectively) if the {@link WorkerInterface} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
+   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
     workerBuilder?: WorkerBuilder,
@@ -103,27 +103,27 @@ export interface VM extends EventCaster {
   ): Promise<[number, number]>;
 
   /**
-   * Shut the {@link WorkerInterface} down.
+   * Shut the {@link VMWorker} down.
    *
    * Shutting a VM instance consists of the following:
    *
-   * 1. Emitting the "shutdown" event on the {@link WorkerInterface}.
+   * 1. Emitting the "shutdown" event on the {@link VMWorker}.
    * 2. Waiting for the given timeout milliseconds.
    * 3. Removing all root enclosures.
    * 4. Calling {@link VM.stop} to finish the shutdown process.
    *
-   * @param timeout - Milliseconds to wait for the {@link WorkerInterface} to shut down.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link WorkerInterface} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMWorker} to shut down.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link VMWorker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
   shutdown(timeout?: number): Promise<void>;
 
   /**
-   * Stop the {@link WorkerInterface} immediately and reject all pending tunnels.
+   * Stop the {@link VMWorker} immediately and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
+   * 2. Calling {@link VMWorker.kill} on the VM's {@link VMWorker}.
    * 3. Rejecting all existing tunnels.
    *
    * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
@@ -249,7 +249,7 @@ export interface VM extends EventCaster {
   predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
 
   /**
-   * Install the given {@link Dependency} on the {@link WorkerInterface}.
+   * Install the given {@link Dependency} on the {@link VMWorker}.
    *
    * @param enclosure - Enclosure to use.
    * @param dependency - The {@link Dependency} to install.
@@ -258,7 +258,7 @@ export interface VM extends EventCaster {
   install(enclosure: string, dependency: Dependency): Promise<void>;
 
   /**
-   * Execute the given {@link Dependency} with the given arguments map in the {@link WorkerInterface}.
+   * Execute the given {@link Dependency} with the given arguments map in the {@link VMWorker}.
    *
    * @param enclosure - The enclosure to use.
    * @param dependency - The {@link Dependency} to execute.
@@ -277,7 +277,7 @@ export interface VM extends EventCaster {
   installAll(enclosure: string, dependencies: Iterable<Dependency>): Promise<void>;
 
   /**
-   * Emit an event towards the {@link WorkerInterface}.
+   * Emit an event towards the {@link VMWorker}.
    *
    * @param enclosure - Enclosure to use.
    * @param event - Event name to emit.
@@ -437,9 +437,9 @@ let __cast: EventCaster_Cast;
  * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
  * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
  * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
- * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link VMImplementation.#worker} encounters a non-fatal, yet reportable, error `error`.
- * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link VMImplementation.#worker} encounters a fatal error `error`.
- * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMImplementation.#worker} fails to respond to ping / pong messages for `delta` milliseconds.
+ * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link VMWorker} encounters a non-fatal, yet reportable, error `error`.
+ * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link VMWorker} encounters a fatal error `error`.
+ * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMWorker} fails to respond to ping / pong messages for `delta` milliseconds.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
  * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
@@ -473,11 +473,11 @@ let __cast: EventCaster_Cast;
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
  * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link VMImplementation.#worker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link VMWorker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
  *
- * Internally, the {@link VMImplementation.#worker} will cast the following events when instructed to by the VM:
+ * Internally, the {@link VMWorker} will cast the following events when instructed to by the VM:
  *
- * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link VMImplementation.#worker} with name `EVENT` and arguments `args`.
+ * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link VMWorker} with name `EVENT` and arguments `args`.
  *
  */
 export const events: Readonly<EventCaster> = Object.freeze(
@@ -513,25 +513,25 @@ export const _namesPrefix: Readonly<string> = 'nomadvm';
 export const _names: Map<string, WeakRef<VM>> = new Map<string, WeakRef<VM>>();
 
 /**
- * The default number of milliseconds to wait for the {@link VMImplementation.#worker} to start.
+ * The default number of milliseconds to wait for the {@link VMWorker} to start.
  *
  */
 export const _defaultBootTimeout: Readonly<number> = 200;
 
 /**
- * The default number of milliseconds to wait for the {@link VMImplementation.#worker} to stop.
+ * The default number of milliseconds to wait for the {@link VMWorker} to stop.
  *
  */
 export const _defaultShutdownTimeout: Readonly<number> = 100;
 
 /**
- * The default number of milliseconds to wait between `ping` messages to the {@link VMImplementation.#worker}.
+ * The default number of milliseconds to wait between `ping` messages to the {@link VMWorker}.
  *
  */
 export const _defaultPingInterval: Readonly<number> = 100;
 
 /**
- * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link VMImplementation.#worker} "unresponsive".
+ * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link VMWorker} "unresponsive".
  *
  */
 export const _defaultPongLimit: Readonly<number> = 1000;
@@ -572,7 +572,7 @@ export class VMImplementation implements VM {
    * The VM's state can be one of:
    *
    * - `created`: the {@link VMImplementation} instance is successfully created.
-   * - `booting`: the {@link VMImplementation.start} method is waiting for the {@link VMImplementation.#worker} boot-up sequence to finish.
+   * - `booting`: the {@link VMImplementation.start} method is waiting for the {@link VMWorker} boot-up sequence to finish.
    * - `running`: the {@link VMImplementation} instance is running and waiting for commands.
    * - `stopped`: the {@link VMImplementation} instance has been stopped and no further commands are accepted.
    *
@@ -580,18 +580,18 @@ export class VMImplementation implements VM {
    *
    * - `created --> booting`: upon calling {@link VMImplementation.start}.
    * - `created --> stopped`: upon calling {@link VMImplementation.stop} before {@link VMImplementation.start}.
-   * - `booting --> running`: upon the {@link VMImplementation.#worker} successfully finishing its boot up sequence.
-   * - `booting --> stopped`: upon calling {@link VMImplementation.stop} after {@link VMImplementation.start} but before the boot-up sequence has finished in the {@link VMImplementation.#worker}.
-   * - `running --> stopped`: upon calling {@link VMImplementation.stop} after successful boot-up sequence termination in the {@link VMImplementation.#worker}.
+   * - `booting --> running`: upon the {@link VMWorker} successfully finishing its boot up sequence.
+   * - `booting --> stopped`: upon calling {@link VMImplementation.stop} after {@link VMImplementation.start} but before the boot-up sequence has finished in the {@link VMWorker}.
+   * - `running --> stopped`: upon calling {@link VMImplementation.stop} after successful boot-up sequence termination in the {@link VMWorker}.
    *
    */
   #state: 'created' | 'booting' | 'running' | 'stopped';
 
   /**
-   * The {@link WorkerInterface} this VM is using for secure execution, or `null` if none create or stopped.
+   * The {@link VMWorker} this VM is using for secure execution, or `null` if none create or stopped.
    *
    */
-  #worker?: WorkerInterface | undefined;
+  #worker?: VMWorker | undefined;
 
   /**
    * A list of predefined functions.
@@ -602,7 +602,7 @@ export class VMImplementation implements VM {
   /**
    * A list of inter-process tunnels being used.
    *
-   * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link VMImplementation.#worker} and the {@link VMImplementation} can interact through these.
+   * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link VMWorker} and the {@link VMImplementation} can interact through these.
    *
    */
   #tunnels: {
@@ -767,7 +767,7 @@ export class VMImplementation implements VM {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post a `ping` message to the {@link VMImplementation.#worker}.
+   * Post a `ping` message to the {@link VMWorker}.
    *
    * A `ping` message has the form:
    *
@@ -783,7 +783,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `resolve` message to the {@link VMImplementation.#worker}.
+   * Post a `resolve` message to the {@link VMWorker}.
    *
    * A `resolve` message has the form:
    *
@@ -809,7 +809,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `reject` message to the {@link VMImplementation.#worker}.
+   * Post a `reject` message to the {@link VMWorker}.
    *
    * A `reject` message has the form:
    *
@@ -828,14 +828,14 @@ export class VMImplementation implements VM {
    * - `error` is the rejection's error string.
    *
    * @param tunnel - The tunnel to reject.
-   * @param error - The error message to use for {@link !Error} construction in the {@link VMImplementation.#worker}.
+   * @param error - The error message to use for {@link !Error} construction in the {@link VMWorker}.
    */
   #postRejectMessage(tunnel: number, error: string): void {
     this.#worker?.shout({ name: 'reject', tunnel, error });
   }
 
   /**
-   * Post an `emit` message to the {@link VMImplementation.#worker}.
+   * Post an `emit` message to the {@link VMWorker}.
    *
    * An `emit` message has the form:
    *
@@ -868,7 +868,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post an `install` message to the {@link VMImplementation.#worker}.
+   * Post an `install` message to the {@link VMWorker}.
    *
    * An `install` message has the form:
    *
@@ -896,7 +896,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post an `execute` message to the {@link VMImplementation.#worker}.
+   * Post an `execute` message to the {@link VMWorker}.
    *
    * An `execute` message has the form:
    *
@@ -940,7 +940,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `predefine` message to the {@link VMImplementation.#worker}.
+   * Post a `predefine` message to the {@link VMWorker}.
    *
    * A `predefine` message has the form:
    *
@@ -977,7 +977,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `create` message to the {@link VMImplementation.#worker}.
+   * Post a `create` message to the {@link VMWorker}.
    *
    * A `create` message has the form:
    *
@@ -1006,7 +1006,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `delete` message to the {@link VMImplementation.#worker}.
+   * Post a `delete` message to the {@link VMWorker}.
    *
    * A `delete` message has the form:
    *
@@ -1031,7 +1031,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `merge` message to the {@link VMImplementation.#worker}.
+   * Post a `merge` message to the {@link VMWorker}.
    *
    * A `merge` message has the form:
    *
@@ -1056,7 +1056,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `link` message to the {@link VMImplementation.#worker}.
+   * Post a `link` message to the {@link VMWorker}.
    *
    * A `link` message has the form:
    *
@@ -1084,7 +1084,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post an `unlink` message to the {@link VMImplementation.#worker}.
+   * Post an `unlink` message to the {@link VMWorker}.
    *
    * An `unlink` message has the form:
    *
@@ -1112,7 +1112,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `mute` message to the {@link VMImplementation.#worker}.
+   * Post a `mute` message to the {@link VMWorker}.
    *
    * A `mute` message has the form:
    *
@@ -1137,7 +1137,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post an `unmute` message to the {@link VMImplementation.#worker}.
+   * Post an `unmute` message to the {@link VMWorker}.
    *
    * An `unmute` message has the form:
    *
@@ -1162,7 +1162,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `listRootEnclosures` message to the {@link VMImplementation.#worker}.
+   * Post a `listRootEnclosures` message to the {@link VMWorker}.
    *
    * A `listRootEnclosures` message has the form:
    *
@@ -1184,7 +1184,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `listInstalled` message to the {@link VMImplementation.#worker}.
+   * Post a `listInstalled` message to the {@link VMWorker}.
    *
    * A `listInstalled` message has the form:
    *
@@ -1209,7 +1209,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `listLinksTo` message to the {@link VMImplementation.#worker}.
+   * Post a `listLinksTo` message to the {@link VMWorker}.
    *
    * A `listLinksTo` message has the form:
    *
@@ -1234,7 +1234,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `listLinkedFrom` message to the {@link VMImplementation.#worker}.
+   * Post a `listLinkedFrom` message to the {@link VMWorker}.
    *
    * A `listLinkedFrom` message has the form:
    *
@@ -1259,7 +1259,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `isMuted` message to the {@link VMImplementation.#worker}.
+   * Post a `isMuted` message to the {@link VMWorker}.
    *
    * A `isMuted` message has the form:
    *
@@ -1284,7 +1284,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Post a `getSubEnclosures` message to the {@link VMImplementation.#worker}.
+   * Post a `getSubEnclosures` message to the {@link VMWorker}.
    *
    * A `getSubEnclosures` message has the form:
    *
@@ -1407,9 +1407,9 @@ export class VMImplementation implements VM {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Handle the {@link VMImplementation.#worker}'s `message` event's data.
+   * Handle the {@link VMWorker}'s `message` event's data.
    *
-   * Handling a {@link VMImplementation.#worker}'s `message` event's data entails:
+   * Handling a {@link VMWorker}'s `message` event's data entails:
    *
    * 1. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
    * 2. executing the corresponding sub-handler.
@@ -1489,9 +1489,9 @@ export class VMImplementation implements VM {
   };
 
   /**
-   * Handle the {@link VMImplementation.#worker}'s `error` event.
+   * Handle the {@link VMWorker}'s `error` event.
    *
-   * Handling a {@link VMImplementation.#worker}'s `error` event simply entails casting a `worker:error` event.
+   * Handling a {@link VMWorker}'s `error` event simply entails casting a `worker:error` event.
    *
    * @param error - Error to handle.
    */
@@ -1502,12 +1502,12 @@ export class VMImplementation implements VM {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Perform the stoppage steps on the {@link VMImplementation.#worker} and reject all pending tunnels.
+   * Perform the stoppage steps on the {@link VMWorker} and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
+   * 2. Calling {@link VMWorker.kill} on the VM's {@link VMWorker}.
    * 3. Rejecting all existing tunnels.
    *
    * NOTE: this method does NOT return a {@link !Promise}, it rather accepts the `resolve` and `reject` callbacks required to serve a {@link !Promise}.
@@ -1549,16 +1549,16 @@ export class VMImplementation implements VM {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Start the {@link VMImplementation.#worker} and wait for its boot-up sequence to complete.
+   * Start the {@link VMWorker} and wait for its boot-up sequence to complete.
    *
    * Starting a VM instance consists of the following:
    *
-   * 1. Initializing a {@link VMImplementation.#worker} instance with the worker code.
-   * 2. Setting up the boot timeout callback (in case the {@link VMImplementation.#worker} takes too much time to boot).
+   * 1. Initializing a {@link VMWorker} instance with the worker code.
+   * 2. Setting up the boot timeout callback (in case the {@link VMWorker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param timeout - Milliseconds to wait for the {@link VMImplementation.#worker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMImplementation.#worker} respectively) if the {@link VMImplementation.#worker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
+   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
     workerBuilder?: WorkerBuilder,
@@ -1635,17 +1635,17 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Shut the {@link VMImplementation.#worker} down.
+   * Shut the {@link VMWorker} down.
    *
    * Shutting a VM instance consists of the following:
    *
-   * 1. Emitting the "shutdown" event on the {@link VMImplementation.#worker}.
+   * 1. Emitting the "shutdown" event on the {@link VMWorker}.
    * 2. Waiting for the given timeout milliseconds.
    * 3. Removing all root enclosures.
    * 4. Calling {@link VMImplementation.stop} to finish the shutdown process.
    *
-   * @param timeout - Milliseconds to wait for the {@link VMImplementation.#worker} to shut down.
-   * @returns A {@link !Promise} that resolves with `void` if the {@link VMImplementation.#worker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
+   * @param timeout - Milliseconds to wait for the {@link VMWorker} to shut down.
+   * @returns A {@link !Promise} that resolves with `void` if the {@link VMWorker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
   shutdown(timeout?: number): Promise<void> {
     return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
@@ -1685,12 +1685,12 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Stop the {@link VMImplementation.#worker} immediately and reject all pending tunnels.
+   * Stop the {@link VMWorker} immediately and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
    *
    * 1. Clearing the pinger.
-   * 2. Calling {@link WorkerInterface.kill} on the VM's {@link WorkerInterface}.
+   * 2. Calling {@link VMWorker.kill} on the VM's {@link VMWorker}.
    * 3. Rejecting all existing tunnels.
    *
    * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
@@ -2119,7 +2119,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Install the given {@link DependencyImplementation} on the {@link VMImplementation.#worker}.
+   * Install the given {@link DependencyImplementation} on the {@link VMWorker}.
    *
    * @param enclosure - Enclosure to use.
    * @param dependency - The {@link DependencyImplementation} to install.
@@ -2154,7 +2154,7 @@ export class VMImplementation implements VM {
   }
 
   /**
-   * Execute the given {@link DependencyImplementation} with the given arguments map in the {@link VMImplementation.#worker}.
+   * Execute the given {@link DependencyImplementation} with the given arguments map in the {@link VMWorker}.
    *
    * @param enclosure - The enclosure to use.
    * @param dependency - The {@link DependencyImplementation} to execute.
@@ -2266,7 +2266,7 @@ export class VMImplementation implements VM {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Emit an event towards the {@link VMImplementation.#worker}.
+   * Emit an event towards the {@link VMWorker}.
    *
    * @param enclosure - Enclosure to use.
    * @param event - Event name to emit.
