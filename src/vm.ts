@@ -30,9 +30,9 @@
  */
 
 import type { Dependency, DependencyObject } from './dependency';
+import { DependencyImplementation, sort } from './dependency';
 import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
-import type { ErrorCallback, MessageCallback, WorkerBuilder, VMWorker } from './worker';
-
+import { EventCasterImplementation } from './eventCaster';
 import {
   argumentsMap as validateArgumentsMap,
   enclosure as validateEnclosure,
@@ -41,11 +41,8 @@ import {
   nonNegativeInteger as validateNonNegativeInteger,
   timeDelta as validateTimeDelta,
 } from './validation';
-
-import { EventCasterImplementation } from './eventCaster';
-import { DependencyImplementation, sort } from './dependency';
+import type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder } from './worker';
 import { BrowserWorker } from './worker';
-
 import workerCode from './workerCode.cjs';
 
 /**
