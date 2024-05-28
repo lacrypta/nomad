@@ -35,6 +35,7 @@ const results = await Promise.all([
     format: 'esm',
     outfile: './dist/esm/index.min.js',
     minify: true,
+    keepNames: false,
   }),
   build({
     ...buildOptions,
@@ -46,6 +47,7 @@ const results = await Promise.all([
     ...buildOptions,
     format: 'umd',
     minify: true,
+    keepNames: false,
     outfile: './dist/umd/index.min.js',
     plugins: [umdWrapper(umdWrapperOptions)],
   }),
