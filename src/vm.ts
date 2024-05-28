@@ -418,6 +418,11 @@ export const _pseudoRandomString: () => string = (): string => {
     .padStart(8, '0');
 };
 
+export const _errorMessage: (error: unknown) => string = (error: unknown): string =>
+  error instanceof Error ? error.message : 'unknown error';
+
+export const _makeError: (error: unknown) => Error = (error: unknown): Error => new Error(_errorMessage(error));
+
 let __cast: EventCaster_Cast;
 
 /**
@@ -1321,7 +1326,7 @@ export class VMImplementation implements VM {
    * @returns The created tunnel's index.
    */
   #addTunnel(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     resolve: (arg: any) => void,
     reject: (error: Error) => void,
   ): number {
@@ -1346,7 +1351,7 @@ export class VMImplementation implements VM {
       resolve: (arg: unknown) => void;
       reject: (error: Error) => void;
     } = this.#tunnels[tunnel] || { resolve: () => {}, reject: () => {} };
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete
+    /* eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete */
     delete this.#tunnels[tunnel];
     return result;
   }
@@ -1390,7 +1395,7 @@ export class VMImplementation implements VM {
         this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
         this.#castEvent(`${enclosure}:predefined:call:ok`, idx, args);
       } catch (e) {
-        this.#postRejectMessage(tunnel, e instanceof Error ? e.message : 'unknown error');
+        this.#postRejectMessage(tunnel, _errorMessage(e));
         this.#castEvent(`${enclosure}:predefined:call:error`, idx, args, e);
       }
     } else {
@@ -1540,7 +1545,7 @@ export class VMImplementation implements VM {
       }
     } catch (e) {
       this.#castEvent('stop:error', e);
-      reject?.(e instanceof Error ? e : new Error('unknown error'));
+      reject?.(_makeError(e));
     }
     this.#castEvent('stop:ok');
     resolve?.();
@@ -1628,7 +1633,7 @@ export class VMImplementation implements VM {
           );
         } catch (e) {
           this.#castEvent('start:error', e);
-          reject(e instanceof Error ? e : new Error('unknown error'));
+          reject(_makeError(e));
         }
       },
     );
@@ -1733,7 +1738,7 @@ export class VMImplementation implements VM {
           );
         } catch (e) {
           this.#castEvent(`${enclosure}:create:error`, e);
-          reject(e instanceof Error ? e : new Error('unknown error'));
+          reject(_makeError(e));
         }
       },
     );
@@ -1770,7 +1775,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:delete:error`, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1804,7 +1809,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`"${enclosure}:merge:error`, enclosure, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1841,7 +1846,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`"${enclosure}:link:error`, target, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1878,7 +1883,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:unlink:error`, target, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1912,7 +1917,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:mute:error`, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1946,7 +1951,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:unmute:error`, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -1964,7 +1969,7 @@ export class VMImplementation implements VM {
 
           this.#postListRootEnclosuresMessage(this.#addTunnel(resolve, reject));
         } catch (e) {
-          reject(e instanceof Error ? e : new Error('unknown error'));
+          reject(_makeError(e));
         }
       },
     );
@@ -1985,7 +1990,7 @@ export class VMImplementation implements VM {
 
         this.#postListInstalledMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2005,7 +2010,7 @@ export class VMImplementation implements VM {
 
         this.#postListLinksToMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2025,7 +2030,7 @@ export class VMImplementation implements VM {
 
         this.#postListLinkedFromMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2045,7 +2050,7 @@ export class VMImplementation implements VM {
 
         this.#postIsMutedMessage(enclosure, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2067,7 +2072,7 @@ export class VMImplementation implements VM {
 
         this.#postGetSubEnclosuresMessage(enclosure, theDepth, this.#addTunnel(resolve, reject));
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2102,7 +2107,7 @@ export class VMImplementation implements VM {
               resolve();
             },
             (error: Error): void => {
-              // eslint-disable-next-line @typescript-eslint/no-array-delete, @typescript-eslint/no-dynamic-delete
+              /* eslint-disable-next-line @typescript-eslint/no-array-delete, @typescript-eslint/no-dynamic-delete */
               delete this.#predefined[idx];
               this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, error);
               reject(error);
@@ -2113,7 +2118,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2148,7 +2153,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:install:error`, dependency, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2188,7 +2193,7 @@ export class VMImplementation implements VM {
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:execute:error`, dependency, args, e);
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }
@@ -2258,7 +2263,7 @@ export class VMImplementation implements VM {
           },
         );
       } catch (e) {
-        reject(e instanceof Error ? e : new Error('unknown error'));
+        reject(_makeError(e));
       }
     });
   }

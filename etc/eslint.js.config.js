@@ -3,11 +3,13 @@ import eslint_js from '@eslint/js';
 import eslint_config_prettier from 'eslint-config-prettier';
 import eslint_plugin_import from 'eslint-plugin-import';
 import eslint_plugin_jsdoc from 'eslint-plugin-jsdoc';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 export default [
   eslint_js.configs.recommended,
   eslint_config_prettier,
   eslint_plugin_jsdoc.configs['flat/recommended'],
+  sonarjs.configs.recommended,
   {
     plugins: {
       import: eslint_plugin_import,

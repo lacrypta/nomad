@@ -238,7 +238,7 @@ export const functionCode = (code: string): string => {
     throw new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR');
   }
   try {
-    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
     void Function(`"use strict"; ${code}`);
   } catch {
     throw new Error('function code must be a valid strict-mode Function body');

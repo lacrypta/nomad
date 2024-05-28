@@ -249,7 +249,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
     for (let i: number = str.indexOf('{'); 0 < i; i = str.indexOf('{', i + 1)) {
       try {
         code = str.substring(i + 1, str.length - 1);
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
         void new Function(code);
         body = code.trim();
         code = `{${code}}`;
@@ -262,7 +262,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
     for (let i: number = str.indexOf('=>'); 0 < i; i = str.indexOf('=>', i + 1)) {
       try {
         code = str.substring(i + 2);
-        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
         void new Function(`return ${code.trim()};`);
         body = `return ${code.trim()};`;
         break;
@@ -283,9 +283,9 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
       const nameS: string = (name ?? '').trim();
       const defsS: string = defs.join('=').trim();
       const testArg: number = Math.trunc(Math.random() * 4294967296);
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
       const nameOk: boolean = testArg === new Function(nameS, `return ${nameS};`)(testArg);
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+      /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
       const defsOk: boolean = defsS === new Function(`${nameS} = ${JSON.stringify(defsS)}`, `return ${nameS};`)();
       if (nameOk && defsOk) {
         argsResult.push([nameS, defsS]);

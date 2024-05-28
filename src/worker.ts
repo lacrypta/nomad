@@ -192,9 +192,9 @@ export class BrowserWorker implements VMWorker {
  * @see {@link https://stackoverflow.com/a/31090240}
  */
 export function builder(): WorkerBuilder {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
   const isBrowser: boolean = new Function('try { return this === window; } catch { return false; }')() as boolean;
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
+  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
   const isNode: boolean = new Function('try { return this === global; } catch { return false; }')() as boolean;
 
   if (isBrowser) {

@@ -44,6 +44,9 @@ importers:
       eslint-plugin-jsdoc:
         specifier: ^48.2.6
         version: 48.2.6(eslint@9.3.0)
+      eslint-plugin-sonarjs:
+        specifier: ^1.0.3
+        version: 1.0.3(eslint@9.3.0)
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.12.12)
@@ -1241,6 +1244,12 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       eslint: ^7.0.0 || ^8.0.0 || ^9.0.0
+
+  eslint-plugin-sonarjs@1.0.3:
+    resolution: {integrity: sha512-6s41HLPYPyDrp+5+7Db5yFYbod6h9pC7yx+xfcNwHRcLe1EZwbbQT/tdOAkR7ekVUkNGEvN3GmYakIoQUX7dEg==, tarball: https://registry.npmjs.org/eslint-plugin-sonarjs/-/eslint-plugin-sonarjs-1.0.3.tgz}
+    engines: {node: '>=16'}
+    peerDependencies:
+      eslint: ^8.0.0 || ^9.0.0
 
   eslint-scope@8.0.1:
     resolution: {integrity: sha512-pL8XjgP4ZOmmwfFE8mEhSxA7ZY4C+LWyqjQ3o4yWkkmD0qcMT9kkW3zWHOczhWcjTSgqycYAgwSlXvZltv65og==, tarball: https://registry.npmjs.org/eslint-scope/-/eslint-scope-8.0.1.tgz}
@@ -3804,6 +3813,10 @@ snapshots:
       spdx-expression-parse: 4.0.0
     transitivePeerDependencies:
       - supports-color
+
+  eslint-plugin-sonarjs@1.0.3(eslint@9.3.0):
+    dependencies:
+      eslint: 9.3.0
 
   eslint-scope@8.0.1:
     dependencies:

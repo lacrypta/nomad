@@ -2208,6 +2208,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
        * @type {{[key: string]: (string | symbol)[]}}
        */
       const keep = _Object.create(null);
+      /* eslint-disable sonarjs/no-duplicate-string */
       keep['this'] = [
         'globalThis',
         'Infinity',
@@ -2833,6 +2834,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'set',
         'setPrototypeOf',
       ];
+      /* eslint-enable sonarjs/no-duplicate-string */
 
       /**
        * @type {string[]}
