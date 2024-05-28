@@ -28,14 +28,12 @@
 
 'use strict';
 
-/* eslint-disable */
-
 /**
  * Callback used for {@link Listener}s, accepting the data string sent from the host side.
  *
  * @callback ListenerCallback
  * @param {string} data - Data the host sent.
- * @return {void}
+ * @returns {void}
  */
 
 /**
@@ -43,7 +41,7 @@
  *
  * @callback Listener
  * @param {ListenerCallback} callback - The callback to use to parsed data coming from the host.
- * @return {void}
+ * @returns {void}
  */
 
 /**
@@ -51,14 +49,14 @@
  *
  * @callback Shouter
  * @param {object} message - Message to shout to the host.
- * @return {void}
+ * @returns {void}
  */
 
 /**
  * Callback used for {@link Scheduler}s, simply scheduled for execution within this event loop iteration.
  *
  * @callback SchedulerCallback
- * @return {void}
+ * @returns {void}
  */
 
 /**
@@ -71,17 +69,17 @@
 /**
  * @typedef TunnelDescriptor
  * @type {object}
- * @property {Function} resolve
- * @property {Function} reject
- * @property {number} port
+ * @property {Function} resolve - Resolution callback
+ * @property {Function} reject - Rejection callback
+ * @property {number} port - Enclosure port
  */
 
 /**
  * @typedef DependencyObject
  * @type {object}
- * @property {string} name
- * @property {string} code
- * @property {Record<string, string>} dependencies
+ * @property {string} name - Dependency name
+ * @property {string} code - Dependency function code.
+ * @property {Record<string, string>} dependencies - Dependency's dependencies
  */
 
 /**
@@ -103,7 +101,7 @@
  * @callback Array_fromAsync_mapFn
  * @param {T} element
  * @param {number} index
- * @return {Promise<U>}
+ * @returns {Promise<U>}
  */
 
 /**
@@ -141,15 +139,15 @@
 /**
  * @template T
  * @typedef SetLike
- * @property {Readonly<number>} size
- * @property {SetLike_has} has
- * @property {SetLike_keys<T>} keys
+ * @property {Readonly<number>} size - The `size` accessor.
+ * @property {SetLike_has} has - The `has()` predicate.
+ * @property {SetLike_keys<T>} keys - The `keys()` method.
  */
 
 /**
  * @callback EventCallback
- * @param {string} name
- * @param {...unknown} args
+ * @param {string} name - Event name to serve.
+ * @param {...unknown} args - Additional arguments to pass.
  * @returns {unknown}
  */
 
@@ -260,22 +258,25 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimArrayFromAsync = () => {
     if (undefined === _this.Array.fromAsync) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {AsyncIterable<T>} items
-       * @returns {Promise<T[]>}
+       * @param {AsyncIterable<T>} items - Items to use.
+       * @returns {Promise<T[]>} The resulting array.
        */
       /**
+       * @description PLACEHOLDER.
        * @template T
        * @template U
-       * @param {AsyncIterable<T>} items
-       * @param {Array_fromAsync_mapFn<T, U>} mapfn
-       * @param {any} thisArg
-       * @returns {Promise<U[]>}
+       * @param {AsyncIterable<T>} items - Items to use.
+       * @param {Array_fromAsync_mapFn<T, U>} mapfn - Map function to apply.
+       * @param {any} thisArg - The `this` value to pass to the map function.
+       * @returns {Promise<U[]>} The resulting array.
        */
       _this.Array.fromAsync = async function (items, mapfn, thisArg) {
         /**
-         * @param {any} obj
-         * @returns {boolean}
+         * @description PLACEHOLDER.
+         * @param {any} obj - Function to query.
+         * @returns {boolean} Whether the given function is a constructor.
          */
         const isConstructor = (obj) => {
           /**
@@ -526,11 +527,12 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimMapGroupBy = () => {
     if (undefined === _this.Map.groupBy) {
       /**
+       * @description PLACEHOLDER.
        * @template T
        * @template K
-       * @param {Iterable<T>} items
-       * @param {Map_groupBy_callbackFn<T, K>} callbackFn
-       * @returns {Map<K, T[]>}
+       * @param {Iterable<T>} items - Items to use
+       * @param {Map_groupBy_callbackFn<T, K>} callbackFn - The grouping function to use.
+       * @returns {Map<K, T[]>} The resulting grouped Map.
        */
       _this.Map.groupBy = function (items, callbackFn) {
         const result = new Map();
@@ -559,8 +561,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     if (undefined === _this.Promise.withResolvers) {
       // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers#description
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @returns {PromiseWithResolvers<T>}
+       * @returns {PromiseWithResolvers<T>} The created Promise along with its resolvers.
        */
       _this.Promise.withResolvers = function () {
         /**
@@ -596,9 +599,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeDifference = () => {
     if (undefined === _this.Set.prototype.difference) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {Set<T>}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {Set<T>} Resulting Set.
        */
       _this.Set.prototype.difference = function (other) {
         const result = new Set();
@@ -622,9 +626,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeIntersection = () => {
     if (undefined === _this.Set.prototype.intersection) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {Set<T>}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {Set<T>} Resulting Set.
        */
       _this.Set.prototype.intersection = function (other) {
         const result = new Set();
@@ -648,9 +653,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeIsDisjointFrom = () => {
     if (undefined === _this.Set.prototype.isDisjointFrom) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {boolean}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {boolean} Result.
        */
       _this.Set.prototype.isDisjointFrom = function (other) {
         for (const element of this) {
@@ -673,9 +679,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeIsSubsetOf = () => {
     if (undefined === _this.Set.prototype.isSubsetOf) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {boolean}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {boolean} Result.
        */
       _this.Set.prototype.isSubsetOf = function (other) {
         for (const element of this) {
@@ -698,9 +705,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeIsSupersetOf = () => {
     if (undefined === _this.Set.prototype.isSupersetOf) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {boolean}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {boolean} Result.
        */
       _this.Set.prototype.isSupersetOf = function (other) {
         for (const element of other.keys()) {
@@ -723,9 +731,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeSymmetricDifference = () => {
     if (undefined === _this.Set.prototype.symmetricDifference) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {Set<T>}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {Set<T>} Resulting Set.
        */
       _this.Set.prototype.symmetricDifference = function (other) {
         const result = new Set();
@@ -754,9 +763,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const shimSetPrototypeUnion = () => {
     if (undefined === _this.Set.prototype.union) {
       /**
+       * @description PLACEHOLDER.
        * @template T
-       * @param {SetLike<T>} other
-       * @returns {Set<T>}
+       * @param {SetLike<T>} other - Operand.
+       * @returns {Set<T>} Resulting Set.
        */
       _this.Set.prototype.union = function (other) {
         const result = new Set();
@@ -820,7 +830,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      * Evaluates JavaScript code and executes it.
      *
      * @param {string} script - A String value that contains valid JavaScript code.
-     * @returns The execution result.
+     * @returns {unknown} The execution result.
      */
     _this.eval = (script) => _eval(`"use strict"; ${script.toString()}`);
   };
@@ -903,14 +913,15 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const patchDate = () => {
     /**
-     * @param {number | string | Date | undefined} valueDateStringDateObjectYear
-     * @param {number | undefined} monthIndex
-     * @param {number | undefined} day
-     * @param {number | undefined} hours
-     * @param {number | undefined} minutes
-     * @param {number | undefined} seconds
-     * @param {number | undefined} milliseconds
-     * @returns {string | Date}
+     * @description PLACEHOLDER.
+     * @param {number | string | Date | undefined} valueDateStringDateObjectYear - Number of milliseconds, or ISO string, or Date object, or none.
+     * @param {number | undefined} monthIndex - Month number.
+     * @param {number | undefined} day - Day number.
+     * @param {number | undefined} hours - Hour number.
+     * @param {number | undefined} minutes - Number of minutes.
+     * @param {number | undefined} seconds - Number of seconds.
+     * @param {number | undefined} milliseconds - Number of milliseconds.
+     * @returns {string | Date} The ISO string of the given date, or the newly constructed Date instance.
      * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
      */
     _this.Date = function Date(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds) {
@@ -919,15 +930,17 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       }
 
       /**
-       * @param {number} left
-       * @param {number} mid
-       * @param {number} right
-       * @returns {boolean}
+       * @description PLACEHOLDER.
+       * @param {number} left - Left endpoint.
+       * @param {number} mid - Value to check.
+       * @param {number} right - Right endpoint.
+       * @returns {boolean} Whether the value is between the given endpoints (inclusive).
        */
       const between = (left, mid, right) => left <= mid && mid <= right;
       /**
-       * @param {number} ts
-       * @returns {boolean}
+       * @description PLACEHOLDER.
+       * @param {number} ts - Timestamp to check.
+       * @returns {boolean} Whether the given timestamp is valid.
        */
       const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
 
@@ -942,19 +955,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           case 'string':
             {
               /**
-               * @param {string | undefined} str
-               * @param {number} def
-               * @returns {number}
+               * @description PLACEHOLDER.
+               * @param {string | undefined} str - String to parse.
+               * @param {number} def - Default value to use.
+               * @returns {number} The parsed number.
                */
               const parse = (str, def) => {
                 const num = Number.parseInt(str ?? '', 10);
                 return Number.isNaN(num) ? def : num;
               };
               /**
-               * @param {number} num
-               * @param {number} padding
-               * @param {boolean} withSign
-               * @returns {string}
+               * @description PLACEHOLDER.
+               * @param {number} num - The number to show as padded decimal.
+               * @param {number} padding - The number fo padding `0`s.
+               * @param {boolean} withSign - Whether to include the sign.
+               * @returns {string} The resulting string.
                */
               const toPaddedDecimal = (num, padding, withSign = false) =>
                 (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
@@ -1043,20 +1058,21 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     _Date.prototype.constructor = _this.Date;
     _this.Date.prototype = _Date.prototype;
     /**
-     *
-     * @param {string} str
-     * @returns {number}
+     * @description PLACEHOLDER.
+     * @param {string} str - String to parse
+     * @returns {number} The number of milliseconds of he parsed string.
      */
     _this.Date.parse = (str) => _Date.parse(str);
     /**
-     * @param {number} year
-     * @param {number | undefined} monthIndex
-     * @param {number | undefined} date
-     * @param {number | undefined} hours
-     * @param {number | undefined} minutes
-     * @param {number | undefined} seconds
-     * @param {number | undefined} ms
-     * @returns {number}
+     * @description PLACEHOLDER.
+     * @param {number} year - Year number.
+     * @param {number | undefined} monthIndex - Month number.
+     * @param {number | undefined} date - Date number.
+     * @param {number | undefined} hours - Hour number.
+     * @param {number | undefined} minutes - Number of minutes.
+     * @param {number | undefined} seconds - Number of seconds.
+     * @param {number | undefined} ms - Number of milliseconds.
+     * @returns {number} The number of milliseconds for the given data, in UTC.
      */
     _this.Date.UTC = (
       year,
@@ -1109,8 +1125,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const patchString = () => {
     /**
-     * @param {string} compareString
-     * @returns {number}
+     * @description PLACEHOLDER.
+     * @param {string} compareString - String to compare against.
+     * @returns {number} -1, 0, or 1, if smaller than, equal to, or greater than the given string respectively.
      */
     _this.String.prototype.localeCompare = function (compareString) {
       return this < compareString ? -1 : compareString < this ? 1 : 0;
@@ -1179,9 +1196,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const patchRegExp = () => {
     /**
-     * @param {RegExp | string} pattern
-     * @param {string | undefined} flags
-     * @returns {RegExp}
+     * @description PLACEHOLDER.
+     * @param {RegExp | string} pattern - Pattern to use.
+     * @param {string | undefined} flags - Flags to use.
+     * @returns {RegExp} The created RegExp instance.
      */
     _this.RegExp = function RegExp(pattern, flags) {
       return new.target
@@ -1256,7 +1274,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   // ----------------------------------------------------------------------------------------------
 
   /**
-   * Post a `pong` message to the host {@link VMImplementation}.
+   * Post a `pong` message to the host.
    *
    * A `pong` message has the following form:
    *
@@ -1273,7 +1291,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `resolve` message to the host {@link VMImplementation}.
+   * Post a `resolve` message to the host.
    *
    * A `resolve` message has the following form:
    *
@@ -1299,7 +1317,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `reject` message to the host {@link VMImplementation}.
+   * Post a `reject` message to the host.
    *
    * A `reject` message has the following form:
    *
@@ -1317,7 +1335,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * - `error` is the rejection's error string.
    *
    * @param {number} tunnel - The tunnel index to reject.
-   * @param {string} error - The error message to use for {@link !Error} construction in the {@link VMImplementation}.
+   * @param {string} error - The error message to use for {@link !Error} construction in the.
    * @returns {void}
    */
   const postRejectMessage = (tunnel, error) => {
@@ -1325,7 +1343,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post an `emit` message to the host {@link VMImplementation}.
+   * Post an `emit` message to the host.
    *
    * An `emit` message has the following form:
    *
@@ -1351,7 +1369,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
-   * Post a `call` message to the host {@link VMImplementation}.
+   * Post a `call` message to the host.
    *
    * A `call` message has the following form:
    *
@@ -1374,7 +1392,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    *
    * @param {string} enclosure - The enclosure to use.
    * @param {number} tunnel - The tunnel index where the call result is expected.
-   * @param {number} idx - The function index to call in the {@link VMImplementation}.
+   * @param {number} idx - The function index to call in the.
    * @param {Array<unknown>} args - The arguments to forward to the function call itself.
    * @returns {void}
    */
@@ -1877,7 +1895,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const once = (enclosure, filter, callback) => {
     /**
-     * @param  {...unknown} args
+     * @description PLACEHOLDER.
+     * @param {...unknown} args - Event arguments to forward.
+     * @returns {void}
      */
     const wrapped = (...args) => {
       callback.apply(undefined, args);
@@ -1897,35 +1917,39 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     const eventCaster = _Object.create(null);
     /**
-     * @param {string} filter
-     * @param {EventCallback} callback
-     * @returns {object}
+     * @description PLACEHOLDER.
+     * @param {string} filter - Filter to use.
+     * @param {EventCallback} callback - Event callback to use.
+     * @returns {object} The event caster itself.
      */
     const __on = (filter, callback) => {
       on(enclosurePorts[port] ?? '', filter, callback);
       return eventCaster;
     };
     /**
-     * @param {string} filter
-     * @param {EventCallback} callback
-     * @returns {object}
+     * @description PLACEHOLDER.
+     * @param {string} filter - Filter to use.
+     * @param {EventCallback} callback - Event callback to use.
+     * @returns {object} The event caster itself.
      */
     const __once = (filter, callback) => {
       once(enclosurePorts[port] ?? '', filter, callback);
       return eventCaster;
     };
     /**
-     * @param {EventCallback} callback
-     * @returns {object}
+     * @description PLACEHOLDER.
+     * @param {EventCallback} callback - Event callback to use.
+     * @returns {object} The event caster itself.
      */
     const __off = (callback) => {
       off(enclosurePorts[port] ?? '', callback);
       return eventCaster;
     };
     /**
-     * @param {string} event
-     * @param  {...unknown} args
-     * @returns {object}
+     * @description PLACEHOLDER.
+     * @param {string} event - Event name to cast.
+     * @param {...unknown} args - Additional arguments to associate.
+     * @returns {object} The event caster itself.
      */
     const __cast = (event, ...args) => {
       castUser(enclosurePorts[port] ?? '', event, ...args);
@@ -1933,32 +1957,36 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     };
     eventCaster.on = _Object.freeze(
       /**
-       * @param {string} filter
-       * @param {EventCallback} callback
-       * @returns {object}
+       * @description PLACEHOLDER.
+       * @param {string} filter - Filter to use.
+       * @param {EventCallback} callback - Event callback to use.
+       * @returns {object} The event caster itself.
        */
       (filter, callback) => __on(filter, callback),
     );
     eventCaster.once = _Object.freeze(
       /**
-       * @param {string} filter
-       * @param {EventCallback} callback
-       * @returns {object}
+       * @description PLACEHOLDER.
+       * @param {string} filter - Filter to use.
+       * @param {EventCallback} callback - Event callback to use.
+       * @returns {object} The event caster itself.
        */
       (filter, callback) => __once(filter, callback),
     );
     eventCaster.off = _Object.freeze(
       /**
-       * @param {EventCallback} callback
-       * @returns {object}
+       * @description PLACEHOLDER.
+       * @param {EventCallback} callback - Event callback to use.
+       * @returns {object} The event caster itself.
        */
       (callback) => __off(callback),
     );
     eventCaster.cast = _Object.freeze(
       /**
-       * @param {string} event
-       * @param  {...unknown} args
-       * @returns {object}
+       * @description PLACEHOLDER.
+       * @param {string} event - Event name to cast.
+       * @param {...unknown} args - Additional arguments to associate.
+       * @returns {object} The event caster itself.
        */
       (event, ...args) => __cast(event, ...args),
     );
@@ -2077,7 +2105,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {DependencyObject} dependency - Dependency to execute.
    * @returns {void}
    * @throws {Error} if there are any missing dependencies.
-   * @see {@link VMImplementation.executeDependency} for further execution context details.
    */
   const installDependency = (enclosure, dependency) => {
     const { dependencies } = getEnclosure(enclosure);
@@ -2104,8 +2131,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     }
     const __predefined = _Object.freeze(
       /**
-       * @param  {...unknown} args
-       * @returns {Promise<unknown>}
+       * @description PLACEHOLDER.
+       * @param {...unknown} args - Arguments to use.
+       * @returns {Promise<unknown>} The execution result.
        */
       (...args) =>
         new _Promise((resolve, reject) => {
@@ -2113,8 +2141,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         }),
     );
     /**
-     * @param  {...unknown} args
-     * @returns {Promise<unknown>}
+     * @description PLACEHOLDER.
+     * @param {...unknown} args - Arguments to use.
+     * @returns {Promise<unknown>} The execution result.
      */
     dependencies[name] = (...args) => __predefined(...args);
   };
@@ -2127,7 +2156,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * Retrieve the error message associated to the given argument.
    *
    * @param {any} e - Error to retrieve the message of.
-   * @returns {string}
+   * @returns {string} The error message to use.
    */
   const getErrorMessage = (e) => (e instanceof _Error ? e.message : 'unknown error');
 
@@ -2176,7 +2205,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       /**
        * Whitelist of properties to keep in the global context.
        *
-       * @type {Object<string, Array<string | symbol>>}
+       * @type {{[key: string]: (string | symbol)[]}}
        */
       const keep = _Object.create(null);
       keep['this'] = [
@@ -2815,7 +2844,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
        *
        * NOTE: errors on deletion are ignored.
        *
-       * @param {{ [key: string | symbol ]: unknown }} start - Object to start the pruning from.
+       * @param {{[key: (string | symbol)]: unknown}} start - Object to start the pruning from.
        * @param {string} name - Name to use for failure reporting.
        * @param {string} toKeep - Label of properties to keep.
        * @returns {void}
