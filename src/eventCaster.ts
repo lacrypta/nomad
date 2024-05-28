@@ -74,6 +74,14 @@ export type EventCaster_ProtectedMethods = { cast: EventCaster_Cast };
  */
 export interface EventCaster {
   /**
+   * Remove the given callback from the listeners set.
+   *
+   * @param callback - The callback to remove.
+   * @returns `this`, for chaining.
+   */
+  off(callback: EventCallback): this;
+
+  /**
    * Attach the given callback to the {@link EventCaster}, triggered on events matching the given filter.
    *
    * @param filter - Event name filter to assign the listener to.
@@ -90,14 +98,6 @@ export interface EventCaster {
    * @returns `this`, for chaining.
    */
   once(filter: string, callback: EventCallback): this;
-
-  /**
-   * Remove the given callback from the listeners set.
-   *
-   * @param callback - The callback to remove.
-   * @returns `this`, for chaining.
-   */
-  off(callback: EventCallback): this;
 }
 
 /**
@@ -154,11 +154,6 @@ export const _filterToRegExp: (filter: string) => RegExp = (filter: string): Reg
  *
  */
 export class EventCasterImplementation implements EventCaster {
-  static {
-    // ref: https://stackoverflow.com/a/77741904
-    Object.setPrototypeOf(this.prototype, null);
-  }
-
   /**
    * The event listener map.
    *
@@ -182,6 +177,39 @@ export class EventCasterImplementation implements EventCaster {
     protectedMethodInjector?.({
       cast: (name: string, ...args: unknown[]): this => this.#cast(name, ...args),
     });
+  }
+
+  /**
+   * Cast the given event with the given arguments and trigger any matching listeners.
+   *
+   * @param name - The event name to cast.
+   * @param args - Any additional arguments o associate to the cast event.
+   * @returns `this`, for chaining.
+   * @see {@link validation.event} for additional exceptions thrown.
+   */
+  #cast(name: string, ...args: unknown[]): this {
+    validateEvent(name);
+
+    for (const [callback, filters] of this.#listeners.entries()) {
+      if (Array.from(filters.values()).some((filter: RegExp): boolean => filter.test(name))) {
+        setTimeout((): void => {
+          callback.bind(undefined)(name, ...args);
+        });
+      }
+    }
+
+    return this;
+  }
+
+  /**
+   * Remove the given callback from the listeners set.
+   *
+   * @param callback - The callback to remove.
+   * @returns `this`, for chaining.
+   */
+  off(callback: EventCallback): this {
+    this.#listeners.delete(callback);
+    return this;
   }
 
   /**
@@ -217,36 +245,8 @@ export class EventCasterImplementation implements EventCaster {
     return this.on(filter, wrapped);
   }
 
-  /**
-   * Remove the given callback from the listeners set.
-   *
-   * @param callback - The callback to remove.
-   * @returns `this`, for chaining.
-   */
-  off(callback: EventCallback): this {
-    this.#listeners.delete(callback);
-    return this;
-  }
-
-  /**
-   * Cast the given event with the given arguments and trigger any matching listeners.
-   *
-   * @param name - The event name to cast.
-   * @param args - Any additional arguments o associate to the cast event.
-   * @returns `this`, for chaining.
-   * @see {@link validation.event} for additional exceptions thrown.
-   */
-  #cast(name: string, ...args: unknown[]): this {
-    validateEvent(name);
-
-    for (const [callback, filters] of this.#listeners.entries()) {
-      if (Array.from(filters.values()).some((filter: RegExp): boolean => filter.test(name))) {
-        setTimeout((): void => {
-          callback.bind(undefined)(name, ...args);
-        });
-      }
-    }
-
-    return this;
+  static {
+    // ref: https://stackoverflow.com/a/77741904
+    Object.setPrototypeOf(this.prototype, null);
   }
 }

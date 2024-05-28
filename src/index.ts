@@ -29,11 +29,12 @@
 // ------------------------------------------------------------------------------------------------
 
 import type { Dependency, DependencyObject } from './dependency';
-import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
 import type { EventCallback, EventCaster } from './eventCaster';
 import type { Enclosure, VM } from './vm';
-import { create as _vmCreate, events as _vmEvents, get as _vmGet } from './vm';
 import type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder } from './worker';
+
+import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
+import { create as _vmCreate, events as _vmEvents, get as _vmGet } from './vm';
 import { build as _workerBuild, builder as _workerBuilder } from './worker';
 
 const dependencyCreate = _dependencyCreate;

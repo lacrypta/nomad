@@ -7,7 +7,7 @@ import eslint_plugin_jsdoc from 'eslint-plugin-jsdoc';
 import sonarjs from 'eslint-plugin-sonarjs';
 import arrayFunc from 'eslint-plugin-array-func';
 import * as regexpPlugin from 'eslint-plugin-regexp';
-import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
 
 export default [
   eslint_js.configs.recommended,
@@ -16,15 +16,7 @@ export default [
   sonarjs.configs.recommended,
   arrayFunc.configs.all,
   regexpPlugin.configs['flat/recommended'],
-  {
-    plugins: {
-      'simple-import-sort': simpleImportSort,
-    },
-    rules: {
-      'simple-import-sort/imports': 'error',
-      'simple-import-sort/exports': 'error',
-    },
-  },
+  perfectionistNatural,
   {
     plugins: {
       import: eslint_plugin_import,

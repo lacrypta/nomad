@@ -48,6 +48,15 @@ export interface VMWorker {
   kill(): this;
 
   /**
+   * Set the given callbacks as handlers for message / error.
+   *
+   * @param messageCallback - Callback to use for message handling.
+   * @param errorCallback - Callback to use for message errors.
+   * @returns `this`, for chaining.
+   */
+  listen(messageCallback: MessageCallback, errorCallback: ErrorCallback): this;
+
+  /**
    * Send the given data to the {@link VMWorker}.
    *
    * > [!warning]
@@ -57,15 +66,6 @@ export interface VMWorker {
    * @returns `this`, for chaining.
    */
   shout(data: object): this;
-
-  /**
-   * Set the given callbacks as handlers for message / error.
-   *
-   * @param messageCallback - Callback to use for message handling.
-   * @param errorCallback - Callback to use for message errors.
-   * @returns `this`, for chaining.
-   */
-  listen(messageCallback: MessageCallback, errorCallback: ErrorCallback): this;
 }
 
 /**
@@ -73,11 +73,6 @@ export interface VMWorker {
  *
  */
 export class BrowserWorker implements VMWorker {
-  static {
-    // ref: https://stackoverflow.com/a/77741904
-    Object.setPrototypeOf(this.prototype, null);
-  }
-
   /**
    * A [`blob:`-URL](https://en.wikipedia.org/wiki/Blob_URI_scheme) containing the worker code (or `null` if killed).
    *
@@ -125,9 +120,9 @@ export class BrowserWorker implements VMWorker {
     );
 
     this.#worker = new Worker(this.#blobURL, {
+      credentials: 'omit',
       name: name,
       type: 'classic',
-      credentials: 'omit',
     });
   }
 
@@ -143,20 +138,6 @@ export class BrowserWorker implements VMWorker {
     }
     this.#worker = undefined;
     this.#blobURL = undefined;
-    return this;
-  }
-
-  /**
-   * Send the given data to the {@link BrowserWorker}.
-   *
-   * > [!warning]
-   * > The given `data` object **MUST** be serializable via `JSON.serialize`.
-   *
-   * @param data - object to send to the {@link BrowserWorker}.
-   * @returns `this`, for chaining.
-   */
-  shout(data: object): this {
-    this.#worker?.postMessage(JSON.stringify(data));
     return this;
   }
 
@@ -182,6 +163,25 @@ export class BrowserWorker implements VMWorker {
       errorCallback(new Error('string' === typeof message.data ? message.data : 'unknown error'));
     });
     return this;
+  }
+
+  /**
+   * Send the given data to the {@link BrowserWorker}.
+   *
+   * > [!warning]
+   * > The given `data` object **MUST** be serializable via `JSON.serialize`.
+   *
+   * @param data - object to send to the {@link BrowserWorker}.
+   * @returns `this`, for chaining.
+   */
+  shout(data: object): this {
+    this.#worker?.postMessage(JSON.stringify(data));
+    return this;
+  }
+
+  static {
+    // ref: https://stackoverflow.com/a/77741904
+    Object.setPrototypeOf(this.prototype, null);
   }
 }
 

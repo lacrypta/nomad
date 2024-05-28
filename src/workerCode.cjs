@@ -580,10 +580,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
             resolve = res;
             reject = rej;
           }),
-          // @ts-expect-error: Variable 'resolve' is used before being assigned.
-          resolve,
           // @ts-expect-error: Variable 'reject' is used before being assigned.
           reject,
+          // @ts-expect-error: Variable 'resolve' is used before being assigned.
+          resolve,
         };
       };
     }
@@ -1052,8 +1052,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       return _Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
     };
     _Object.defineProperty(_this.Date, 'length', {
-      value: _Date.length,
       configurable: true,
+      value: _Date.length,
     });
     _Date.prototype.constructor = _this.Date;
     _this.Date.prototype = _Date.prototype;
@@ -1207,8 +1207,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         : _RegExp(pattern, flags);
     };
     _Object.defineProperty(_this.RegExp, 'length', {
-      value: _RegExp.length,
       configurable: true,
+      value: _RegExp.length,
     });
     _RegExp.prototype.constructor = _this.RegExp;
     _this.RegExp.prototype = _RegExp.prototype;
@@ -1236,7 +1236,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      * @returns {void}
      */
     const deepFreeze = (subject, processed = new _WeakSet()) => {
-      if (null === subject || !['object', 'function'].includes(typeof subject)) {
+      if (null === subject || !['function', 'object'].includes(typeof subject)) {
         return;
       }
       let current = subject;
@@ -1313,7 +1313,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postResolveMessage = (tunnel, payload) => {
-    _shout({ name: 'resolve', tunnel, payload });
+    _shout({ name: 'resolve', payload, tunnel });
   };
 
   /**
@@ -1339,7 +1339,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postRejectMessage = (tunnel, error) => {
-    _shout({ name: 'reject', tunnel, error });
+    _shout({ error, name: 'reject', tunnel });
   };
 
   /**
@@ -1365,7 +1365,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {void}
    */
   const postEmitMessage = (event, args) => {
-    _shout({ name: 'emit', event, args });
+    _shout({ args, event, name: 'emit' });
   };
 
   /**
@@ -1398,11 +1398,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const postCallMessage = (enclosure, tunnel, idx, args) => {
     _shout({
-      name: 'call',
-      enclosure,
-      tunnel,
-      idx,
       args,
+      enclosure,
+      idx,
+      name: 'call',
+      tunnel,
     });
   };
 
@@ -1478,12 +1478,12 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     }
 
     enclosures.set(enclosure, {
-      tunnels: new _Set(),
-      listeners: new _Map(),
-      linked: new _Set(),
-      muted: false,
       dependencies: _Object.create(null === parent ? null : getEnclosure(parent).dependencies),
+      linked: new _Set(),
+      listeners: new _Map(),
+      muted: false,
       port: enclosurePorts.push(enclosure) - 1,
+      tunnels: new _Set(),
     });
   };
 
@@ -1535,7 +1535,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     const removed = [enclosure, ...enclosureSubEnclosures(enclosure)].sort();
     removed.forEach((toRemove) => {
-      const { tunnels, port } = getEnclosure(toRemove);
+      const { port, tunnels } = getEnclosure(toRemove);
       toReject = [...toReject, ...tunnels];
       delete enclosurePorts[port];
       enclosures.delete(toRemove);
@@ -1563,7 +1563,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @throws {Error} if the given enclosure is a root enclosure.
    */
   const mergeEnclosure = (enclosure) => {
-    const { tunnels, listeners, dependencies, port } = getEnclosure(enclosure);
+    const { dependencies, listeners, port, tunnels } = getEnclosure(enclosure);
 
     const parent = getEnclosureBase(enclosure) || null;
     if (null === parent) {
@@ -1586,9 +1586,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     }
 
     const {
-      tunnels: parentTunnels,
-      listeners: parentListeners,
       dependencies: parentDependencies,
+      listeners: parentListeners,
+      tunnels: parentTunnels,
     } = getEnclosure(parent);
 
     Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
@@ -1643,7 +1643,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     const { linked } = getEnclosure(enclosure);
 
     if (
-      [enclosure, ...enclosureSubEnclosures(enclosure), ...enclosurePrefixes(enclosure), ...linked].includes(target)
+      /* eslint-disable-next-line perfectionist/sort-array-includes */
+      [...enclosureSubEnclosures(enclosure), enclosure, ...linked, ...enclosurePrefixes(enclosure)].includes(target)
     ) {
       return false;
     }
@@ -1711,8 +1712,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {number} The created tunnel's index.
    */
   const addTunnel = (enclosure, resolve, reject) => {
-    const { tunnels: enclosureTunnels, port } = getEnclosure(enclosure);
-    const tunnel = tunnels.push({ resolve, reject, port }) - 1;
+    const { port, tunnels: enclosureTunnels } = getEnclosure(enclosure);
+    const tunnel = tunnels.push({ port, reject, resolve }) - 1;
     enclosureTunnels.add(tunnel);
 
     return tunnel;
@@ -1731,10 +1732,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       throw new _Error(`tunnel ${tunnel.toString()} does not exist`);
     }
 
-    const { resolve, reject, port } = theTunnel;
+    const { port, reject, resolve } = theTunnel;
     getEnclosure(enclosurePorts[port] ?? '').tunnels.delete(tunnel);
 
-    return { resolve, reject };
+    return { reject, resolve };
   };
 
   /**
@@ -3028,25 +3029,25 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'resolve':
           {
-            const { tunnel, payload } = parsedData;
+            const { payload, tunnel } = parsedData;
             resolveTunnel(tunnel, payload);
           }
           break;
         case 'reject':
           {
-            const { tunnel, error } = parsedData;
+            const { error, tunnel } = parsedData;
             rejectTunnel(tunnel, new _Error(error));
           }
           break;
         case 'emit':
           {
-            const { enclosure, event, args } = parsedData;
+            const { args, enclosure, event } = parsedData;
             castHost(enclosure, event, args);
           }
           break;
         case 'install':
           {
-            const { enclosure, tunnel, dependency } = parsedData;
+            const { dependency, enclosure, tunnel } = parsedData;
             try {
               installDependency(enclosure, dependency);
               postResolveMessage(tunnel, undefined);
@@ -3057,7 +3058,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'execute':
           {
-            const { enclosure, tunnel, dependency, args } = parsedData;
+            const { args, dependency, enclosure, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, executeDependency(enclosure, dependency, new _Map(_Object.entries(args))));
             } catch (e) {
@@ -3067,7 +3068,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'predefine':
           {
-            const { enclosure, tunnel, idx, function: fName } = parsedData;
+            const { enclosure, function: fName, idx, tunnel } = parsedData;
             try {
               addPredefined(enclosure, idx, fName);
               postResolveMessage(tunnel, undefined);
@@ -3110,7 +3111,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'link':
           {
-            const { enclosure, tunnel, target } = parsedData;
+            const { enclosure, target, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, linkEnclosure(enclosure, target));
             } catch (e) {
@@ -3120,7 +3121,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'unlink':
           {
-            const { enclosure, tunnel, target } = parsedData;
+            const { enclosure, target, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, unlinkEnclosure(enclosure, target));
             } catch (e) {
@@ -3200,7 +3201,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           break;
         case 'getSubEnclosures':
           {
-            const { enclosure, tunnel, depth } = parsedData;
+            const { depth, enclosure, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, enclosureSubEnclosures(enclosure, depth));
             } catch (e) {

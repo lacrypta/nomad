@@ -41,12 +41,6 @@ import {
  */
 export type DependencyObject = {
   /**
-   * Dependency name.
-   *
-   */
-  name: string;
-
-  /**
    * Dependency function source code.
    *
    */
@@ -57,6 +51,12 @@ export type DependencyObject = {
    *
    */
   dependencies: Record<string, string>;
+
+  /**
+   * Dependency name.
+   *
+   */
+  name: string;
 };
 
 /**
@@ -71,10 +71,24 @@ export type DependencyObject = {
  */
 export interface Dependency {
   /**
-   * Get the {@link Dependency} name.
+   * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
    *
+   * @param importedName - Dependency {@link Dependency.name} to use for importing.
+   * @param dependencyName - Dependency being depended on.
+   * @returns `this`, for chaining.
+   * @throws {@link !Error} if an imported name fails regular expression validation.
+   * @throws {@link !Error} if an imported name is forbidden.
+   * @throws {@link !Error} if a dependency name fails regular expression validation.
+   * @throws {@link !Error} if a dependency name is forbidden.
    */
-  get name(): string;
+  addDependency(importedName: string, dependencyName: string): this;
+
+  /**
+   * Return the plain object representation of the {@link Dependency}.
+   *
+   * @returns The {@link Dependency}, as an independent {@link DependencyObject}.
+   */
+  asObject(): DependencyObject;
 
   /**
    * Get the {@link Dependency} source code.
@@ -89,12 +103,28 @@ export interface Dependency {
   get dependencies(): Map<string, string>;
 
   /**
-   * Set the {@link Dependency} name.
+   * Get the {@link Dependency} name.
    *
-   * @param name - The name to set.
-   * @see {@link Dependency.setName} for exceptions thrown.
    */
-  set name(name: string);
+  get name(): string;
+
+  /**
+   * Remove the given dependency {@link Dependency.name} from this {@link Dependency}'s dependencies.
+   *
+   * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
+   *
+   * @param dependencyName - Dependency {@link Dependency.name} to remove from the dependencies.
+   * @returns `this`, for chaining.
+   */
+  removeDependency(dependencyName: string): this;
+
+  /**
+   * Remove the given import name from this {@link Dependency}'s dependencies.
+   *
+   * @param importName - Import name to remove from the dependencies.
+   * @returns `this`, for chaining.
+   */
+  removeImport(importName: string): this;
 
   /**
    * Set the {@link Dependency} source code.
@@ -116,11 +146,9 @@ export interface Dependency {
    * Set the {@link Dependency} name.
    *
    * @param name - The name to set.
-   * @returns `this`, for chaining.
-   * @throws {@link !Error} if the given identifier fails regular expression validation.
-   * @throws {@link !Error} if the given identifier is forbidden.
+   * @see {@link Dependency.setName} for exceptions thrown.
    */
-  setName(name: string): this;
+  set name(name: string);
 
   /**
    * Set the {@link Dependency} source code.
@@ -142,42 +170,14 @@ export interface Dependency {
   setDependencies(dependencies: Map<string, string>): this;
 
   /**
-   * Add the given imported name / dependent dependency pair to this {@link Dependency}'s dependencies.
+   * Set the {@link Dependency} name.
    *
-   * @param importedName - Dependency {@link Dependency.name} to use for importing.
-   * @param dependencyName - Dependency being depended on.
+   * @param name - The name to set.
    * @returns `this`, for chaining.
-   * @throws {@link !Error} if an imported name fails regular expression validation.
-   * @throws {@link !Error} if an imported name is forbidden.
-   * @throws {@link !Error} if a dependency name fails regular expression validation.
-   * @throws {@link !Error} if a dependency name is forbidden.
+   * @throws {@link !Error} if the given identifier fails regular expression validation.
+   * @throws {@link !Error} if the given identifier is forbidden.
    */
-  addDependency(importedName: string, dependencyName: string): this;
-
-  /**
-   * Remove the given import name from this {@link Dependency}'s dependencies.
-   *
-   * @param importName - Import name to remove from the dependencies.
-   * @returns `this`, for chaining.
-   */
-  removeImport(importName: string): this;
-
-  /**
-   * Remove the given dependency {@link Dependency.name} from this {@link Dependency}'s dependencies.
-   *
-   * Note that this may remove more than one dependency from this {@link Dependency}'s dependencies.
-   *
-   * @param dependencyName - Dependency {@link Dependency.name} to remove from the dependencies.
-   * @returns `this`, for chaining.
-   */
-  removeDependency(dependencyName: string): this;
-
-  /**
-   * Return the plain object representation of the {@link Dependency}.
-   *
-   * @returns The {@link Dependency}, as an independent {@link DependencyObject}.
-   */
-  asObject(): DependencyObject;
+  setName(name: string): this;
 }
 
 /**
@@ -188,7 +188,7 @@ export interface Dependency {
  */
 export const _removeComments: (code: string) => string = (code: string): string => {
   // ref: https://stackoverflow.com/a/52630274
-  let inQuoteChar: string | null = null;
+  let inQuoteChar: null | string = null;
   let inBlockComment: boolean = false;
   let inLineComment: boolean = false;
   let inRegexLiteral: boolean = false;
@@ -243,7 +243,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
   func: (...args: unknown[]) => unknown,
 ): DependencyObject => {
   const str: string = _removeComments(func.toString()).trim();
-  let body: string | null = null;
+  let body: null | string = null;
   let code: string = '';
   if (str.endsWith('}')) {
     for (let i: number = str.indexOf('{'); 0 < i; i = str.indexOf('{', i + 1)) {
@@ -302,9 +302,9 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
 
   return Object.setPrototypeOf(
     {
-      name: func.name,
       code: body,
       dependencies: Object.setPrototypeOf(Object.fromEntries(argsResult), null) as Record<string, string>,
+      name: func.name,
     },
     null,
   ) as DependencyObject;
@@ -326,7 +326,7 @@ export const from: (func: (...args: unknown[]) => unknown, fName?: string) => De
     throw new Error('Expected defined function');
   }
 
-  const { name, code, dependencies }: DependencyObject = _getDependencyPrimitive(func);
+  const { code, dependencies, name }: DependencyObject = _getDependencyPrimitive(func);
   return new DependencyImplementation(fName || name, code, dependencies);
 };
 
@@ -391,17 +391,6 @@ export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?:
  *
  */
 export class DependencyImplementation implements Dependency {
-  static {
-    // ref: https://stackoverflow.com/a/77741904
-    Object.setPrototypeOf(this.prototype, null);
-  }
-
-  /**
-   * The {@link DependencyImplementation}'s name.
-   *
-   */
-  #name: string;
-
   /**
    * The {@link DependencyImplementation}'s function source code.
    *
@@ -413,6 +402,12 @@ export class DependencyImplementation implements Dependency {
    *
    */
   #dependencies: Map<string, string>;
+
+  /**
+   * The {@link DependencyImplementation}'s name.
+   *
+   */
+  #name: string;
 
   /**
    * Build a new {@link DependencyImplementation} using the given parameters.
@@ -434,70 +429,62 @@ export class DependencyImplementation implements Dependency {
   }
 
   /**
-   * Get the {@link DependencyImplementation} name.
+   * Add the given imported name / dependent dependency pair to this {@link DependencyImplementation}'s dependencies.
    *
-   */
-  get name(): string {
-    return this.#name;
-  }
-
-  /**
-   * Get the {@link DependencyImplementation} source code.
-   *
-   */
-  get code(): string {
-    return this.#code;
-  }
-
-  /**
-   * Get the {@link DependencyImplementation} dependencies.
-   *
-   * This will create a _new_ dependencies {@link !Map}, so as not to expose the {@link DependencyImplementation}'s internals to consumers.
-   *
-   */
-  get dependencies(): Map<string, string> {
-    return new Map<string, string>(Object.entries(this.#dependencies));
-  }
-
-  /**
-   * Set the {@link DependencyImplementation} name.
-   *
-   * @param name - The name to set.
-   * @see {@link DependencyImplementation.setName} for exceptions thrown.
-   */
-  set name(name: string) {
-    this.setName(name);
-  }
-
-  /**
-   * Set the {@link DependencyImplementation} source code.
-   *
-   * @param code - The function source code to set.
-   * @see {@link DependencyImplementation.setCode} for exceptions thrown.
-   */
-  set code(code: string) {
-    this.setCode(code);
-  }
-
-  /**
-   * Set the {@link DependencyImplementation} dependencies.
-   *
-   * @param dependencies - The dependencies to set.
-   * @see {@link DependencyImplementation.setDependencies} for exceptions thrown.
-   */
-  set dependencies(dependencies: Map<string, string>) {
-    this.setDependencies(dependencies);
-  }
-
-  /**
-   * Set the {@link DependencyImplementation} name.
-   *
-   * @param name - The name to set.
+   * @param importedName - The {@link DependencyImplementation.name} to use for importing.
+   * @param dependencyName - {@link DependencyImplementation} being depended on.
    * @returns `this`, for chaining.
    * @see {@link validation.identifier} for exceptions thrown.
    */
-  setName(name: string): this {
-    this.#name = validateIdentifier(name);
+  addDependency(importedName: string, dependencyName: string): this {
+    this.#dependencies.set(validateIdentifier(importedName), validateIdentifier(dependencyName));
+    return this;
+  }
+
+  /**
+   * Return the plain object representation of the {@link DependencyImplementation}.
+   *
+   * @returns The {@link DependencyImplementation}, as an independent object.
+   */
+  asObject(): DependencyObject {
+    return Object.setPrototypeOf(
+      {
+        code: this.code,
+        dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
+          string,
+          string
+        >,
+        name: this.name,
+      },
+      null,
+    ) as DependencyObject;
+  }
+
+  /**
+   * Remove the given dependency {@link DependencyImplementation.name} from this {@link DependencyImplementation}'s dependencies.
+   *
+   * Note that this may remove more than one {@link DependencyImplementation} from this {@link DependencyImplementation}'s dependencies.
+   *
+   * @param dependencyName - The {@link DependencyImplementation.name} to remove from the dependencies.
+   * @returns `this`, for chaining.
+   */
+  removeDependency(dependencyName: string): this {
+    this.#dependencies = new Map<string, string>(
+      Array.from(this.#dependencies.entries()).filter(
+        ([, dName]: [string, string]): boolean => dName !== dependencyName,
+      ),
+    );
+    return this;
+  }
+
+  /**
+   * Remove the given import name from this {@link DependencyImplementation}'s dependencies.
+   *
+   * @param importName - Import name to remove from the dependencies.
+   * @returns `this`, for chaining.
+   */
+  removeImport(importName: string): this {
+    this.#dependencies.delete(importName);
     return this;
   }
 
@@ -526,62 +513,75 @@ export class DependencyImplementation implements Dependency {
   }
 
   /**
-   * Add the given imported name / dependent dependency pair to this {@link DependencyImplementation}'s dependencies.
+   * Set the {@link DependencyImplementation} name.
    *
-   * @param importedName - The {@link DependencyImplementation.name} to use for importing.
-   * @param dependencyName - {@link DependencyImplementation} being depended on.
+   * @param name - The name to set.
    * @returns `this`, for chaining.
    * @see {@link validation.identifier} for exceptions thrown.
    */
-  addDependency(importedName: string, dependencyName: string): this {
-    this.#dependencies.set(validateIdentifier(importedName), validateIdentifier(dependencyName));
+  setName(name: string): this {
+    this.#name = validateIdentifier(name);
     return this;
   }
 
   /**
-   * Remove the given import name from this {@link DependencyImplementation}'s dependencies.
+   * Get the {@link DependencyImplementation} source code.
    *
-   * @param importName - Import name to remove from the dependencies.
-   * @returns `this`, for chaining.
    */
-  removeImport(importName: string): this {
-    this.#dependencies.delete(importName);
-    return this;
+  get code(): string {
+    return this.#code;
   }
 
   /**
-   * Remove the given dependency {@link DependencyImplementation.name} from this {@link DependencyImplementation}'s dependencies.
+   * Set the {@link DependencyImplementation} source code.
    *
-   * Note that this may remove more than one {@link DependencyImplementation} from this {@link DependencyImplementation}'s dependencies.
-   *
-   * @param dependencyName - The {@link DependencyImplementation.name} to remove from the dependencies.
-   * @returns `this`, for chaining.
+   * @param code - The function source code to set.
+   * @see {@link DependencyImplementation.setCode} for exceptions thrown.
    */
-  removeDependency(dependencyName: string): this {
-    this.#dependencies = new Map<string, string>(
-      Array.from(this.#dependencies.entries()).filter(
-        ([, dName]: [string, string]): boolean => dName !== dependencyName,
-      ),
-    );
-    return this;
+  set code(code: string) {
+    this.setCode(code);
   }
 
   /**
-   * Return the plain object representation of the {@link DependencyImplementation}.
+   * Get the {@link DependencyImplementation} dependencies.
    *
-   * @returns The {@link DependencyImplementation}, as an independent object.
+   * This will create a _new_ dependencies {@link !Map}, so as not to expose the {@link DependencyImplementation}'s internals to consumers.
+   *
    */
-  asObject(): DependencyObject {
-    return Object.setPrototypeOf(
-      {
-        name: this.name,
-        code: this.code,
-        dependencies: Object.setPrototypeOf(Object.fromEntries(this.#dependencies.entries()), null) as Record<
-          string,
-          string
-        >,
-      },
-      null,
-    ) as DependencyObject;
+  get dependencies(): Map<string, string> {
+    return new Map<string, string>(Object.entries(this.#dependencies));
+  }
+
+  /**
+   * Set the {@link DependencyImplementation} dependencies.
+   *
+   * @param dependencies - The dependencies to set.
+   * @see {@link DependencyImplementation.setDependencies} for exceptions thrown.
+   */
+  set dependencies(dependencies: Map<string, string>) {
+    this.setDependencies(dependencies);
+  }
+
+  /**
+   * Get the {@link DependencyImplementation} name.
+   *
+   */
+  get name(): string {
+    return this.#name;
+  }
+
+  /**
+   * Set the {@link DependencyImplementation} name.
+   *
+   * @param name - The name to set.
+   * @see {@link DependencyImplementation.setName} for exceptions thrown.
+   */
+  set name(name: string) {
+    this.setName(name);
+  }
+
+  static {
+    // ref: https://stackoverflow.com/a/77741904
+    Object.setPrototypeOf(this.prototype, null);
   }
 }
