@@ -240,7 +240,7 @@ export class EventCasterImplementation implements EventCaster {
     validateEvent(name);
 
     for (const [callback, filters] of this.#listeners.entries()) {
-      if ([...filters.values()].some((filter: RegExp): boolean => filter.test(name))) {
+      if (Array.from(filters.values()).some((filter: RegExp): boolean => filter.test(name))) {
         setTimeout((): void => {
           callback.bind(undefined)(name, ...args);
         });

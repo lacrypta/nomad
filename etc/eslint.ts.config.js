@@ -5,12 +5,14 @@ import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import';
 import sonarjs from 'eslint-plugin-sonarjs';
+import arrayFunc from 'eslint-plugin-array-func';
 
 export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   eslintConfigPrettier,
   sonarjs.configs.recommended,
+  arrayFunc.configs.all,
   {
     plugins: { import: importPlugin },
     ignores: ['pnpm-lock.yaml', 'dist/**'],

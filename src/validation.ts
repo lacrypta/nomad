@@ -254,7 +254,7 @@ export const functionCode = (code: string): string => {
  * @see {@link identifier} for additional exceptions thrown.
  */
 export const dependencyMap = (dependencies: Map<string, string>): Map<string, string> => {
-  [...dependencies.entries()].forEach(([key, value]: [string, string]): void => {
+  Array.from(dependencies.entries()).forEach(([key, value]: [string, string]): void => {
     identifier(key);
     identifier(value);
   });
@@ -360,7 +360,7 @@ export const timeDelta = (delta: number): number => {
  * @see {@link identifier} for additional exceptions thrown.
  */
 export const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
-  [...args.keys()].forEach(identifier);
+  Array.from(args.keys()).forEach(identifier);
 
   return args;
 };

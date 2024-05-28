@@ -1512,7 +1512,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const enclosureSubEnclosures = (enclosure, depth = 0) => {
     const limit = 0 < depth ? depth + enclosure.split('.').length : Infinity;
-    return [...enclosures.keys()].filter(
+    return Array.from(enclosures.keys()).filter(
       (candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit,
     );
   };
@@ -1577,7 +1577,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       ]),
     );
     {
-      const collisions = [...newSubEnclosures.values()].filter((newSubEnclosure) => enclosures.has(newSubEnclosure));
+      const collisions = Array.from(newSubEnclosures.values()).filter((newSubEnclosure) =>
+        enclosures.has(newSubEnclosure),
+      );
       if (0 < collisions.length) {
         throw new Error(`collisions found on [${collisions.join(', ')}]`);
       }
@@ -1589,14 +1591,14 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       dependencies: parentDependencies,
     } = getEnclosure(parent);
 
-    [...tunnels].forEach((tunnel) => parentTunnels.add(tunnel));
+    Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
 
-    [...listeners.entries()].forEach(([callback, filters]) => {
+    Array.from(listeners.entries()).forEach(([callback, filters]) => {
       if (!parentListeners.has(callback)) {
         parentListeners.set(callback, new _Set());
       }
       const callbackFilters = parentListeners.get(callback);
-      [...filters].forEach((filter) => callbackFilters?.add(filter));
+      Array.from(filters).forEach((filter) => callbackFilters?.add(filter));
     });
 
     _Object.entries(dependencies).forEach(([name, value]) => {
@@ -1605,7 +1607,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     enclosurePorts[port] = parent;
 
-    [...newSubEnclosures.entries()].forEach(([subEnclosure, newSubEnclosure]) => {
+    Array.from(newSubEnclosures.entries()).forEach(([subEnclosure, newSubEnclosure]) => {
       listLinkedFrom(subEnclosure).forEach((linkSource) => {
         const { linked } = getEnclosure(linkSource);
         linked.delete(subEnclosure);
@@ -1695,7 +1697,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {Array<string>} A list of root enclosures.
    */
   const listRootEnclosures = () => {
-    return [...enclosures.keys()].filter((enclosure) => -1 === enclosure.indexOf('.')).sort();
+    return Array.from(enclosures.keys())
+      .filter((enclosure) => -1 === enclosure.indexOf('.'))
+      .sort();
   };
 
   /**
@@ -1779,13 +1783,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     const callbacks = new _Set();
     [enclosure, ...enclosurePrefixes(enclosure), ...enclosureSubEnclosures(enclosure), ...linked].forEach((target) => {
       for (const [callback, filters] of getEnclosure(target).listeners.entries()) {
-        if ([...filters.values()].some((filter) => filter.test(event))) {
+        if (Array.from(filters.values()).some((filter) => filter.test(event))) {
           callbacks.add(callback);
         }
       }
     });
 
-    [...callbacks].forEach((callback) => _schedule(callback.apply(undefined, [event, ...args])));
+    Array.from(callbacks).forEach((callback) => _schedule(callback.apply(undefined, [event, ...args])));
   };
 
   /**
@@ -2015,7 +2019,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {Array<string>} A list of enclosures linked to by the given one.
    */
   const listLinksTo = (enclosure) => {
-    return [...getEnclosure(enclosure).linked].sort();
+    return Array.from(getEnclosure(enclosure).linked).sort();
   };
 
   /**
@@ -2026,7 +2030,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const listLinkedFrom = (enclosure) => {
     getEnclosure(enclosure);
-    return [...enclosures.entries()].filter(([, { linked }]) => linked.has(enclosure)).map(([name]) => name);
+    return Array.from(enclosures.entries())
+      .filter(([, { linked }]) => linked.has(enclosure))
+      .map(([name]) => name);
   };
 
   /**
@@ -2067,18 +2073,18 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       const missing = importedNames.filter((name) => !((dependency.dependencies[name] ?? '') in dependencies));
       if (0 !== missing.length) {
         throw new _Error(
-          `missing dependencies: [${[...new _Set(missing.map((name) => dependency.dependencies[name]))].join(', ')}]`,
+          `missing dependencies: [${Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
         );
       }
     }
-    const argumentNames = [...args.keys()];
+    const argumentNames = Array.from(args.keys());
     {
       if (ARGUMENTS_LIMIT < argumentNames.length) {
         throw new _Error(`too many arguments 1024 < ${argumentNames.length.toString()}`);
       }
       const shadowed = argumentNames.filter((name) => name in dependency.dependencies);
       if (0 < shadowed.length) {
-        throw new _Error(`shadowing arguments [${[...new _Set(shadowed)].sort().join(', ')}]`);
+        throw new _Error(`shadowing arguments [${Array.from(new _Set(shadowed)).sort().join(', ')}]`);
       }
     }
 
@@ -2329,7 +2335,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "__lookupGetter__", // Deprecated
         // "__lookupSetter__", // Deprecated
       ];
-      keep['Boolean.prototype'] = [...keep['Object.prototype']];
+      keep['Boolean.prototype'] = Array.from(keep['Object.prototype']);
       keep['Symbol'] = [
         ...keep['Function.instance'],
         'prototype',
@@ -2352,20 +2358,20 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', Symbol.toPrimitive, Symbol.toStringTag];
       keep['Error'] = [...keep['Function.instance'], 'prototype'];
       keep['Error.prototype'] = [...keep['Object.prototype'], 'name'];
-      keep['AggregateError'] = [...keep['Error']];
-      keep['AggregateError.prototype'] = [...keep['Error.prototype']];
-      keep['EvalError'] = [...keep['Error']];
-      keep['EvalError.prototype'] = [...keep['Error.prototype']];
-      keep['RangeError'] = [...keep['Error']];
-      keep['RangeError.prototype'] = [...keep['Error.prototype']];
-      keep['ReferenceError'] = [...keep['Error']];
-      keep['ReferenceError.prototype'] = [...keep['Error.prototype']];
-      keep['SyntaxError'] = [...keep['Error']];
-      keep['SyntaxError.prototype'] = [...keep['Error.prototype']];
-      keep['TypeError'] = [...keep['Error']];
-      keep['TypeError.prototype'] = [...keep['Error.prototype']];
-      keep['URIError'] = [...keep['Error']];
-      keep['URIError.prototype'] = [...keep['Error.prototype']];
+      keep['AggregateError'] = Array.from(keep['Error']);
+      keep['AggregateError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['EvalError'] = Array.from(keep['Error']);
+      keep['EvalError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['RangeError'] = Array.from(keep['Error']);
+      keep['RangeError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['ReferenceError'] = Array.from(keep['Error']);
+      keep['ReferenceError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['SyntaxError'] = Array.from(keep['Error']);
+      keep['SyntaxError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['TypeError'] = Array.from(keep['Error']);
+      keep['TypeError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['URIError'] = Array.from(keep['Error']);
+      keep['URIError.prototype'] = Array.from(keep['Error.prototype']);
       keep['Number'] = [
         ...keep['Function.instance'],
         'prototype',

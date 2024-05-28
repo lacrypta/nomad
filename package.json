@@ -79,6 +79,7 @@
     "eslint": "^9.3.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-array-func": "^5.0.1",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsdoc": "^48.2.6",
     "eslint-plugin-sonarjs": "^1.0.3",

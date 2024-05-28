@@ -372,7 +372,9 @@ export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?:
   } while (0 < newOnes.size);
 
   if (0 < pending.size) {
-    throw new Error(`unresolved dependencies: [${[...pending.values()].map((dep: T): string => dep.name).join(', ')}]`);
+    throw new Error(
+      `unresolved dependencies: [${Array.from(pending.values(), (dep: T): string => dep.name).join(', ')}]`,
+    );
   }
 
   return result;
@@ -557,7 +559,9 @@ export class DependencyImplementation implements Dependency {
    */
   removeDependency(dependencyName: string): this {
     this.#dependencies = new Map<string, string>(
-      [...this.#dependencies.entries()].filter(([, dName]: [string, string]): boolean => dName !== dependencyName),
+      Array.from(this.#dependencies.entries()).filter(
+        ([, dName]: [string, string]): boolean => dName !== dependencyName,
+      ),
     );
     return this;
   }
