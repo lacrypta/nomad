@@ -2095,8 +2095,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       ...importedNames,
       ...argumentNames,
       //
-      `"use strict"; if (true) { ${dependency.code.toString()}; } return null;
-    `,
+      `"use strict";if(true){${dependency.code.toString()};}return null;`,
     ).call(
       undefined,
       eventCaster(enclosure),

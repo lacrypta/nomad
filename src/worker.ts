@@ -96,22 +96,7 @@ export class BrowserWorker implements VMWorker {
     this.#blobURL = URL.createObjectURL(
       new Blob(
         [
-          `'use strict';
-          (${code})(
-            this,
-            ${tunnel.toString()},
-            ((_addEventListener) => (listener) => {
-              _addEventListener('message', ({ data }) => {
-                listener(data);
-              });
-            })(addEventListener),
-            ((_postMessage, _JSON_stringify) => (message) => {
-              _postMessage(_JSON_stringify(message));
-            })(postMessage, JSON.stringify),
-            ((_setTimeout) => (callback) => {
-              _setTimeout(callback, 0);
-            })(setTimeout),
-          );`,
+          `'use strict';(${code})(this,${tunnel.toString()},((_addEventListener)=>(listener)=>{_addEventListener('message',({data})=>{listener(data);});})(addEventListener),((_postMessage,_JSON_stringify)=>(message)=>{_postMessage(_JSON_stringify(message));})(postMessage,JSON.stringify),((_setTimeout)=>(callback)=>{_setTimeout(callback,0);})(setTimeout));`,
         ],
         {
           type: 'application/javascript',
