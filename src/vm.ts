@@ -30,7 +30,12 @@
  */
 
 import type { Dependency, DependencyObject } from './dependency';
-import type { EventCallback, EventCaster, EventCaster_Cast, EventCaster_ProtectedMethods } from './eventCaster';
+import type {
+  EventCallback,
+  EventCaster,
+  EventCasterImplementation_Cast,
+  EventCasterImplementation_ProtectedMethods,
+} from './eventCaster';
 import type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder } from './worker';
 
 import { DependencyImplementation, sort } from './dependency';
@@ -416,12 +421,28 @@ export const _pseudoRandomString: () => string = (): string => {
     .padStart(8, '0');
 };
 
+/**
+ * Extract an error message from an error "parameter".
+ *
+ * If the given argument is an instance of {@link !Error}, return {@link !Error.message}, otherwise return `"unknown error"`.
+ *
+ * @param error - Error parameter to extract an error message from.
+ * @returns The extracted error message.
+ */
 export const _errorMessage: (error: unknown) => string = (error: unknown): string =>
   error instanceof Error ? error.message : 'unknown error';
 
+/**
+ * Create an {@link !Error} instance from an error "parameter".
+ *
+ * If the given argument is an instance of {@link !Error}, use {@link !Error.message}, otherwise use `"unknown error"` as the {@link !Error.Error} argument.
+ *
+ * @param error - Error parameter to extract an error message from.
+ * @returns The created {@link !Error} instance.
+ */
 export const _makeError: (error: unknown) => Error = (error: unknown): Error => new Error(_errorMessage(error));
 
-let __cast: EventCaster_Cast;
+let __cast: EventCasterImplementation_Cast;
 
 /**
  * Static {@link EventCasterImplementation} that allows a single event source to be used across all VMs.
@@ -484,7 +505,7 @@ let __cast: EventCaster_Cast;
  *
  */
 export const events: Readonly<EventCaster> = Object.freeze(
-  new EventCasterImplementation((protectedMethods: EventCaster_ProtectedMethods): void => {
+  new EventCasterImplementation((protectedMethods: EventCasterImplementation_ProtectedMethods): void => {
     __cast = protectedMethods.cast;
   }),
 );
@@ -493,7 +514,7 @@ export const events: Readonly<EventCaster> = Object.freeze(
  * The {@link EventCasterImplementation} casting function for all he VMs.
  *
  */
-export const _cast: EventCaster_Cast =
+export const _cast: EventCasterImplementation_Cast =
   // @ts-expect-error: Variable '__cast' is used before being assigned.
   __cast;
 
@@ -549,8 +570,50 @@ export const get: (name: string) => WeakRef<VM> | undefined = (name: string): We
   return _names.get(name);
 };
 
+/**
+ * Create a new VM.
+ *
+ * @param name - Name to give the created VM (auto-generated if not given).
+ * @returns The created VM instance.
+ */
 export const create: (name?: string) => VM = (name?: string): VM => {
   return new VMImplementation(name);
+};
+
+/**
+ * Rejection part of the on-hold {@link !Promise}.
+ *
+ * @param error - {@link !Error} being thrown.
+ */
+export type TunnelDescriptor_Rejection = (error: Error) => void;
+
+/**
+ * Resolution part of the on-hold {@link !Promise}.
+ *
+ * @param arg - Argument being returned.
+ */
+export type TunnelDescriptor_Resolution =
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  (arg: any) => void;
+
+/**
+ * The type of a VM-side  _tunnel_.
+ *
+ * Tunnels are used to store pending {@link !Promise} resolvers that are yet to be called effectively as a response to an asynchronous cal to the {@link VMWorker}.
+ *
+ */
+export type TunnelDescriptor = {
+  /**
+   * Rejection part of the tunnel.
+   *
+   */
+  reject: TunnelDescriptor_Rejection;
+
+  /**
+   * Resolution part of the tunnel.
+   *
+   */
+  resolve: TunnelDescriptor_Resolution;
 };
 
 /**
@@ -708,10 +771,7 @@ export class VMImplementation implements VM {
    * Tunnels are a way of holding on to `resolve` / `reject` {@link !Promise} callbacks under a specific index number, so that both the {@link VMWorker} and the {@link VMImplementation} can interact through these.
    *
    */
-  #tunnels: {
-    reject: (error: Error) => void;
-    resolve: (arg: unknown) => void;
-  }[] = [];
+  #tunnels: TunnelDescriptor[] = [];
 
   /**
    * The {@link VMWorker} this VM is using for secure execution, or `null` if none create or stopped.
@@ -748,11 +808,7 @@ export class VMImplementation implements VM {
    * @param reject - The rejection callback.
    * @returns The created tunnel's index.
    */
-  #addTunnel(
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    resolve: (arg: any) => void,
-    reject: (error: Error) => void,
-  ): number {
+  #addTunnel(resolve: TunnelDescriptor_Resolution, reject: TunnelDescriptor_Rejection): number {
     return this.#tunnels.push({ reject, resolve }) - 1;
   }
 
@@ -1432,17 +1488,11 @@ export class VMImplementation implements VM {
    * @returns The resolution / rejection callbacks that used to be at the given index.
    * @throws {@link !Error} if the given tunnel index does not exist.
    */
-  #removeTunnel(tunnel: number): {
-    reject: (error: Error) => void;
-    resolve: (arg: unknown) => void;
-  } {
+  #removeTunnel(tunnel: number): TunnelDescriptor {
     if (!(tunnel in this.#tunnels)) {
       throw new Error(`tunnel ${tunnel.toString()} does not exist`);
     }
-    const result: {
-      reject: (error: Error) => void;
-      resolve: (arg: unknown) => void;
-    } = this.#tunnels[tunnel] || { reject: () => {}, resolve: () => {} };
+    const result: TunnelDescriptor = this.#tunnels[tunnel] || { reject: () => {}, resolve: () => {} };
     /* eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete */
     delete this.#tunnels[tunnel];
     return result;

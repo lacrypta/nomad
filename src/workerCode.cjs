@@ -148,7 +148,7 @@
  * @callback EventCallback
  * @param {string} name - Event name to serve.
  * @param {...unknown} args - Additional arguments to pass.
- * @returns {unknown}
+ * @returns {void}
  */
 
 // ------------------------------------------------------------------------------------------------

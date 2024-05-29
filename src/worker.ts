@@ -29,10 +29,28 @@
  * @module
  */
 
+/**
+ * The type of a {@link VMWorker}-construction function.
+ *
+ * @param code - The code to initialize the {@link VMWorker} with.
+ * @param tunnel - A tunnel ID to advertise successful booting on.
+ * @param name - A name to give to the constructed {@link VMWorker}.
+ * @returns The created {@link VMWorker}.
+ */
 export type WorkerBuilder = (code: string, tunnel: number, name: string) => VMWorker;
 
+/**
+ * The type of a normal message handler to attach to a {@link VMWorker}.
+ *
+ * @param data - The data being transmitted _from_ the {@link VMWorker}.
+ */
 export type MessageCallback = (data: string) => void;
 
+/**
+ * The type of an error handler to attach to a {@link VMWorker}.
+ *
+ * @param error - The {@link !Error} being thrown _from within_ the {@link VMWorker}.
+ */
 export type ErrorCallback = (error: Error) => void;
 
 /**

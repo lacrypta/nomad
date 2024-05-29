@@ -262,6 +262,13 @@ export const dependencyMap = (dependencies: Map<string, string>): Map<string, st
   return new Map<string, string>(dependencies.entries());
 };
 
+/**
+ * Regular expression all event names must adhere to.
+ *
+ * Event names consist of "segments", separated by `:`.
+ * Each segment consists of alphanumeric characters, `.`, or `-`.
+ *
+ */
 export const _eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
 
 /**
@@ -286,6 +293,14 @@ export const event = (name: string): string => {
   return name;
 };
 
+/**
+ * Regular expression all event name filters must adhere to.
+ *
+ * Event name filters consist of "segments", separated by `:`.
+ * Each segment consists of alphanumeric characters, `.`, or `-`, or a _wildcard_.
+ * Wildcards can be `*` or `**`.
+ *
+ */
 export const _filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
 
 /**

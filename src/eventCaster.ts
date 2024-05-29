@@ -34,18 +34,54 @@ import { event as validateEvent, filter as validateFilter } from './validation';
 /**
  * The type of a method injector.
  *
+ * A {@link MethodInjector} is a mechanism by which a parent class may expose some of its `private` methods to child classes.
+ * This is done by having the parent class accept a {@link MethodInjector} as parameter in their `constructor`, and passing it a mapping of method names to functions internally implementing those method calls.
+ * The child class is expected to store these callbacks internally, and use them to call the exposed parent methods, thus effectively making them "`protected`".
+ *
+ * @template T - The class whose methods (or a subset thereof) are beng exposed via this {@link MethodInjector}.
+ * @param entries - A mapping from method name to a function that will in fact execute said method internally and transparently.
  */
 export type MethodInjector<T> = (entries: { [Method in keyof T]: T[Method] }) => void;
 
 /**
  * The type of an event callback.
  *
+ * {@link EventCaster} events consists of two parts:
+ *
+ * - an event `name`: this is the main routing parameter, listeners use this to declare _what_ events to forward to them,
+ * - additional arguments `args`: a _specific_ event may associate any number of arguments to each specific instance of it.
+ *
+ * An event _callback_ is simply a function that is prepared to receive these parts individually, and it's not expected to return anything at all.
+ *
+ * @param name - The event name to pass on to the call back function.
+ * @param args - Any additional arguments associated to the particular event instance.
  */
-export type EventCallback = (name: string, ...args: unknown[]) => unknown;
+export type EventCallback = (name: string, ...args: unknown[]) => void;
 
-export type EventCaster_Cast = (name: string, ...args: unknown[]) => EventCaster;
+/**
+ * The type of the _casting_ method of the {@link EventCasterImplementation} class (ie. [EventCasterImplementation.#cast](../classes/eventCaster.EventCasterImplementation.html#_cast)).
+ *
+ * This is the call-signature of a method that will cast the given event name with the given associated arguments.
+ *
+ * @param name - The event name to cast.
+ * @param args - The additional arguments associated to the event being cast.
+ * @returns The {@link EventCasterImplementation} instance itself, for chaining.
+ */
+export type EventCasterImplementation_Cast = (name: string, ...args: unknown[]) => EventCasterImplementation;
 
-export type EventCaster_ProtectedMethods = { cast: EventCaster_Cast };
+/**
+ * The type of an {@link EventCasterImplementation}'s "`protected`" methods (ie. those that will be exposed via a {@link MethodInjector}).
+ *
+ * This type alias is useful in defining the _argument_ a child class' {@link MethodInjector} will accept.
+ *
+ */
+export type EventCasterImplementation_ProtectedMethods = {
+  /**
+   * The _casting_ method (ie . [EventCasterImplementation.#cast](../classes/eventCaster.EventCasterImplementation.html#_cast)).
+   *
+   */
+  cast: EventCasterImplementation_Cast;
+};
 
 /**
  * Glob-enabled Event Caster interface.
@@ -171,7 +207,7 @@ export class EventCasterImplementation implements EventCaster {
    */
   constructor(
     protectedMethodInjector?: MethodInjector<{
-      cast: EventCaster_Cast;
+      cast: EventCasterImplementation_Cast;
     }>,
   ) {
     protectedMethodInjector?.({

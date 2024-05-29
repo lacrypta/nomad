@@ -330,6 +330,14 @@ export const from: (func: (...args: unknown[]) => unknown, fName?: string) => De
   return new DependencyImplementation(fName || name, code, dependencies);
 };
 
+/**
+ * Construct a new {@link Dependency} from the given arguments.
+ *
+ * @param name - Name to use for constructing the {@link Dependency}.
+ * @param code - {@link !Function} body to use for constructing the {@link Dependency}.
+ * @param dependencies - Dependencies map to use for constructing the {@link Dependency}.
+ * @returns The constructed {@link Dependency}.
+ */
 export const create: (name?: string, code?: string, dependencies?: Record<string, string>) => Dependency = (
   name?: string,
   code?: string,
