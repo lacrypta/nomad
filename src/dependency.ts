@@ -231,6 +231,19 @@ export const _removeComments: (code: string) => string = (code: string): string 
 };
 
 /**
+ * Type of an unknown number of additional parameters.
+ *
+ */
+export type AnyRest = unknown[];
+
+/**
+ * Type of an unknown function (that is not a constructor or class).
+ *
+ * @param args - Any number of additional parameters.
+ */
+export type AnyFunction = (...args: AnyRest) => unknown;
+
+/**
  * Retrieve the {@link DependencyObject} of the given function.
  *
  * NOTE: this is a strictly SYNTACTICAL operation, it will parse the actual code of the given {@link !Function}, but it will not execute it in any way nor follow references therein.
@@ -239,8 +252,8 @@ export const _removeComments: (code: string) => string = (code: string): string 
  * @returns A {@link DependencyObject} extracted from the given instance.
  * @throws {Error} if the function body cannot be determined.
  */
-export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) => DependencyObject = (
-  func: (...args: unknown[]) => unknown,
+export const _getDependencyPrimitive: (func: AnyFunction) => DependencyObject = (
+  func: AnyFunction,
 ): DependencyObject => {
   const str: string = _removeComments(func.toString()).trim();
   let body: null | string = null;
@@ -318,8 +331,8 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
  * @returns The constructed {@link Dependency}.
  * @throws {Error} if the given argument is not a {@link !Function}.
  */
-export const from: (func: (...args: unknown[]) => unknown, fName?: string) => Dependency = (
-  func: (...args: unknown[]) => unknown,
+export const from: (func: AnyFunction, fName?: string) => Dependency = (
+  func: AnyFunction,
   fName?: string,
 ): Dependency => {
   if (Function !== func.constructor) {
@@ -349,6 +362,7 @@ export const create: (name?: string, code?: string, dependencies?: Record<string
 /**
  * Topologically sort the given {@link Dependency} iterable by their dependency tree relations, using the given pre-installed {@link Dependency} names.
  *
+ * @template T - The actual {@link Dependency} implementation type to sort.
  * @param dependencies - Dependencies to sort.
  * @param installed - Installed {@link Dependency.name}s to assume existing (defaults to `null`, meaning none).
  * @returns Sorted {@link Dependency} list.

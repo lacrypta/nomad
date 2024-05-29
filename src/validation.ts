@@ -348,6 +348,8 @@ export const nonNegativeInteger = (datum: number): number => {
 /**
  * The time delta value to allow.
  *
+ * This is half of the [maximum delay value](https://developer.mozilla.org/en-US/docs/Web/API/setTimeout#maximum_delay_value) for {@link !setTimeout} (applicable to {@link !setInterval} as well).
+ *
  */
 export const _timeDeltaLimit: number = 1 << 30;
 
@@ -367,6 +369,12 @@ export const timeDelta = (delta: number): number => {
 };
 
 /**
+ * The type of an arguments map intended to be forwarded to a dependency.
+ *
+ */
+export type ArgumentsMap = Map<string, unknown>;
+
+/**
  * Validate the given arguments map and return them if valid.
  *
  * @param args - The arguments map to validate.
@@ -374,10 +382,10 @@ export const timeDelta = (delta: number): number => {
  * @throws {Error} if the given arguments map is not an object.
  * @see {@link identifier} for additional exceptions thrown.
  */
-export const argumentsMap = (args: Map<string, unknown>): Map<string, unknown> => {
-  Array.from(args.keys()).forEach(identifier);
+export const argumentsMap = (args: Map<unknown, unknown>): ArgumentsMap => {
+  Array.from(args.keys()).forEach((id: unknown) => 'string' === typeof id && identifier(id));
 
-  return args;
+  return args as ArgumentsMap;
 };
 
 /**

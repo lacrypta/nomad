@@ -29,18 +29,19 @@
  * @module
  */
 
-import type { Dependency, DependencyObject } from './dependency';
+import type { AnyFunction, AnyRest, Dependency, DependencyObject } from './dependency';
 import type {
   EventCallback,
   EventCaster,
   EventCasterImplementation_Cast,
   EventCasterImplementation_ProtectedMethods,
 } from './eventCaster';
-import type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder } from './worker';
+import type { VMWorker, WorkerBuilder } from './worker';
 
 import { DependencyImplementation, sort } from './dependency';
 import { EventCasterImplementation } from './eventCaster';
 import {
+  ArgumentsMap,
   argumentsMap as validateArgumentsMap,
   enclosure as validateEnclosure,
   event as validateEvent,
@@ -50,6 +51,24 @@ import {
 } from './validation';
 import { BrowserWorker } from './worker';
 import workerCode from './workerCode.cjs';
+
+/**
+ * The type of a {@link VMWorker} timing structure (used in {@link VM.start}).
+ *
+ */
+export type WorkerTimings = {
+  /**
+   * Timing as measured from within the {@link VMWorker}.
+   *
+   */
+  inside: number;
+
+  /**
+   * Timing as measured from outside of the {@link VMWorker}.
+   *
+   */
+  outside: number;
+};
 
 /**
  * A safe execution environment for NOMAD code execution.
@@ -82,7 +101,7 @@ export interface VM extends EventCaster {
    * @param args - Associated arguments to emit alongside the event.
    * @returns `this`, for chaining.
    */
-  emit(enclosure: string, event: string, ...args: unknown[]): this;
+  emit(enclosure: string, event: string, ...args: AnyRest): this;
 
   /**
    * Execute the given {@link Dependency} with the given arguments map in the {@link VMWorker}.
@@ -92,7 +111,7 @@ export interface VM extends EventCaster {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: Dependency, args?: Map<string, unknown>): Promise<unknown>;
+  execute(enclosure: string, dependency: Dependency, args?: ArgumentsMap): Promise<unknown>;
 
   /**
    * Getter used to determine if the VM is in the "booting" state.
@@ -223,7 +242,7 @@ export interface VM extends EventCaster {
    * @param callback - {@link !Function} callback to use.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    */
-  predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
+  predefine(enclosure: string, name: string, callback: AnyFunction): Promise<void>;
 
   /**
    * Shut the {@link VMWorker} down.
@@ -249,15 +268,18 @@ export interface VM extends EventCaster {
    * 2. Setting up the boot timeout callback (in case the {@link VMWorker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
+   * @param workerBuilder - The {@link WorkerBuilder} to use in order to build the worker instance (will default to the platform one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
+   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
+   * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
   start(
     workerBuilder?: WorkerBuilder,
     timeout?: number,
     pingInterval?: number,
     pongLimit?: number,
-  ): Promise<[number, number]>;
+  ): Promise<WorkerTimings>;
 
   /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
@@ -302,7 +324,7 @@ export interface Enclosure extends EventCaster {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link Dependency}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(dependency: Dependency, args?: Map<string, unknown>): Promise<unknown>;
+  execute(dependency: Dependency, args?: ArgumentsMap): Promise<unknown>;
 
   /**
    * Getter used to retrieve the wrapped enclosure.
@@ -390,7 +412,7 @@ export interface Enclosure extends EventCaster {
    * @param callback - {@link !Function} callback to use.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    */
-  predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void>;
+  predefine(name: string, callback: AnyFunction): Promise<void>;
 
   /**
    * Unlink the wrapped enclosure from another, so that events cast on the wrapped enclosure are no longer handled in the other.
@@ -566,8 +588,8 @@ export const _defaultPongLimit: Readonly<number> = 1000;
  * @param name - VM name to retrieve.
  * @returns The VM registered under the given name, or `undefined` if none found.
  */
-export const get: (name: string) => WeakRef<VM> | undefined = (name: string): WeakRef<VM> | undefined => {
-  return _names.get(name);
+export const get: (name: string) => VM | undefined = (name: string): VM | undefined => {
+  return _names.get(name)?.deref();
 };
 
 /**
@@ -581,20 +603,19 @@ export const create: (name?: string) => VM = (name?: string): VM => {
 };
 
 /**
- * Rejection part of the on-hold {@link !Promise}.
+ * Rejection part of a {@link !Promise}.
  *
  * @param error - {@link !Error} being thrown.
  */
-export type TunnelDescriptor_Rejection = (error: Error) => void;
+export type Rejection = (error: Error) => void;
 
 /**
- * Resolution part of the on-hold {@link !Promise}.
+ * Resolution part of a {@link !Promise}.
  *
+ * @template T - The type of the resolved {@link !Promise}.
  * @param arg - Argument being returned.
  */
-export type TunnelDescriptor_Resolution =
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  (arg: any) => void;
+export type Resolution<T> = (arg: T) => void;
 
 /**
  * The type of a VM-side  _tunnel_.
@@ -607,13 +628,96 @@ export type TunnelDescriptor = {
    * Rejection part of the tunnel.
    *
    */
-  reject: TunnelDescriptor_Rejection;
+  reject: Rejection;
 
   /**
    * Resolution part of the tunnel.
    *
    */
-  resolve: TunnelDescriptor_Resolution;
+  resolve: Resolution<any> /* eslint-disable-line @typescript-eslint/no-explicit-any */;
+};
+
+/**
+ * The type of a "resolve" message from the {@link VMWorker} to the {@link VM}.
+ *
+ */
+export type Message_Resolve = {
+  /**
+   * Payload to resolve with.
+   *
+   */
+  payload: unknown;
+
+  /**
+   * Tunnel to resolve on the {@link VM}'s side.
+   *
+   */
+  tunnel: number;
+};
+
+/**
+ * The type of a "reject" message from the {@link VMWorker} to the {@link VM}.
+ *
+ */
+export type Message_Reject = {
+  /**
+   * Error message to reject with.
+   *
+   */
+  error: string;
+
+  /**
+   * Tunnel to reject on the {@link VM}'s side.
+   *
+   */
+  tunnel: number;
+};
+
+/**
+ * The type of a "call" message from the {@link VMWorker} to the {@link VM}.
+ *
+ */
+export type Message_Call = {
+  /**
+   * Arguments to pass on to the predefined function being called.
+   *
+   */
+  args: AnyRest;
+
+  /**
+   * Enclosure name where the call is taking place.
+   */
+  enclosure: string;
+
+  /**
+   * Predefined function index to call.
+   *
+   */
+  idx: number;
+
+  /**
+   * Tunnel to respond on on the {@link VMWorker}'s side.
+   *
+   */
+  tunnel: number;
+};
+
+/**
+ * The type of an "emit" message from the {@link VMWorker} to the {@link VM}.
+ *
+ */
+export type Message_Emit = {
+  /**
+   * Additional arguments to associate to the event being emitted.
+   *
+   */
+  args: AnyRest;
+
+  /**
+   * The event name to emit on the {@link VM}'s side.
+   *
+   */
+  event: string;
 };
 
 /**
@@ -628,103 +732,10 @@ export class VMImplementation implements VM {
   #bootTimeout?: ReturnType<typeof setTimeout> | undefined;
 
   /**
-   * Handle the {@link VMWorker}'s `error` event.
-   *
-   * Handling a {@link VMWorker}'s `error` event simply entails casting a `worker:error` event.
-   *
-   * @param error - Error to handle.
-   */
-  #errorHandler: ErrorCallback = (error: Error): void => {
-    this.#castEvent('worker:error', error.message);
-  };
-
-  /**
    * The timestamp when the last `pong` message was received.
    *
    */
   #lastPong?: number;
-
-  /**
-   * Handle the {@link VMWorker}'s `message` event's data.
-   *
-   * Handling a {@link VMWorker}'s `message` event's data entails:
-   *
-   * 1. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
-   * 2. executing the corresponding sub-handler.
-   * 3. if the `name` is not supported, try to signal rejection to the tunnel index if existing, or simply emit an error message otherwise.
-   *
-   * @param data - The message's `data` field, a JSON-encoded string.
-   */
-  #messageHandler: MessageCallback = (data: string): void => {
-    try {
-      const parsedData: Record<string, unknown> = JSON.parse(data) as Record<string, unknown>;
-      switch (parsedData.name) {
-        case 'pong':
-          this.#lastPong = Date.now();
-          break;
-        case 'resolve':
-          {
-            const { payload, tunnel }: { payload: unknown; tunnel: number } = parsedData as {
-              payload: unknown;
-              tunnel: number;
-            };
-            this.#resolveTunnel(tunnel, payload);
-          }
-          break;
-        case 'reject':
-          {
-            const { error, tunnel }: { error: string; tunnel: number } = parsedData as {
-              error: string;
-              tunnel: number;
-            };
-            this.#rejectTunnel(tunnel, new Error(error));
-          }
-          break;
-        case 'call':
-          {
-            const {
-              args,
-              enclosure,
-              idx,
-              tunnel,
-            }: {
-              args: unknown[];
-              enclosure: string;
-              idx: number;
-              tunnel: number;
-            } = parsedData as {
-              args: unknown[];
-              enclosure: string;
-              idx: number;
-              tunnel: number;
-            };
-            this.#callPredefined(enclosure, tunnel, idx, args);
-          }
-          break;
-        case 'emit':
-          {
-            const { args, event }: { args: unknown[]; event: string } = parsedData as {
-              args: unknown[];
-              event: string;
-            };
-            this.#castEvent(event, args);
-          }
-          break;
-        default: {
-          if ('string' === typeof parsedData.name) {
-            if ('tunnel' in parsedData) {
-              this.#postRejectMessage(parsedData.tunnel as number, `unknown event name ${parsedData.name}`);
-            }
-            throw new Error(`unknown event name ${parsedData.name}`);
-          } else {
-            throw new Error('malformed event');
-          }
-        }
-      }
-    } catch (e) {
-      this.#castEvent('worker:error', e);
-    }
-  };
 
   /**
    * The VM name to use.
@@ -742,7 +753,7 @@ export class VMImplementation implements VM {
    * A list of predefined functions.
    *
    */
-  #predefined: ((...args: unknown[]) => unknown)[] = [];
+  #predefined: AnyFunction[] = [];
 
   /**
    * The VM's state.
@@ -808,7 +819,11 @@ export class VMImplementation implements VM {
    * @param reject - The rejection callback.
    * @returns The created tunnel's index.
    */
-  #addTunnel(resolve: TunnelDescriptor_Resolution, reject: TunnelDescriptor_Rejection): number {
+  #addTunnel(
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    resolve: Resolution<any>,
+    reject: Rejection,
+  ): number {
     return this.#tunnels.push({ reject, resolve }) - 1;
   }
 
@@ -842,28 +857,19 @@ export class VMImplementation implements VM {
    * @param idx - The predefined function index to call.
    * @param args - The arguments to forward to the predefined function called.
    */
-  #callPredefined(enclosure: string, tunnel: number, idx: number, args: unknown[]): void {
+  #callPredefined(enclosure: string, tunnel: number, idx: number, args: AnyRest): void {
     this.#castEvent(`${enclosure}:predefined:call`, idx, args);
-    if (idx in this.#predefined) {
-      try {
-        this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
-        this.#castEvent(`${enclosure}:predefined:call:ok`, idx, args);
-      } catch (e) {
-        this.#postRejectMessage(tunnel, _errorMessage(e));
-        this.#castEvent(`${enclosure}:predefined:call:error`, idx, args, e);
+    try {
+      if (!(idx in this.#predefined)) {
+        throw new Error(`unknown function index ${idx.toString()}`);
       }
-    } else {
-      this.#postRejectMessage(tunnel, `unknown function index ${idx.toString()}`);
-      this.#castEvent(
-        `${enclosure}:predefined:call:error`,
-        idx,
-        args,
-        new Error(`unknown function index ${idx.toString()}`),
-      );
+      this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
+      this.#castEvent(`${enclosure}:predefined:call:ok`, idx, args);
+    } catch (e) {
+      this.#postRejectMessage(tunnel, _errorMessage(e));
+      this.#castEvent(`${enclosure}:predefined:call:error`, idx, args, _makeError(e));
     }
   }
-
-  // ----------------------------------------------------------------------------------------------
 
   /**
    * Cast an event both from the static {@link EventCasterImplementation} at {@link events}, and from the current instance.
@@ -872,7 +878,7 @@ export class VMImplementation implements VM {
    * @param args - Arguments to associate to the event in question.
    * @see {@link validation.event} for additional exceptions thrown.
    */
-  #castEvent(name: string, ...args: unknown[]): void {
+  #castEvent(name: string, ...args: AnyRest): void {
     _cast(`${_eventPrefix}:${this.#name}:${name}`, this, ...args);
   }
 
@@ -890,7 +896,7 @@ export class VMImplementation implements VM {
    * @param resolve - Resolution callback: called if shutting down completed successfully.
    * @param reject - Rejection callback: called if anything went wrong with shutting down.
    */
-  #doStop(resolve?: () => void, reject?: (error: Error) => void): void {
+  #doStop(resolve?: Resolution<void>, reject?: Rejection): void {
     this.#castEvent('stop');
     try {
       if ('stopped' !== this.#state) {
@@ -908,7 +914,7 @@ export class VMImplementation implements VM {
           try {
             this.#rejectTunnel(idx, new Error('stopped'));
           } catch (e) {
-            this.#castEvent('stop:error:ignored', e);
+            this.#castEvent('stop:error:ignored', _makeError(e));
           }
         });
         this.#tunnels = [];
@@ -921,7 +927,79 @@ export class VMImplementation implements VM {
     resolve?.();
   }
 
-  // ----------------------------------------------------------------------------------------------
+  /**
+   * Handle the {@link VMWorker}'s `error` event.
+   *
+   * Handling a {@link VMWorker}'s `error` event simply entails casting a `worker:error` event.
+   *
+   * @param error - Error to handle.
+   */
+  #errorHandler(error: Error): void {
+    this.#castEvent('worker:error', error.message);
+  }
+
+  /**
+   * Handle the {@link VMWorker}'s `message` event's data.
+   *
+   * Handling a {@link VMWorker}'s `message` event's data entails:
+   *
+   * 1. handling the specific `name` therein (only `resolve`, `reject`, `call`, and `emit` are supported).
+   * 2. executing the corresponding sub-handler.
+   * 3. if the `name` is not supported, try to signal rejection to the tunnel index if existing, or simply emit an error message otherwise.
+   *
+   * @param data - The message's `data` field, a JSON-encoded string.
+   */
+  #messageHandler(data: string): void {
+    try {
+      let parsedData: Record<string, unknown>;
+      try {
+        parsedData = JSON.parse(data) as Record<string, unknown>;
+      } catch {
+        throw new Error(`malformed message ${data}`);
+      }
+      switch (parsedData.name) {
+        case 'pong':
+          this.#lastPong = Date.now();
+          break;
+        case 'resolve':
+          {
+            const { payload, tunnel }: Message_Resolve = parsedData as Message_Resolve;
+            this.#resolveTunnel(tunnel, payload);
+          }
+          break;
+        case 'reject':
+          {
+            const { error, tunnel }: Message_Reject = parsedData as Message_Reject;
+            this.#rejectTunnel(tunnel, new Error(error));
+          }
+          break;
+        case 'call':
+          {
+            const { args, enclosure, idx, tunnel }: Message_Call = parsedData as Message_Call;
+            this.#callPredefined(enclosure, tunnel, idx, args);
+          }
+          break;
+        case 'emit':
+          {
+            const { args, event }: Message_Emit = parsedData as Message_Emit;
+            this.#castEvent(event, args);
+          }
+          break;
+        default: {
+          if ('string' === typeof parsedData.name) {
+            if ('tunnel' in parsedData) {
+              this.#postRejectMessage(parsedData.tunnel as number, `unknown event name ${parsedData.name}`);
+            }
+            throw new Error(`unknown event name ${parsedData.name}`);
+          } else {
+            throw new Error(`malformed event ${JSON.stringify(parsedData)}`);
+          }
+        }
+      }
+    } catch (e) {
+      this.#castEvent('worker:error', e);
+    }
+  }
 
   /**
    * Post a `create` message to the {@link VMWorker}.
@@ -945,11 +1023,7 @@ export class VMImplementation implements VM {
    * @param tunnel - The tunnel index to expect a response on.
    */
   #postCreateMessage(enclosure: string, tunnel: number): void {
-    this.#worker?.shout({
-      enclosure,
-      name: 'create',
-      tunnel,
-    });
+    this.#worker?.shout({ enclosure, name: 'create', tunnel });
   }
 
   /**
@@ -1001,13 +1075,8 @@ export class VMImplementation implements VM {
    * @param event - The event name to emit.
    * @param args - The arguments to associate to the given event.
    */
-  #postEmitMessage(enclosure: string, event: string, args: unknown[]): void {
-    this.#worker?.shout({
-      args,
-      enclosure,
-      event: event,
-      name: 'emit',
-    });
+  #postEmitMessage(enclosure: string, event: string, args: AnyRest): void {
+    this.#worker?.shout({ args, enclosure, event: event, name: 'emit' });
   }
 
   /**
@@ -1039,22 +1108,9 @@ export class VMImplementation implements VM {
    * @param dependency - The dependency being executed.
    * @param args - The arguments to execute the dependency with.
    */
-  #postExecuteMessage(
-    enclosure: string,
-    tunnel: number,
-    dependency: DependencyObject,
-    args: Map<string, unknown>,
-  ): void {
-    this.#worker?.shout({
-      args: Object.fromEntries(args.entries()),
-      dependency,
-      enclosure,
-      name: 'execute',
-      tunnel,
-    });
+  #postExecuteMessage(enclosure: string, tunnel: number, dependency: DependencyObject, args: ArgumentsMap): void {
+    this.#worker?.shout({ args: Object.fromEntries(args.entries()), dependency, enclosure, name: 'execute', tunnel });
   }
-
-  // ----------------------------------------------------------------------------------------------
 
   /**
    * Post a `getSubEnclosures` message to the {@link VMWorker}.
@@ -1356,13 +1412,7 @@ export class VMImplementation implements VM {
    * @param funcName - The function name to use.
    */
   #postPredefineMessage(enclosure: string, tunnel: number, idx: number, funcName: string): void {
-    this.#worker?.shout({
-      enclosure,
-      function: funcName,
-      idx,
-      name: 'predefine',
-      tunnel,
-    });
+    this.#worker?.shout({ enclosure, function: funcName, idx, name: 'predefine', tunnel });
   }
 
   /**
@@ -1517,11 +1567,10 @@ export class VMImplementation implements VM {
    */
   createEnclosure(enclosure: string): Promise<EnclosureImplementation> {
     return new Promise<EnclosureImplementation>(
-      (resolve: (enclosureImplementation: EnclosureImplementation) => void, reject: (error: Error) => void): void => {
-        this.#castEvent(`${enclosure}:create`);
+      (resolve: Resolution<EnclosureImplementation>, reject: Rejection): void => {
+        validateEnclosure(enclosure);
         try {
-          validateEnclosure(enclosure);
-
+          this.#castEvent(`${enclosure}:create`);
           this.#assertRunning();
 
           this.#postCreateMessage(
@@ -1545,8 +1594,6 @@ export class VMImplementation implements VM {
     );
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * Delete the enclosure with the given name.
    *
@@ -1556,11 +1603,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a list of deleted enclosures (the one given and any sub enclosures of it) if enclosure deletion completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   deleteEnclosure(enclosure: string): Promise<string[]> {
-    return new Promise<string[]>((resolve: (deleted: string[]) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:delete`);
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
+        this.#castEvent(`${enclosure}:delete`);
         this.#assertRunning();
 
         this.#postDeleteMessage(
@@ -1591,7 +1637,7 @@ export class VMImplementation implements VM {
    * @param args - Associated arguments to emit alongside the event.
    * @returns `this`, for chaining.
    */
-  emit(enclosure: string, event: string, ...args: unknown[]): this {
+  emit(enclosure: string, event: string, ...args: AnyRest): this {
     this.#postEmitMessage(validateEnclosure(enclosure), validateEvent(event), args);
     return this;
   }
@@ -1604,14 +1650,12 @@ export class VMImplementation implements VM {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link DependencyImplementation}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(enclosure: string, dependency: DependencyImplementation, args?: Map<string, unknown>): Promise<unknown> {
-    return new Promise<unknown>((resolve: (result: unknown) => void, reject: (error: Error) => void): void => {
+  execute(enclosure: string, dependency: DependencyImplementation, args?: ArgumentsMap): Promise<unknown> {
+    return new Promise<unknown>((resolve: Resolution<unknown>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
+      const theArgs: ArgumentsMap = validateArgumentsMap(args ?? new Map<string, unknown>());
       try {
-        validateEnclosure(enclosure);
-        const theArgs: Map<string, unknown> = validateArgumentsMap(args ?? new Map<string, unknown>());
-
         this.#castEvent(`${enclosure}:execute`, dependency, theArgs);
-
         this.#assertRunning();
 
         this.#postExecuteMessage(
@@ -1644,11 +1688,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a list of sub enclosures enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   getSubEnclosures(enclosure: string, depth?: number): Promise<string[]> {
-    return new Promise<string[]>((resolve: (subEnclosures: string[]) => void, reject: (error: Error) => void): void => {
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
       const theDepth: number = validateNonNegativeInteger(depth ?? 0);
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
         this.#assertRunning();
 
         this.#postGetSubEnclosuresMessage(enclosure, theDepth, this.#addTunnel(resolve, reject));
@@ -1658,8 +1701,6 @@ export class VMImplementation implements VM {
     });
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * Install the given {@link DependencyImplementation} on the {@link VMWorker}.
    *
@@ -1668,10 +1709,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if the {@link DependencyImplementation} was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
   install(enclosure: string, dependency: DependencyImplementation): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:install`, dependency);
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
+        this.#castEvent(`${enclosure}:install`, dependency);
         this.#assertRunning();
 
         this.#postInstallMessage(
@@ -1695,8 +1736,6 @@ export class VMImplementation implements VM {
     });
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * Install the given {@link DependencyImplementation} iterable, by sorting them topologically and installing each one in turn.
    *
@@ -1705,61 +1744,33 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if every {@link DependencyImplementation} in the iterable was correctly installed, and rejects with an {@link !Error} in case errors occurred.
    */
   installAll(enclosure: string, dependencies: Iterable<DependencyImplementation>): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
         this.createEnclosure(`${enclosure}.tmp_${_pseudoRandomString()}`).then(
           (wrapper: EnclosureImplementation): void => {
-            wrapper.listInstalled().then(
-              (installed: string[]): void => {
-                Promise.all(
-                  sort<DependencyImplementation>(dependencies, installed).map((dependency: DependencyImplementation) =>
-                    wrapper.install(dependency),
-                  ),
-                ).then(
-                  (): void => {
-                    this.mergeEnclosure(wrapper.enclosure).then(
-                      (): void => {
-                        resolve();
-                      },
-                      (error: Error): void => {
-                        this.deleteEnclosure(wrapper.enclosure).then(
-                          () => {
-                            reject(error);
-                          },
-                          () => {
-                            reject(error);
-                          },
-                        );
-                      },
-                    );
-                  },
-                  (error: Error): void => {
-                    this.deleteEnclosure(wrapper.enclosure).then(
-                      () => {
-                        reject(error);
-                      },
-                      () => {
-                        reject(error);
-                      },
-                    );
-                  },
-                );
-              },
-              (error: Error): void => {
-                this.deleteEnclosure(wrapper.enclosure).then(
-                  () => {
-                    reject(error);
-                  },
-                  () => {
-                    reject(error);
-                  },
-                );
-              },
-            );
+            const rejectAndDeleteEnclosure: Rejection = (error: Error): void => {
+              this.deleteEnclosure(wrapper.enclosure).then(
+                (): void => {
+                  reject(error);
+                },
+                (): void => {
+                  reject(error);
+                },
+              );
+            };
+
+            wrapper.listInstalled().then((installed: string[]): void => {
+              Promise.all(
+                sort<DependencyImplementation>(dependencies, installed).map((dependency: DependencyImplementation) =>
+                  wrapper.install(dependency),
+                ),
+              ).then((): void => {
+                this.mergeEnclosure(wrapper.enclosure).then(resolve, rejectAndDeleteEnclosure);
+              }, rejectAndDeleteEnclosure);
+            }, rejectAndDeleteEnclosure);
           },
-          (error: Error): void => {
-            reject(error);
-          },
+          reject,
         );
       } catch (e) {
         reject(_makeError(e));
@@ -1774,10 +1785,9 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a boolean value indicating whether the enclosure is muted if successful, and rejects with an {@link !Error} in case errors occur.
    */
   isMuted(enclosure: string): Promise<boolean> {
-    return new Promise<boolean>((resolve: (muted: boolean) => void, reject: (error: Error) => void): void => {
+    return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
         this.#assertRunning();
 
         this.#postIsMutedMessage(enclosure, this.#addTunnel(resolve, reject));
@@ -1787,8 +1797,6 @@ export class VMImplementation implements VM {
     });
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * Link one enclosure to another, so that events cast on the first are also handled in the second.
    *
@@ -1797,12 +1805,11 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   linkEnclosures(enclosure: string, target: string): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:link`, target);
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
+      validateEnclosure(target);
       try {
-        validateEnclosure(enclosure);
-        validateEnclosure(target);
-
+        this.#castEvent(`${enclosure}:link`, target);
         this.#assertRunning();
 
         this.#postLinkMessage(
@@ -1826,8 +1833,6 @@ export class VMImplementation implements VM {
     });
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * List the dependencies (user-level and predefined) installed on the given enclosure or its prefixes.
    *
@@ -1835,10 +1840,9 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a list of installed dependency names if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listInstalled(enclosure: string): Promise<string[]> {
-    return new Promise<string[]>((resolve: (installed: string[]) => void, reject: (error: Error) => void): void => {
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
         this.#assertRunning();
 
         this.#postListInstalledMessage(enclosure, this.#addTunnel(resolve, reject));
@@ -1855,10 +1859,9 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a list of linked-from enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listLinkedFrom(enclosure: string): Promise<string[]> {
-    return new Promise<string[]>((resolve: (linkedFrom: string[]) => void, reject: (error: Error) => void): void => {
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
         this.#assertRunning();
 
         this.#postListLinkedFromMessage(enclosure, this.#addTunnel(resolve, reject));
@@ -1875,10 +1878,9 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a list of linked-to enclosures if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listLinksTo(enclosure: string): Promise<string[]> {
-    return new Promise<string[]>((resolve: (linksTo: string[]) => void, reject: (error: Error) => void): void => {
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
         this.#assertRunning();
 
         this.#postListLinksToMessage(enclosure, this.#addTunnel(resolve, reject));
@@ -1888,25 +1890,21 @@ export class VMImplementation implements VM {
     });
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   /**
    * List the root enclosures created.
    *
    * @returns A {@link !Promise} that resolves with a list of root enclosures created if successful, and rejects with an {@link !Error} in case errors occur.
    */
   listRootEnclosures(): Promise<string[]> {
-    return new Promise<string[]>(
-      (resolve: (rootEnclosures: string[]) => void, reject: (error: Error) => void): void => {
-        try {
-          this.#assertRunning();
+    return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
+      try {
+        this.#assertRunning();
 
-          this.#postListRootEnclosuresMessage(this.#addTunnel(resolve, reject));
-        } catch (e) {
-          reject(_makeError(e));
-        }
-      },
-    );
+        this.#postListRootEnclosuresMessage(this.#addTunnel(resolve, reject));
+      } catch (e) {
+        reject(_makeError(e));
+      }
+    });
   }
 
   /**
@@ -1916,11 +1914,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if enclosure merging completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   mergeEnclosure(enclosure: string): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:merge`, enclosure);
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
+        this.#castEvent(`${enclosure}:merge`, enclosure);
         this.#assertRunning();
 
         this.#postMergeMessage(
@@ -1950,11 +1947,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with the previous muting status if enclosure muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   muteEnclosure(enclosure: string): Promise<boolean> {
-    return new Promise<boolean>((resolve: (previous: boolean) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:muteEnclosure`);
+    return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
+        this.#castEvent(`${enclosure}:muteEnclosure`);
         this.#assertRunning();
 
         this.#postMuteMessage(
@@ -2022,17 +2018,18 @@ export class VMImplementation implements VM {
    * @param callback - {@link !Function} callback to use.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    */
-  predefine(enclosure: string, name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+  predefine(enclosure: string, name: string, callback: AnyFunction): Promise<void> {
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
+      validateIdentifier(name);
       const idx: number =
         this.#predefined.push(() => {
           throw new Error('SHOULD NEVER HAPPEN');
         }) - 1;
-      this.#castEvent(`${enclosure}:predefined:add`, name, callback, idx);
       try {
-        validateEnclosure(enclosure);
-
+        this.#castEvent(`${enclosure}:predefined:add`, name, callback, idx);
         this.#assertRunning();
+
         this.#postPredefineMessage(
           enclosure,
           this.#addTunnel(
@@ -2049,7 +2046,7 @@ export class VMImplementation implements VM {
             },
           ),
           idx,
-          validateIdentifier(name),
+          name,
         );
       } catch (e) {
         this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, e);
@@ -2072,39 +2069,22 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if the {@link VMWorker} was successfully shut down, and rejects with an {@link !Error} in case errors are found.
    */
   shutdown(timeout?: number): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultShutdownTimeout);
 
-      this.listRootEnclosures().then(
-        (rootEnclosures: string[]) => {
-          rootEnclosures.forEach((rootEnclosure: string): void => {
-            this.emit(rootEnclosure, 'shutdown');
-          });
+      this.listRootEnclosures().then((rootEnclosures: string[]) => {
+        rootEnclosures.forEach((rootEnclosure: string): void => {
+          this.emit(rootEnclosure, 'shutdown');
+        });
 
-          setTimeout((): void => {
-            Promise.all(
-              rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
-            ).then(
-              (): void => {
-                this.stop().then(
-                  (): void => {
-                    resolve();
-                  },
-                  (error: Error): void => {
-                    reject(error);
-                  },
-                );
-              },
-              (error: Error): void => {
-                reject(error);
-              },
-            );
-          }, theTimeout);
-        },
-        (error: Error) => {
-          reject(error);
-        },
-      );
+        setTimeout((): void => {
+          Promise.all(
+            rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
+          ).then((): void => {
+            this.stop().then(resolve, reject);
+          }, reject);
+        }, theTimeout);
+      }, reject);
     });
   }
 
@@ -2125,73 +2105,71 @@ export class VMImplementation implements VM {
     timeout?: number,
     pingInterval?: number,
     pongLimit?: number,
-  ): Promise<[number, number]> {
-    return new Promise<[number, number]>(
-      (resolve: (bootTimes: [number, number]) => void, reject: (error: Error) => void): void => {
+  ): Promise<WorkerTimings> {
+    return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
+      const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
+      const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
+      const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
+      try {
         this.#castEvent('start');
-        try {
-          this.#assertCreated();
+        this.#assertCreated();
 
-          const theWorkerBuilder: WorkerBuilder =
-            workerBuilder ?? ((code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name));
-          const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
-          const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
-          const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
+        const theWorkerBuilder: WorkerBuilder =
+          workerBuilder ?? ((code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name));
 
-          this.#state = 'booting';
+        this.#state = 'booting';
 
-          const externalBootTime: number = Date.now();
-          const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
-            clearTimeout(this.#bootTimeout);
-            this.#bootTimeout = undefined;
+        const externalBootTime: number = Date.now();
+        const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
+          clearTimeout(this.#bootTimeout);
+          this.#bootTimeout = undefined;
 
-            this.#lastPong = Date.now();
-            this.#pinger = setInterval(() => {
-              const delta: number = Date.now() - (this.#lastPong ?? -Infinity);
-              if (thePongLimit < delta) {
-                this.#castEvent('worker:unresponsive', delta);
-                this.#doStop();
-              }
-              this.#postPingMessage();
-            }, thePingInterval);
+          this.#lastPong = Date.now();
+          this.#pinger = setInterval(() => {
+            const delta: number = Date.now() - (this.#lastPong ?? -Infinity);
+            if (thePongLimit < delta) {
+              this.#castEvent('worker:unresponsive', delta);
+              this.#doStop();
+            }
+            this.#postPingMessage();
+          }, thePingInterval);
 
-            this.#state = 'running';
-            this.#castEvent('start:ok');
+          this.#state = 'running';
+          this.#castEvent('start:ok');
 
-            resolve([internalBootTime, Date.now() - externalBootTime]);
-          };
-          const bootReject: (error: Error) => void = (error: Error): void => {
-            this.#castEvent('start:error', error);
-            this.stop().then(
-              (): void => {
-                reject(error);
-              },
-              (): void => {
-                reject(error);
-              },
-            );
-          };
-
-          const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
-
-          this.#bootTimeout = setTimeout((): void => {
-            this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
-          }, theTimeout);
-
-          this.#worker = theWorkerBuilder(workerCode.toString(), bootTunnel, this.name).listen(
-            (data: string): void => {
-              this.#messageHandler(data);
+          resolve({ inside: internalBootTime, outside: Date.now() - externalBootTime });
+        };
+        const bootReject: Rejection = (error: Error): void => {
+          this.#castEvent('start:error', error);
+          this.stop().then(
+            (): void => {
+              reject(error);
             },
-            (error: Error): void => {
-              this.#errorHandler(error);
+            (): void => {
+              reject(error);
             },
           );
-        } catch (e) {
-          this.#castEvent('start:error', e);
-          reject(_makeError(e));
-        }
-      },
-    );
+        };
+
+        const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
+
+        this.#bootTimeout = setTimeout((): void => {
+          this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
+        }, theTimeout);
+
+        this.#worker = theWorkerBuilder(workerCode.toString(), bootTunnel, this.name).listen(
+          (data: string): void => {
+            this.#messageHandler(data);
+          },
+          (error: Error): void => {
+            this.#errorHandler(error);
+          },
+        );
+      } catch (e) {
+        this.#castEvent('start:error', e);
+        reject(_makeError(e));
+      }
+    });
   }
 
   /**
@@ -2206,7 +2184,7 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   stop(): Promise<void> {
-    return new Promise<void>((resolve: () => void, reject: (error: Error) => void): void => {
+    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
       this.#doStop(resolve, reject);
     });
   }
@@ -2219,12 +2197,12 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with a boolean indicating whether the target enclosure was previously linked if enclosure unlinking completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   unlinkEnclosures(enclosure: string, target: string): Promise<boolean> {
-    return new Promise<boolean>((resolve: (unlinked: boolean) => void, reject: (error: Error) => void): void => {
+    return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
       validateEnclosure(enclosure);
       validateEnclosure(target);
 
-      this.#castEvent(`${enclosure}:unlink`, target);
       try {
+        this.#castEvent(`${enclosure}:unlink`, target);
         this.#assertRunning();
 
         this.#postUnlinkMessage(
@@ -2255,11 +2233,10 @@ export class VMImplementation implements VM {
    * @returns A {@link !Promise} that resolves with he previous muting status if enclosure un-muting completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   unmuteEnclosure(enclosure: string): Promise<boolean> {
-    return new Promise<boolean>((resolve: (prev: boolean) => void, reject: (error: Error) => void): void => {
-      this.#castEvent(`${enclosure}:unmute`);
+    return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
+      validateEnclosure(enclosure);
       try {
-        validateEnclosure(enclosure);
-
+        this.#castEvent(`${enclosure}:unmute`);
         this.#assertRunning();
 
         this.#postUnmuteMessage(
@@ -2289,8 +2266,6 @@ export class VMImplementation implements VM {
   get isBooting(): boolean {
     return 'booting' === this.#state;
   }
-
-  // ----------------------------------------------------------------------------------------------
 
   /**
    * Getter used to determine if the VM is in the "created" state.
@@ -2324,8 +2299,6 @@ export class VMImplementation implements VM {
     return this.#name;
   }
 
-  // ----------------------------------------------------------------------------------------------
-
   static {
     // ref: https://stackoverflow.com/a/77741904
     Object.setPrototypeOf(this.prototype, null);
@@ -2357,12 +2330,8 @@ export class EnclosureImplementation implements Enclosure {
    * @throws {Error} if the given enclosure is not a string.
    */
   constructor(vm: VMImplementation, enclosure: string) {
-    if ('string' !== typeof enclosure) {
-      throw new Error('expected enclosure to be a string');
-    }
-
     this.#vm = vm;
-    this.#enclosure = enclosure;
+    this.#enclosure = validateEnclosure(enclosure);
   }
 
   /**
@@ -2372,7 +2341,7 @@ export class EnclosureImplementation implements Enclosure {
    * @param args - The arguments map to execute with.
    * @returns A {@link !Promise} that resolves with the {@link DependencyImplementation}'s execution result, and rejects with an {@link !Error} in case errors occurred.
    */
-  execute(dependency: DependencyImplementation, args?: Map<string, unknown>): Promise<unknown> {
+  execute(dependency: DependencyImplementation, args?: ArgumentsMap): Promise<unknown> {
     return this.vm.execute(this.enclosure, dependency, args);
   }
 
@@ -2503,7 +2472,7 @@ export class EnclosureImplementation implements Enclosure {
    * @param callback - {@link !Function} callback to use.
    * @returns A {@link !Promise} that resolves with `void` if the {@link !Function} was correctly predefined, and rejects with an {@link !Error} in case errors occurred.
    */
-  predefine(name: string, callback: (...args: unknown[]) => unknown): Promise<void> {
+  predefine(name: string, callback: AnyFunction): Promise<void> {
     return this.vm.predefine(this.enclosure, name, callback);
   }
 

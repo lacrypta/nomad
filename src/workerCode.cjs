@@ -1761,6 +1761,20 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   };
 
   /**
+   * Validate that the given argument is indeed a {@link !Function}.
+   *
+   * @param {unknown} callback - The argument ot validate.
+   * @returns {Function} The validated argument.
+   * @throws {Error} if the given callback is not a {@link !Function} instance.
+   */
+  const validateCallback = (callback) => {
+    if (!(callback instanceof _Function)) {
+      throw new _Error('expected callback to be a function');
+    }
+    return callback;
+  };
+
+  /**
    * Cast the given event with the given arguments and trigger any matching listeners in the given enclosure.
    *
    * @param {string} enclosure - The enclosure to cast the given event on.
@@ -1830,11 +1844,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @throws {Error} if the given callback is not a {@link !Function} instance.
    */
   const off = (enclosure, callback) => {
-    if (!(callback instanceof _Function)) {
-      throw new _Error('expected callback to be a function');
-    }
-
-    getEnclosure(enclosure).listeners.delete(callback);
+    getEnclosure(enclosure).listeners.delete(validateCallback(callback));
   };
 
   /**
@@ -1852,9 +1862,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const on = (enclosure, filter, callback) => {
     const filterRegex = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
 
-    if (!(callback instanceof _Function)) {
-      throw new _Error('expected callback to be a function');
-    } else if ('string' !== typeof filter) {
+    const _callback = validateCallback(callback);
+    if ('string' !== typeof filter) {
       throw new _Error('event name filter must be a string');
     } else if (!filterRegex.test(filter)) {
       throw new _Error(`event name filter must adhere to ${filterRegex.toString()}`);
@@ -1863,10 +1872,10 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     }
 
     const listeners = getEnclosure(enclosure).listeners;
-    let filters = listeners.get(callback);
+    let filters = listeners.get(_callback);
     if (undefined === filters) {
       filters = new _Set();
-      listeners.set(callback, filters);
+      listeners.set(_callback, filters);
     }
     filters.add(
       _RegExp(
@@ -1897,6 +1906,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @param {unknown} filter - Event name filter to assign the listener to.
    * @param {Function} callback - Callback to call on a matching event being cast.
    * @returns {void}
+   * @throws {Error} if the given callback is not a {@link !Function} instance.
    */
   const once = (enclosure, filter, callback) => {
     /**
@@ -1905,7 +1915,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      * @returns {void}
      */
     const wrapped = (...args) => {
-      callback.apply(undefined, args);
+      validateCallback(callback).apply(undefined, args);
       off(enclosure, wrapped);
     };
     on(enclosure, filter, wrapped);

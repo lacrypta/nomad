@@ -26,11 +26,14 @@
 
 // TODO: ANALYZE Iterator AND OTHER HIDDEN OBJECTS
 
+// TODO: FIX EVENT REGEX SO AS NOT TO ALLOW ".._---:foo" AS AN EVENT NAME (ALSO: ALLOW "/")
+
 // ------------------------------------------------------------------------------------------------
 
-import type { Dependency, DependencyObject } from './dependency';
+import type { AnyFunction, AnyRest, Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster } from './eventCaster';
-import type { Enclosure, VM } from './vm';
+import type { ArgumentsMap } from './validation';
+import type { Enclosure, VM, WorkerTimings } from './vm';
 import type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder } from './worker';
 
 import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
@@ -46,9 +49,10 @@ const workerBuilder = _workerBuilder;
 
 const vmEvents = _vmEvents;
 
-export type { Dependency, DependencyObject };
+export type { AnyFunction, AnyRest, Dependency, DependencyObject };
 export type { EventCallback, EventCaster };
-export type { Enclosure, VM };
+export type { ArgumentsMap };
+export type { Enclosure, VM, WorkerTimings };
 export type { ErrorCallback, MessageCallback, VMWorker, WorkerBuilder };
 
 export { dependencyCreate, dependencyFrom };
