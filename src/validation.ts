@@ -269,7 +269,7 @@ export const dependencyMap = (dependencies: Map<string, string>): Map<string, st
  * Each segment consists of alphanumeric characters, `.`, or `-`.
  *
  */
-export const _eventRegex: RegExp = /^[\w/.-]+(?::[\w/.-]+)*$/i;
+export const _eventRegex: RegExp = /^[\w/.-]+(?::[\w/.-]+)*$/;
 
 /**
  * Validate the given event name and return it if valid.
@@ -301,7 +301,7 @@ export const event = (name: string): string => {
  * Wildcards can be `*` or `**`.
  *
  */
-export const _filterRegex: RegExp = /^(?:\*\*?|[\w/.-]+)(?::(?:\*\*?|[\w/.-]+))*$/i;
+export const _filterRegex: RegExp = /^(?:\*\*?|[\w/.-]+)(?::(?:\*\*?|[\w/.-]+))*$/;
 
 /**
  * Validate the given event name filter and return it if valid.
