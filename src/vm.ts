@@ -29,19 +29,19 @@
  * @module
  */
 
-import type { AnyFunction, AnyRest, Dependency, DependencyObject } from './dependency';
+import type { AnyFunction, AnyRest, Dependency, DependencyImplementation, DependencyObject } from './dependency';
 import type {
   EventCallback,
   EventCaster,
   EventCasterImplementation_Cast,
   EventCasterImplementation_ProtectedMethods,
 } from './eventCaster';
+import type { ArgumentsMap } from './validation';
 import type { VMWorker, WorkerBuilder } from './worker';
 
-import { DependencyImplementation, sort } from './dependency';
+import { sort } from './dependency';
 import { EventCasterImplementation } from './eventCaster';
 import {
-  ArgumentsMap,
   argumentsMap as validateArgumentsMap,
   enclosure as validateEnclosure,
   event as validateEvent,
