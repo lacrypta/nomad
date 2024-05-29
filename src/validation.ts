@@ -269,7 +269,7 @@ export const dependencyMap = (dependencies: Map<string, string>): Map<string, st
  * Each segment consists of alphanumeric characters, `.`, or `-`.
  *
  */
-export const _eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
+export const _eventRegex: RegExp = /^[\w/.-]+(?::[\w/.-]+)*$/i;
 
 /**
  * Validate the given event name and return it if valid.
@@ -277,7 +277,7 @@ export const _eventRegex: RegExp = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
  * All event names must adhere to the following ABNF:
  *
  * ```ini
- * segment = 1*( "." / ALPHA / DIGIT / "-" )
+ * segment = 1*( ALPHA / DIGIT / "/" / "_" / "." / "-" )
  * event-name = segment *( ":" segment )
  * ```
  *
@@ -301,7 +301,7 @@ export const event = (name: string): string => {
  * Wildcards can be `*` or `**`.
  *
  */
-export const _filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9-]+))*$/i;
+export const _filterRegex: RegExp = /^(?:\*\*?|[\w/.-]+)(?::(?:\*\*?|[\w/.-]+))*$/i;
 
 /**
  * Validate the given event name filter and return it if valid.
@@ -309,7 +309,7 @@ export const _filterRegex: RegExp = /^(?:\*\*?|[.a-z0-9-]+)(?::(?:\*\*?|[.a-z0-9
  * All event name filters must adhere to the following ABNF:
  *
  * ```ini
- * filter-segment = "*" / "**" / 1*( "." / ALPHA / DIGIT / "-" )
+ * filter-segment = "*" / "**" / 1*( ALPHA / DIGIT / "/" / "_" / "." / "-" )
  * filter = filter-segment *( ":" filter-segment )
  * ```
  *

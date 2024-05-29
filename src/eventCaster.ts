@@ -92,7 +92,7 @@ export type EventCasterImplementation_ProtectedMethods = {
  * All event names must adhere to the following ABNF:
  *
  * ```ini
- * segment = 1*( "." / ALPHA / DIGIT / "-" )
+ * segment = 1*( ALPHA / DIGIT / "/" / "_" / "." / "-" )
  * event-name = segment *( ":" segment )
  * ```
  * .
@@ -173,7 +173,7 @@ export const _filterToRegExp: (filter: string) => RegExp = (filter: string): Reg
  * All event names must adhere to the following ABNF:
  *
  * ```ini
- * segment = 1*( "." / ALPHA / DIGIT / "-" )
+ * segment = 1*( ALPHA / DIGIT / "/" / "_" / "." / "-" )
  * event-name = segment *( ":" segment )
  * ```
  * .

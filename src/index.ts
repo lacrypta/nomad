@@ -26,8 +26,6 @@
 
 // TODO: ANALYZE Iterator AND OTHER HIDDEN OBJECTS
 
-// TODO: FIX EVENT REGEX SO AS NOT TO ALLOW ".._---:foo" AS AN EVENT NAME (ALSO: ALLOW "/")
-
 // ------------------------------------------------------------------------------------------------
 
 import type { AnyFunction, AnyRest, Dependency, DependencyObject } from './dependency';
