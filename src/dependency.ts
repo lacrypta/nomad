@@ -76,10 +76,10 @@ export interface Dependency {
    * @param importedName - Dependency {@link Dependency.name} to use for importing.
    * @param dependencyName - Dependency being depended on.
    * @returns `this`, for chaining.
-   * @throws {@link !Error} if an imported name fails regular expression validation.
-   * @throws {@link !Error} if an imported name is forbidden.
-   * @throws {@link !Error} if a dependency name fails regular expression validation.
-   * @throws {@link !Error} if a dependency name is forbidden.
+   * @throws {Error} if an imported name fails regular expression validation.
+   * @throws {Error} if an imported name is forbidden.
+   * @throws {Error} if a dependency name fails regular expression validation.
+   * @throws {Error} if a dependency name is forbidden.
    */
   addDependency(importedName: string, dependencyName: string): this;
 
@@ -155,8 +155,8 @@ export interface Dependency {
    *
    * @param code - The function source code to set.
    * @returns `this`, for chaining.
-   * @throws {@link !Error} if the given function source code contains disallowed characters.
-   * @throws {@link !Error} if the given function source code is not a valid strict mode function body.
+   * @throws {Error} if the given function source code contains disallowed characters.
+   * @throws {Error} if the given function source code is not a valid strict mode function body.
    */
   setCode(code: string): this;
 
@@ -174,8 +174,8 @@ export interface Dependency {
    *
    * @param name - The name to set.
    * @returns `this`, for chaining.
-   * @throws {@link !Error} if the given identifier fails regular expression validation.
-   * @throws {@link !Error} if the given identifier is forbidden.
+   * @throws {Error} if the given identifier fails regular expression validation.
+   * @throws {Error} if the given identifier is forbidden.
    */
   setName(name: string): this;
 }
@@ -237,7 +237,7 @@ export const _removeComments: (code: string) => string = (code: string): string 
  *
  * @param func - {@link !Function} instance to extract parameters for.
  * @returns A {@link DependencyObject} extracted from the given instance.
- * @throws {@link !Error} if the function body cannot be determined.
+ * @throws {Error} if the function body cannot be determined.
  */
 export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) => DependencyObject = (
   func: (...args: unknown[]) => unknown,
@@ -316,7 +316,7 @@ export const _getDependencyPrimitive: (func: (...args: unknown[]) => unknown) =>
  * @param func - Function to use for constructing the {@link Dependency}.
  * @param fName - Name to use instead if given.
  * @returns The constructed {@link Dependency}.
- * @throws {@link !Error} if the given argument is not a {@link !Function}.
+ * @throws {Error} if the given argument is not a {@link !Function}.
  */
 export const from: (func: (...args: unknown[]) => unknown, fName?: string) => Dependency = (
   func: (...args: unknown[]) => unknown,
@@ -352,7 +352,7 @@ export const create: (name?: string, code?: string, dependencies?: Record<string
  * @param dependencies - Dependencies to sort.
  * @param installed - Installed {@link Dependency.name}s to assume existing (defaults to `null`, meaning none).
  * @returns Sorted {@link Dependency} list.
- * @throws {@link !Error} if unresolved dependencies found.
+ * @throws {Error} if unresolved dependencies found.
  */
 export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?: Iterable<string>) => T[] = <
   T extends Dependency,

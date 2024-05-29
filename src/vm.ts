@@ -783,7 +783,7 @@ export class VMImplementation implements VM {
    * Construct a new {@link VMImplementation} instance, using the given name.
    *
    * @param name - The VM's name to use, or `null` to have one generated randomly.
-   * @throws {@link !Error} if the given name already exists.
+   * @throws {Error} if the given name already exists.
    */
   constructor(name?: string) {
     if (undefined === name) {
@@ -815,7 +815,7 @@ export class VMImplementation implements VM {
   /**
    * Assert that the VM is currently in the "created" state.
    *
-   * @throws {@link !Error} if the VM is in any state other than "created".
+   * @throws {Error} if the VM is in any state other than "created".
    */
   #assertCreated(): void {
     if (!this.isCreated) {
@@ -826,7 +826,7 @@ export class VMImplementation implements VM {
   /**
    * Assert that the VM is currently in the "running" state.
    *
-   * @throws {@link !Error} if the VM is in any state other than "running".
+   * @throws {Error} if the VM is in any state other than "running".
    */
   #assertRunning(): void {
     if (!this.isRunning) {
@@ -1475,7 +1475,7 @@ export class VMImplementation implements VM {
    *
    * @param tunnel - Tunnel to reject.
    * @param error - {@link !Error} to pass on to the rejection callback.
-   * @throws {@link !Error} if the given tunnel index does not exist.
+   * @throws {Error} if the given tunnel index does not exist.
    */
   #rejectTunnel(tunnel: number, error: Error): void {
     this.#removeTunnel(tunnel).reject(error);
@@ -1486,7 +1486,7 @@ export class VMImplementation implements VM {
    *
    * @param tunnel - The tunnel to remove.
    * @returns The resolution / rejection callbacks that used to be at the given index.
-   * @throws {@link !Error} if the given tunnel index does not exist.
+   * @throws {Error} if the given tunnel index does not exist.
    */
   #removeTunnel(tunnel: number): TunnelDescriptor {
     if (!(tunnel in this.#tunnels)) {
@@ -1503,7 +1503,7 @@ export class VMImplementation implements VM {
    *
    * @param tunnel - Tunnel to resolve.
    * @param arg - Argument to pass on to the resolution callback.
-   * @throws {@link !Error} if the given tunnel index does not exist.
+   * @throws {Error} if the given tunnel index does not exist.
    */
   #resolveTunnel(tunnel: number, arg: unknown): void {
     this.#removeTunnel(tunnel).resolve(arg);
@@ -2354,7 +2354,7 @@ export class EnclosureImplementation implements Enclosure {
    *
    * @param vm - The VM instance to wrap.
    * @param enclosure - The enclosure to wrap for.
-   * @throws {@link !Error} if the given enclosure is not a string.
+   * @throws {Error} if the given enclosure is not a string.
    */
   constructor(vm: VMImplementation, enclosure: string) {
     if ('string' !== typeof enclosure) {
