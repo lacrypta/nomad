@@ -18,8 +18,8 @@
         'qpl',
       );
 
-      await vm.start().then(([internalStartTime, externalStartTime]) => {
-        console.log(`STARTUP: ${internalStartTime} / ${externalStartTime}`);
+      await vm.start().then(({ inside, outside }) => {
+        console.log(`STARTUP: ${inside} / ${outside}`);
       });
 
       await vm.install('root', dbl);
