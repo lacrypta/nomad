@@ -195,8 +195,8 @@ export const _removeComments: (code: string) => string = (code: string): string 
   let newCode: string = '';
   for (let i: number = 0; i < code.length; i++) {
     if (!(inQuoteChar || inBlockComment || inLineComment || inRegexLiteral)) {
-      if ('"\'`'.includes(code[i] ?? '')) {
-        inQuoteChar = code[i] ?? '';
+      if ('"' === code[i] || "'" === code[i] || '`' === code[i]) {
+        inQuoteChar = code[i] as string;
       } else if ('/' === code[i]) {
         if ('*' === code[i + 1]) {
           inBlockComment = true;
@@ -207,10 +207,7 @@ export const _removeComments: (code: string) => string = (code: string): string 
         }
       }
     } else {
-      if (
-        null !== inQuoteChar &&
-        ((inQuoteChar === code[i] && '\\' !== code[i - 1]) || ('\n' === code[i] && '`' !== inQuoteChar))
-      ) {
+      if ((inQuoteChar === code[i] && '\\' !== code[i - 1]) || ('\n' === code[i] && '`' !== inQuoteChar)) {
         inQuoteChar = null;
       }
       if (inRegexLiteral && (('/' === code[i] && '\\' !== code[i - 1]) || '\n' === code[i])) {
@@ -224,7 +221,7 @@ export const _removeComments: (code: string) => string = (code: string): string 
       }
     }
     if (!inBlockComment && !inLineComment) {
-      newCode += code[i] ?? '';
+      newCode += code[i] as string;
     }
   }
   return newCode;
@@ -293,7 +290,7 @@ export const _getDependencyPrimitive: (func: AnyFunction) => DependencyObject = 
     currentArg.push(part);
     try {
       const [name, ...defs]: string[] = currentArg.join(',').split('=');
-      const nameS: string = (name ?? '').trim();
+      const nameS: string = (name as string).trim();
       const defsS: string = defs.join('=').trim();
       const testArg: number = Math.trunc(Math.random() * 4294967296);
       /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
@@ -340,7 +337,7 @@ export const from: (func: AnyFunction, fName?: string) => Dependency = (
   }
 
   const { code, dependencies, name }: DependencyObject = _getDependencyPrimitive(func);
-  return new DependencyImplementation(fName || name, code, dependencies);
+  return new DependencyImplementation(fName || name, code, new Map<string, string>(Object.entries(dependencies)));
 };
 
 /**
@@ -351,12 +348,12 @@ export const from: (func: AnyFunction, fName?: string) => Dependency = (
  * @param dependencies - Dependencies map to use for constructing the {@link Dependency}.
  * @returns The constructed {@link Dependency}.
  */
-export const create: (name?: string, code?: string, dependencies?: Record<string, string>) => Dependency = (
-  name?: string,
+export const create: (name: string, code?: string, dependencies?: Record<string, string>) => Dependency = (
+  name: string,
   code?: string,
   dependencies?: Record<string, string>,
 ): Dependency => {
-  return new DependencyImplementation(name, code, dependencies);
+  return new DependencyImplementation(name, code, new Map<string, string>(Object.entries(dependencies ?? {})));
 };
 
 /**
@@ -440,13 +437,14 @@ export class DependencyImplementation implements Dependency {
    * @see {@link validation.identifier} for exceptions thrown.
    * @see {@link validation.functionCode} for exceptions thrown.
    */
-  constructor(name?: string, code?: string, dependencies?: Record<string, string>) {
-    this.#name = validateIdentifier(name ?? '');
+  constructor(name: string, code?: string, dependencies?: Map<string, string>) {
+    this.#name = validateIdentifier(name);
     this.#code = validateFunctionCode(code ?? '');
     this.#dependencies = new Map(
-      Object.entries(dependencies ?? (Object.create(null) as Record<string, string>)).map(
-        ([key, value]: [string, string]): [string, string] => [validateIdentifier(key), validateIdentifier(value)],
-      ),
+      Array.from(dependencies?.entries() ?? [], ([key, value]): [string, string] => [
+        validateIdentifier(key),
+        validateIdentifier(value),
+      ]),
     );
   }
 
