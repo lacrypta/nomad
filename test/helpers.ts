@@ -41,15 +41,21 @@ export type TestCases<T extends (...args: any) => any> = {
 };
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, cases: TestCases<T>) => void = <
+export const testAll: <T extends (...args: any) => any>(
+  it: jest.It,
+  func: T,
+  cases: TestCases<T>,
+  testName?: string,
+) => void = <
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   T extends (...args: any) => any,
 >(
   it: jest.It,
   func: T,
   cases: TestCases<T>,
+  testName?: string,
 ): void => {
-  describe(`${func.name}()`, (): void => {
+  describe(`${testName ?? func.name}()`, (): void => {
     it.each(
       Object.entries(cases).map(
         ([name, testCase]: [string, TestCaseInput<T>]): {
@@ -64,7 +70,7 @@ export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, ca
           func(...input);
         }).toThrow(error);
       } else {
-        expect(JSON.stringify(func(...input))).toStrictEqual(JSON.stringify(expected));
+        expect(func(...input)).toStrictEqual(expected);
       }
     });
   });

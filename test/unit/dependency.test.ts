@@ -72,95 +72,100 @@ describe('dependency', (): void => {
     },
   });
 
-  testAll(it, _getDependencyPrimitive, {
-    'should deal with empty arrow function': {
-      expected: { code: '', dependencies: {}, name: '' },
-      input: [() => {}],
-    },
-    'should deal with empty arrow function with a single parameter with no default': {
-      expected: { code: '', dependencies: { _x: '' }, name: '' },
-      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-      input: [(_x: unknown) => {}],
-    },
-    'should deal with empty function': {
-      expected: { code: '', dependencies: {}, name: '' },
-      input: [function () {}],
-    },
-    'should deal with empty function with a single parameter with no default': {
-      expected: { code: '', dependencies: { _x: '' }, name: '' },
-      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-      input: [function (_x: unknown) {}],
-    },
-    'should deal with empty named function': {
-      expected: { code: '', dependencies: {}, name: 'something' },
-      input: [function something() {}],
-    },
-    'should deal with empty named function with a single parameter with no default': {
-      expected: { code: '', dependencies: { _x: '' }, name: 'something' },
-      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-      input: [function something(_x: unknown) {}],
-    },
-    'should deal with non-empty arrow function': {
-      expected: { code: 'return null;', dependencies: {}, name: '' },
-      input: [() => null],
-    },
-    'should deal with non-empty arrow function with two parameters with a default': {
-      expected: {
-        code: 'return y;',
-        dependencies: { _x: '', y: '123' },
-        name: '',
+  testAll(
+    it,
+    (x) => JSON.stringify(_getDependencyPrimitive(x)),
+    {
+      'should deal with empty arrow function': {
+        expected: JSON.stringify({ code: '', dependencies: {}, name: '' }),
+        input: [() => {}],
       },
-      input: [(_x: unknown, y: unknown = 123) => y],
-    },
-    'should deal with non-empty function': {
-      expected: { code: 'return null;', dependencies: {}, name: '' },
-      input: [
-        function () {
-          /* something */
-          return null;
-          // else
-        },
-      ],
-    },
-    'should deal with non-empty function with two parameters with a default': {
-      expected: {
-        code: 'return y;',
-        dependencies: { _x: '', y: '123' },
-        name: '',
+      'should deal with empty arrow function with a single parameter with no default': {
+        expected: JSON.stringify({ code: '', dependencies: { _x: '' }, name: '' }),
+        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+        input: [(_x: unknown) => {}],
       },
-      input: [
-        function (_x: unknown, y: unknown = 123) {
-          return y;
-        },
-      ],
-    },
-    'should deal with non-empty named function': {
-      expected: { code: 'return null;', dependencies: {}, name: 'something' },
-      input: [
-        function something() {
-          /* something */
-          return null;
-          // else
-        },
-      ],
-    },
-    'should deal with non-empty named function with two parameters with a default': {
-      expected: {
-        code: 'return y;',
-        dependencies: { _x: '', y: '123' },
-        name: 'something',
+      'should deal with empty function': {
+        expected: JSON.stringify({ code: '', dependencies: {}, name: '' }),
+        input: [function () {}],
       },
-      input: [
-        function something(_x: unknown, y: unknown = 123) {
-          return y;
-        },
-      ],
+      'should deal with empty function with a single parameter with no default': {
+        expected: JSON.stringify({ code: '', dependencies: { _x: '' }, name: '' }),
+        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+        input: [function (_x: unknown) {}],
+      },
+      'should deal with empty named function': {
+        expected: JSON.stringify({ code: '', dependencies: {}, name: 'something' }),
+        input: [function something() {}],
+      },
+      'should deal with empty named function with a single parameter with no default': {
+        expected: JSON.stringify({ code: '', dependencies: { _x: '' }, name: 'something' }),
+        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+        input: [function something(_x: unknown) {}],
+      },
+      'should deal with non-empty arrow function': {
+        expected: JSON.stringify({ code: 'return null;', dependencies: {}, name: '' }),
+        input: [() => null],
+      },
+      'should deal with non-empty arrow function with two parameters with a default': {
+        expected: JSON.stringify({
+          code: 'return y;',
+          dependencies: { _x: '', y: '123' },
+          name: '',
+        }),
+        input: [(_x: unknown, y: unknown = 123) => y],
+      },
+      'should deal with non-empty function': {
+        expected: JSON.stringify({ code: 'return null;', dependencies: {}, name: '' }),
+        input: [
+          function () {
+            /* something */
+            return null;
+            // else
+          },
+        ],
+      },
+      'should deal with non-empty function with two parameters with a default': {
+        expected: JSON.stringify({
+          code: 'return y;',
+          dependencies: { _x: '', y: '123' },
+          name: '',
+        }),
+        input: [
+          function (_x: unknown, y: unknown = 123) {
+            return y;
+          },
+        ],
+      },
+      'should deal with non-empty named function': {
+        expected: JSON.stringify({ code: 'return null;', dependencies: {}, name: 'something' }),
+        input: [
+          function something() {
+            /* something */
+            return null;
+            // else
+          },
+        ],
+      },
+      'should deal with non-empty named function with two parameters with a default': {
+        expected: JSON.stringify({
+          code: 'return y;',
+          dependencies: { _x: '', y: '123' },
+          name: 'something',
+        }),
+        input: [
+          function something(_x: unknown, y: unknown = 123) {
+            return y;
+          },
+        ],
+      },
+      'should throw on native function': {
+        error: new Error('could not determine function body'),
+        input: [isFinite],
+      },
     },
-    'should throw on native function': {
-      error: new Error('could not determine function body'),
-      input: [isFinite],
-    },
-  });
+    '_getDependencyPrimitive',
+  );
 
   testAll(it, from, {
     'should deal with empty arrow function': {
