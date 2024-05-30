@@ -233,7 +233,7 @@ export const _codeAscii: number[] = [
  * @throws {Error} if the given function source code is not a valid strict mode function body.
  */
 export const functionCode = (code: string): string => {
-  if (code.split('').some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) ?? 0))) {
+  if (code.split('').some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) as number))) {
     throw new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR');
   }
   try {
@@ -381,8 +381,8 @@ export type ArgumentsMap = Map<string, unknown>;
  * @throws {Error} if the given arguments map is not an object.
  * @see {@link identifier} for additional exceptions thrown.
  */
-export const argumentsMap = (args: Map<unknown, unknown>): ArgumentsMap => {
-  Array.from(args.keys()).forEach((id: unknown) => 'string' === typeof id && identifier(id));
+export const argumentsMap = (args: Map<string, unknown>): ArgumentsMap => {
+  Array.from(args.keys()).forEach(identifier);
 
   return args as ArgumentsMap;
 };
