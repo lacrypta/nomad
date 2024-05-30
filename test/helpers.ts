@@ -22,29 +22,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export type TestCaseInput<T extends (...args: any) => any> =
+export type TestCaseInput<T, U> =
   | {
       error: Error;
       expected?: null;
-      input: Parameters<T>;
+      input: T;
     }
   | {
       error?: null;
-      expected: ReturnType<T>;
-      input: Parameters<T>;
+      expected: U;
+      input: T;
     };
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export type TestCases<T extends (...args: any) => any> = {
-  [name: string]: TestCaseInput<T>;
+export type TestCases<T, U> = {
+  [name: string]: TestCaseInput<T, U>;
 };
+
+const reformatCases: <T, U>(cases: TestCases<T, U>) => ({ name: string } & TestCaseInput<T, U>)[] = <T, U>(
+  cases: TestCases<T, U>,
+): ({ name: string } & TestCaseInput<T, U>)[] =>
+  Object.entries(cases).map(
+    ([name, testCase]: [string, TestCaseInput<T, U>]): {
+      name: string;
+    } & TestCaseInput<T, U> => {
+      return { name, ...testCase };
+    },
+  );
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export const testAll: <T extends (...args: any) => any>(
   it: jest.It,
   func: T,
-  cases: TestCases<T>,
+  cases: TestCases<Parameters<T>, ReturnType<T>>,
   testName?: string,
 ) => void = <
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -52,26 +61,86 @@ export const testAll: <T extends (...args: any) => any>(
 >(
   it: jest.It,
   func: T,
-  cases: TestCases<T>,
+  cases: TestCases<Parameters<T>, ReturnType<T>>,
   testName?: string,
 ): void => {
-  describe(`${testName ?? func.name}()`, (): void => {
-    it.each(
-      Object.entries(cases).map(
-        ([name, testCase]: [string, TestCaseInput<T>]): {
-          name: string;
-        } & TestCaseInput<T> => {
-          return { name, ...testCase };
-        },
-      ),
-    )('$name', ({ error, expected, input }: TestCaseInput<T>): void => {
-      if (error instanceof Error) {
-        expect((): void => {
-          func(...input);
-        }).toThrow(error);
-      } else {
-        expect(func(...input)).toStrictEqual(expected);
-      }
-    });
+  describe(testName ?? `${func.name}()`, (): void => {
+    it.each(reformatCases(cases))(
+      '$name',
+      ({ error, expected, input }: TestCaseInput<Parameters<T>, ReturnType<T>>): void => {
+        if (error instanceof Error) {
+          expect((): void => {
+            func(...input);
+          }).toThrow(error);
+        } else {
+          expect(func(...input)).toStrictEqual(expected);
+        }
+      },
+    );
+  });
+};
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export const testAllConstructor: <T extends new (...args: any) => any>(
+  it: jest.It,
+  cls: T,
+  cases: TestCases<ConstructorParameters<T>, InstanceType<T>>,
+  testName?: string,
+) => void = <
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  T extends new (...args: any) => any,
+>(
+  it: jest.It,
+  cls: T,
+  cases: TestCases<ConstructorParameters<T>, InstanceType<T>>,
+  testName?: string,
+): void => {
+  describe(testName ?? 'constructor', (): void => {
+    it.each(reformatCases(cases))(
+      '$name',
+      ({ error, expected, input }: TestCaseInput<ConstructorParameters<T>, InstanceType<T>>): void => {
+        if (error instanceof Error) {
+          expect((): void => {
+            new cls(...input);
+          }).toThrow(error);
+        } else {
+          expect(new cls(...input)).toStrictEqual(expected);
+        }
+      },
+    );
+  });
+};
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export const testAllMethod: <T, U extends (this: T, ...args: any) => any>(
+  it: jest.It,
+  targetBuilder: () => T,
+  method: U,
+  cases: TestCases<Parameters<U>, ReturnType<U>>,
+  testName?: string,
+) => void = <
+  T,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  U extends (this: T, ...args: any) => any,
+>(
+  it: jest.It,
+  targetBuilder: () => T,
+  method: U,
+  cases: TestCases<Parameters<U>, ReturnType<U>>,
+  testName?: string,
+): void => {
+  describe(testName ?? `${method.name}()`, (): void => {
+    it.each(reformatCases(cases))(
+      '$name',
+      ({ error, expected, input }: TestCaseInput<Parameters<U>, ReturnType<U>>): void => {
+        if (error instanceof Error) {
+          expect((): void => {
+            method.apply(targetBuilder(), input);
+          }).toThrow(error);
+        } else {
+          expect(method.apply(targetBuilder(), input)).toStrictEqual(expected);
+        }
+      },
+    );
   });
 };
