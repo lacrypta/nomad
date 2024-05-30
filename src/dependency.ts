@@ -400,6 +400,21 @@ export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?:
 };
 
 /**
+ * Return the {@link Dependency} this {@link DependencyObject} represents.
+ *
+ * @param dependencyObject - The {@link DependencyObject} to transform into a {@link Dependency}.
+ * @returns The transformed {@link Dependency}.
+ */
+export const asDependency: (dependencyObject: DependencyObject) => Dependency = (
+  dependencyObject: DependencyObject,
+): Dependency =>
+  new DependencyImplementation(
+    dependencyObject.name,
+    dependencyObject.code,
+    new Map(Object.entries(dependencyObject.dependencies)),
+  );
+
+/**
  * Class representing an atomic dependency.
  *
  * A "dependency" is an entity comprised of three parts:
