@@ -153,15 +153,14 @@ export const _filterToRegExp: (filter: string) => RegExp = (filter: string): Reg
         .map((part: string): string => {
           switch (part) {
             case '*':
-              return '[.A-Za-z0-9-]+';
+              return '[\\w/.-]+';
             case '**':
-              return '?[.A-Za-z0-9-]+(?::[.A-Za-z0-9-]+)*';
+              return '[\\w/.-]+(?::[\\w/.-]+)*';
             default:
               return part.replace(/\./g, '\\.');
           }
         })
-        .join(':')
-        .replace(/^\?/g, '') +
+        .join(':') +
       '$',
   );
 };
