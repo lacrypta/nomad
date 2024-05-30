@@ -131,7 +131,6 @@ export const _forbiddenWords: string[] = [
   'enum',
   'escape',
   'eval',
-  'eval',
   'export',
   'extends',
   'false',
