@@ -22,6 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* eslint-disable sonarjs/no-duplicate-string */
 
 import {
   _getDependencyPrimitive,
@@ -78,6 +79,7 @@ describe('dependency', (): void => {
     'should deal with empty arrow function with a single parameter with no default': {
       error: null,
       expected: { code: '', dependencies: { _x: '' }, name: '' },
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
       input: [(_x: unknown) => {}],
     },
     'should deal with empty function': {
@@ -88,6 +90,7 @@ describe('dependency', (): void => {
     'should deal with empty function with a single parameter with no default': {
       error: null,
       expected: { code: '', dependencies: { _x: '' }, name: '' },
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
       input: [function (_x: unknown) {}],
     },
     'should deal with empty named function': {
@@ -99,6 +102,7 @@ describe('dependency', (): void => {
     'should deal with empty named function with a single parameter with no default': {
       error: null,
       expected: { code: '', dependencies: { _x: '' }, name: 'something' },
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
       input: [function something(_x: unknown) {}],
     },
     'should deal with non-empty arrow function': {
@@ -212,6 +216,7 @@ describe('dependency', (): void => {
     'should deal with non-empty arrow function with two parameters with default': {
       error: null,
       expected: new DependencyImplementation('name', '', { x: 'x', y: 'y' }),
+      // @ts-expect-error: 'x' is declared but its value is never read.
       input: [(x: unknown = x, y: unknown = y) => y, 'name'],
     },
     'should deal with non-empty function': {
@@ -233,6 +238,7 @@ describe('dependency', (): void => {
         y: 'y',
       }),
       input: [
+        // @ts-expect-error: Parameter 'x' cannot reference itself. Parameter 'y' cannot reference itself.
         function (x: unknown = x, y: unknown = y) {
           return y;
         },

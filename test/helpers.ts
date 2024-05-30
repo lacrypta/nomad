@@ -22,6 +22,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type TestCaseInput<T extends (...args: any) => any> =
   | {
       error: Error;
@@ -34,15 +35,19 @@ export type TestCaseInput<T extends (...args: any) => any> =
       input: Parameters<T>;
     };
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type TestCases<T extends (...args: any) => any> = {
   [name: string]: TestCaseInput<T>;
 };
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, cases: Record<string, any>) => void = <
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   T extends (...args: any) => any,
 >(
   it: jest.It,
   func: T,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   cases: Record<string, any>,
 ): void => {
   describe(`${func.name}()`, (): void => {
