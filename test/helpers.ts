@@ -24,25 +24,23 @@
 
 export type TestCaseInput<T extends (...args: any) => any> =
   | {
+      error: Error;
+      expected: null;
       input: Parameters<T>;
-      expected: ReturnType<T>;
-      error: null;
     }
   | {
+      error: null;
+      expected: ReturnType<T>;
       input: Parameters<T>;
-      expected: null;
-      error: Error;
     };
 
 export type TestCases<T extends (...args: any) => any> = {
   [name: string]: TestCaseInput<T>;
 };
 
-export const testAll: <T extends (...args: any) => any>(
-  it: jest.It,
-  func: T,
-  cases: Record<string, any>,
-) => void = <T extends (...args: any) => any>(
+export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, cases: Record<string, any>) => void = <
+  T extends (...args: any) => any,
+>(
   it: jest.It,
   func: T,
   cases: Record<string, any>,
@@ -50,21 +48,19 @@ export const testAll: <T extends (...args: any) => any>(
   describe(`${func.name}()`, (): void => {
     it.each(
       Object.entries(cases as TestCases<T>).map(
-        ([name, testCase]: [string, TestCaseInput<T>]): TestCaseInput<T> & {
+        ([name, testCase]: [string, TestCaseInput<T>]): {
           name: string;
-        } => {
+        } & TestCaseInput<T> => {
           return { name, ...testCase };
         },
       ),
-    )("$name", ({ input, expected, error }: TestCaseInput<T>): void => {
+    )('$name', ({ error, expected, input }: TestCaseInput<T>): void => {
       if (error instanceof Error) {
         expect((): void => {
           func(...input);
         }).toThrow(error);
       } else {
-        expect(JSON.stringify(func(...input))).toStrictEqual(
-          JSON.stringify(expected),
-        );
+        expect(JSON.stringify(func(...input))).toStrictEqual(JSON.stringify(expected));
       }
     });
   });

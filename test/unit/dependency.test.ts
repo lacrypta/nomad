@@ -22,76 +22,102 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-import { testAll } from '../helpers';
 
 import {
-  _removeComments,
   _getDependencyPrimitive,
-  from,
+  _removeComments,
   DependencyImplementation,
   create,
+  from,
   sort,
-} from "../../src/dependency";
+} from '../../src/dependency';
+import { testAll } from '../helpers';
 
-describe("dependency", (): void => {
+describe('dependency', (): void => {
   testAll(it, _removeComments, {
-    "should leave empty string alone": {
-      input: [""],
-      expected: "",
+    'should leave empty string alone': {
+      expected: '',
+      input: [''],
     },
-    "should not change whitespace": {
-      input: [" something   else "],
-      expected: " something   else ",
+    'should not change inside backtick-quoted strings': {
+      expected: '`/* something */`',
+      input: ['`/* something */`'],
     },
-    "should not change inside double-quoted strings": {
-      input: ['"/* something */"'],
+    'should not change inside double-quoted strings': {
       expected: '"/* something */"',
+      input: ['"/* something */"'],
     },
-    "should not change inside single-quoted strings": {
-      input: ["'/* something */'"],
+    'should not change inside regular expressions': {
+      expected: '/./* something */',
+      input: ['/./* something */'],
+    },
+    'should not change inside single-quoted strings': {
       expected: "'/* something */'",
+      input: ["'/* something */'"],
     },
-    "should not change inside backtick-quoted strings": {
-      input: ["`/* something */`"],
-      expected: "`/* something */`",
+    'should not change whitespace': {
+      expected: ' something   else ',
+      input: [' something   else '],
     },
-    "should not change inside regular expressions": {
-      input: ["/./* something */"],
-      expected: "/./* something */",
+    'should strip eof': {
+      expected: '\nelse',
+      input: ['// something\nelse'],
     },
-    "should strip multiline": {
-      input: ["/* something */ else"],
-      expected: " else",
-    },
-    "should strip eof": {
-      input: ["// something\nelse"],
-      expected: "\nelse",
+    'should strip multiline': {
+      expected: ' else',
+      input: ['/* something */ else'],
     },
   });
 
   testAll(it, _getDependencyPrimitive, {
-    "should deal with empty arrow function": {
+    'should deal with empty arrow function': {
+      error: null,
+      expected: { code: '', dependencies: {}, name: '' },
       input: [() => {}],
-      expected: { code: "", dependencies: {}, name: "" },
-      error: null,
     },
-    "should deal with empty function": {
+    'should deal with empty arrow function with a single parameter with no default': {
+      error: null,
+      expected: { code: '', dependencies: { _x: '' }, name: '' },
+      input: [(_x: unknown) => {}],
+    },
+    'should deal with empty function': {
+      error: null,
+      expected: { code: '', dependencies: {}, name: '' },
       input: [function () {}],
-      expected: { code: "", dependencies: {}, name: "" },
-      error: null,
     },
-    "should deal with empty named function": {
+    'should deal with empty function with a single parameter with no default': {
+      error: null,
+      expected: { code: '', dependencies: { _x: '' }, name: '' },
+      input: [function (_x: unknown) {}],
+    },
+    'should deal with empty named function': {
+      error: null,
+      expected: { code: '', dependencies: {}, name: 'something' },
       input: [function something() {}],
-      expected: { code: "", dependencies: {}, name: "something" },
-      name: "should deal with empty named function",
-      error: null,
+      name: 'should deal with empty named function',
     },
-    "should deal with non-empty arrow function": {
+    'should deal with empty named function with a single parameter with no default': {
+      error: null,
+      expected: { code: '', dependencies: { _x: '' }, name: 'something' },
+      input: [function something(_x: unknown) {}],
+    },
+    'should deal with non-empty arrow function': {
+      error: null,
+      expected: { code: 'return null;', dependencies: {}, name: '' },
       input: [() => null],
-      expected: { code: "return null;", dependencies: {}, name: "" },
-      error: null,
     },
-    "should deal with non-empty function": {
+    'should deal with non-empty arrow function with two parameters with a default': {
+      error: null,
+      expected: {
+        code: 'return y;',
+        dependencies: { _x: '', y: '123' },
+        name: '',
+      },
+      input: [(_x: unknown, y: unknown = 123) => y],
+    },
+    'should deal with non-empty function': {
+      error: null,
+      expected: { code: 'return null;', dependencies: {}, name: '' },
       input: [
         function () {
           /* something */
@@ -99,125 +125,23 @@ describe("dependency", (): void => {
           // else
         },
       ],
-      expected: { code: "return null;", dependencies: {}, name: "" },
-      error: null,
     },
-    "should deal with non-empty named function": {
-      input: [
-        function something() {
-          /* something */
-          return null;
-          // else
-        },
-      ],
-      expected: { code: "return null;", dependencies: {}, name: "something" },
+    'should deal with non-empty function with two parameters with a default': {
       error: null,
-    },
-    "should deal with empty arrow function with a single parameter with no default":
-      {
-        input: [(_x: unknown) => {}],
-        expected: { code: "", dependencies: { _x: "" }, name: "" },
-        error: null,
+      expected: {
+        code: 'return y;',
+        dependencies: { _x: '', y: '123' },
+        name: '',
       },
-    "should deal with empty function with a single parameter with no default": {
-      input: [function (_x: unknown) {}],
-      expected: { code: "", dependencies: { _x: "" }, name: "" },
-      error: null,
-    },
-    "should deal with empty named function with a single parameter with no default":
-      {
-        input: [function something(_x: unknown) {}],
-        expected: { code: "", dependencies: { _x: "" }, name: "something" },
-        error: null,
-      },
-    "should deal with non-empty arrow function with two parameters with a default":
-      {
-        input: [(_x: unknown, y: unknown = 123) => y],
-        expected: {
-          code: "return y;",
-          dependencies: { _x: "", y: "123" },
-          name: "",
-        },
-        error: null,
-      },
-    "should deal with non-empty function with two parameters with a default": {
       input: [
         function (_x: unknown, y: unknown = 123) {
           return y;
         },
       ],
-      expected: {
-        code: "return y;",
-        dependencies: { _x: "", y: "123" },
-        name: "",
-      },
+    },
+    'should deal with non-empty named function': {
       error: null,
-    },
-    "should deal with non-empty named function with two parameters with a default":
-      {
-        input: [
-          function something(_x: unknown, y: unknown = 123) {
-            return y;
-          },
-        ],
-        expected: {
-          code: "return y;",
-          dependencies: { _x: "", y: "123" },
-          name: "something",
-        },
-        error: null,
-      },
-    "should throw on native function": {
-      input: [isFinite],
-      expected: null,
-      error: new Error("could not determine function body"),
-    },
-  });
-
-  testAll(it, from, {
-    "should throw with empty arrow function and no name": {
-      input: [() => {}],
-      expected: null,
-      error: new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
-    },
-    "should throw with empty function and no name": {
-      input: [function () {}],
-      expected: null,
-      error: new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
-    },
-    "should deal with empty arrow function": {
-      input: [() => {}, "name"],
-      expected: new DependencyImplementation("name", "", {}),
-      error: null,
-    },
-    "should deal with empty function": {
-      input: [function () {}, "name"],
-      expected: new DependencyImplementation("name", "", {}),
-      error: null,
-    },
-    "should deal with empty named function": {
-      input: [function something() {}],
-      expected: new DependencyImplementation("something", "", {}),
-      error: null,
-    },
-    "should deal with non-empty arrow function": {
-      input: [() => null, "name"],
-      expected: new DependencyImplementation("name", "return null;", {}),
-      error: null,
-    },
-    "should deal with non-empty function": {
-      input: [
-        function () {
-          /* something */
-          return null;
-          // else
-        },
-        "name",
-      ],
-      expected: new DependencyImplementation("name", "return null;", {}),
-      error: null,
-    },
-    "should deal with non-empty named function": {
+      expected: { code: 'return null;', dependencies: {}, name: 'something' },
       input: [
         function something() {
           /* something */
@@ -225,117 +149,181 @@ describe("dependency", (): void => {
           // else
         },
       ],
-      expected: new DependencyImplementation("something", "return null;", {}),
-      error: null,
     },
-    "should deal with empty arrow function with a single parameter": {
-      // @ts-expect-error: 'x' is declared but its value is never read.
-      input: [(x: unknown = x) => {}, "name"],
-      expected: new DependencyImplementation("name", "", { x: "x" }),
+    'should deal with non-empty named function with two parameters with a default': {
       error: null,
-    },
-    "should deal with empty function with a single parameter": {
-      // @ts-expect-error: 'x' is declared but its value is never read.
-      input: [function (x: unknown = x) {}, "name"],
-      expected: new DependencyImplementation("name", "", { x: "x" }),
-      error: null,
-    },
-    "should deal with empty named function with a single parameter": {
-      // @ts-expect-error: 'x' is declared but its value is never read.
-      input: [function something(x: unknown = x) {}, "name"],
-      expected: new DependencyImplementation("something", "", { x: "x" }),
-      error: null,
-    },
-    "should deal with non-empty arrow function with two parameters with default":
-      {
-        // @ts-expect-error: 'x' is declared but its value is never read.
-        input: [(x: unknown = x, y: unknown = y) => y, "name"],
-        expected: new DependencyImplementation("name", "", { x: "x", y: "y" }),
-        error: null,
+      expected: {
+        code: 'return y;',
+        dependencies: { _x: '', y: '123' },
+        name: 'something',
       },
-    "should deal with non-empty function with two parameters with default": {
       input: [
-        // @ts-expect-error: Parameter 'x' cannot reference itself. Parameter 'y' cannot reference itself.
+        function something(_x: unknown, y: unknown = 123) {
+          return y;
+        },
+      ],
+    },
+    'should throw on native function': {
+      error: new Error('could not determine function body'),
+      expected: null,
+      input: [isFinite],
+    },
+  });
+
+  testAll(it, from, {
+    'should deal with empty arrow function': {
+      error: null,
+      expected: new DependencyImplementation('name', '', {}),
+      input: [() => {}, 'name'],
+    },
+    'should deal with empty arrow function with a single parameter': {
+      error: null,
+      expected: new DependencyImplementation('name', '', { x: 'x' }),
+      // @ts-expect-error: 'x' is declared but its value is never read.
+      input: [(x: unknown = x) => {}, 'name'],
+    },
+    'should deal with empty function': {
+      error: null,
+      expected: new DependencyImplementation('name', '', {}),
+      input: [function () {}, 'name'],
+    },
+    'should deal with empty function with a single parameter': {
+      error: null,
+      expected: new DependencyImplementation('name', '', { x: 'x' }),
+      // @ts-expect-error: 'x' is declared but its value is never read.
+      input: [function (x: unknown = x) {}, 'name'],
+    },
+    'should deal with empty named function': {
+      error: null,
+      expected: new DependencyImplementation('something', '', {}),
+      input: [function something() {}],
+    },
+    'should deal with empty named function with a single parameter': {
+      error: null,
+      expected: new DependencyImplementation('something', '', { x: 'x' }),
+      // @ts-expect-error: 'x' is declared but its value is never read.
+      input: [function something(x: unknown = x) {}, 'name'],
+    },
+    'should deal with non-empty arrow function': {
+      error: null,
+      expected: new DependencyImplementation('name', 'return null;', {}),
+      input: [() => null, 'name'],
+    },
+    'should deal with non-empty arrow function with two parameters with default': {
+      error: null,
+      expected: new DependencyImplementation('name', '', { x: 'x', y: 'y' }),
+      input: [(x: unknown = x, y: unknown = y) => y, 'name'],
+    },
+    'should deal with non-empty function': {
+      error: null,
+      expected: new DependencyImplementation('name', 'return null;', {}),
+      input: [
+        function () {
+          /* something */
+          return null;
+          // else
+        },
+        'name',
+      ],
+    },
+    'should deal with non-empty function with two parameters with default': {
+      error: null,
+      expected: new DependencyImplementation('name', 'return y;', {
+        x: 'x',
+        y: 'y',
+      }),
+      input: [
         function (x: unknown = x, y: unknown = y) {
           return y;
         },
-        "name",
+        'name',
       ],
-      expected: new DependencyImplementation("name", "return y;", {
-        x: "x",
-        y: "y",
-      }),
-      error: null,
     },
-    "should deal with non-empty named function with two parameters with default":
-      {
-        input: [
+    'should deal with non-empty named function': {
+      error: null,
+      expected: new DependencyImplementation('something', 'return null;', {}),
+      input: [
+        function something() {
+          /* something */
+          return null;
+          // else
+        },
+      ],
+    },
+    'should deal with non-empty named function with two parameters with default': {
+      error: null,
+      expected: new DependencyImplementation('something', 'return y;', {
+        x: 'x',
+        y: 'y',
+      }),
+      input: [
         // @ts-expect-error: Parameter 'x' cannot reference itself. Parameter 'y' cannot reference itself.
         function something(x: unknown = x, y: unknown = y) {
-            return y;
-          },
-        ],
-        expected: new DependencyImplementation("something", "return y;", {
-          x: "x",
-          y: "y",
-        }),
-        error: null,
-      },
-    "should throw on native function": {
-      input: [isFinite],
-      expected: null,
-      error: new Error("could not determine function body"),
+          return y;
+        },
+      ],
     },
-    "should throw on non-defined function": {
-      input: [Atomics],
+    'should throw on native function': {
+      error: new Error('could not determine function body'),
       expected: null,
-      error: new Error("Expected defined function"),
+      input: [isFinite],
+    },
+    'should throw on non-defined function': {
+      error: new Error('Expected defined function'),
+      expected: null,
+      input: [Atomics],
+    },
+    'should throw with empty arrow function and no name': {
+      error: new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+      expected: null,
+      input: [() => {}],
+    },
+    'should throw with empty function and no name': {
+      error: new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+      expected: null,
+      input: [function () {}],
     },
   });
 
   testAll(it, create, {
-    "should deal with empty dependency": {
-      input: ["name", "", {}],
-      expected: new DependencyImplementation("name", "", {}),
+    'should deal with empty dependency': {
       error: null,
+      expected: new DependencyImplementation('name', '', {}),
+      input: ['name', '', {}],
     },
   });
 
   testAll(it, sort, {
-    "should deal with empty input": {
-      input: [[]],
+    'should deal with empty input': {
+      error: null,
       expected: [],
-      error: null,
+      input: [[]],
     },
-    "should deal with only installed dependencies": {
-      input: [
-        [
-          new DependencyImplementation("c", "", { x: "a" }),
-          new DependencyImplementation("d", "", { x: "b", y: "c" }),
-          new DependencyImplementation("e", "", { x: "a", y: "c", z: "d" }),
-        ],
-        ["a", "b"],
-      ],
+    'should deal with only installed dependencies': {
+      error: null,
       expected: [
-        new DependencyImplementation("c", "", { x: "a" }),
-        new DependencyImplementation("d", "", { x: "b", y: "c" }),
-        new DependencyImplementation("e", "", { x: "a", y: "c", z: "d" }),
+        new DependencyImplementation('c', '', { x: 'a' }),
+        new DependencyImplementation('d', '', { x: 'b', y: 'c' }),
+        new DependencyImplementation('e', '', { x: 'a', y: 'c', z: 'd' }),
       ],
-      error: null,
-    },
-    "should throw with cycles": {
       input: [
         [
-          new DependencyImplementation("a", "", { x: "b" }),
-          new DependencyImplementation("b", "", { x: "a" }),
+          new DependencyImplementation('c', '', { x: 'a' }),
+          new DependencyImplementation('d', '', { x: 'b', y: 'c' }),
+          new DependencyImplementation('e', '', { x: 'a', y: 'c', z: 'd' }),
         ],
+        ['a', 'b'],
+      ],
+    },
+    'should throw with cycles': {
+      error: new Error('unresolved dependencies: [a, b]'),
+      expected: null,
+      input: [
+        [new DependencyImplementation('a', '', { x: 'b' }), new DependencyImplementation('b', '', { x: 'a' })],
         [],
       ],
-      expected: null,
-      error: new Error('unresolved dependencies: [a, b]'),
-    }
+    },
   });
 
-  describe("DependencyImplementation", (): void => {
-  });
+  describe('DependencyImplementation', (): void => {});
 });
