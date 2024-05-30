@@ -234,14 +234,14 @@ export const _removeComments: (code: string) => string = (code: string): string 
  * Type of an unknown number of additional parameters.
  *
  */
-export type AnyRest = unknown[];
+export type AnyArgs = unknown[];
 
 /**
  * Type of an unknown function (that is not a constructor or class).
  *
  * @param args - Any number of additional parameters.
  */
-export type AnyFunction = (...args: AnyRest) => unknown;
+export type AnyFunction = (...args: AnyArgs) => unknown;
 
 /**
  * Retrieve the {@link DependencyObject} of the given function.

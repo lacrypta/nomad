@@ -29,7 +29,7 @@
  * @module
  */
 
-import type { AnyFunction, AnyRest, Dependency, DependencyImplementation, DependencyObject } from './dependency';
+import type { AnyArgs, AnyFunction, Dependency, DependencyImplementation, DependencyObject } from './dependency';
 import type {
   EventCallback,
   EventCaster,
@@ -101,7 +101,7 @@ export interface VM extends EventCaster {
    * @param args - Associated arguments to emit alongside the event.
    * @returns `this`, for chaining.
    */
-  emit(enclosure: string, event: string, ...args: AnyRest): this;
+  emit(enclosure: string, event: string, ...args: AnyArgs): this;
 
   /**
    * Execute the given {@link Dependency} with the given arguments map in the {@link VMWorker}.
@@ -682,7 +682,7 @@ export type Message_Call = {
    * Arguments to pass on to the predefined function being called.
    *
    */
-  args: AnyRest;
+  args: AnyArgs;
 
   /**
    * Enclosure name where the call is taking place.
@@ -711,7 +711,7 @@ export type Message_Emit = {
    * Additional arguments to associate to the event being emitted.
    *
    */
-  args: AnyRest;
+  args: AnyArgs;
 
   /**
    * The event name to emit on the {@link VM}'s side.
@@ -857,7 +857,7 @@ export class VMImplementation implements VM {
    * @param idx - The predefined function index to call.
    * @param args - The arguments to forward to the predefined function called.
    */
-  #callPredefined(enclosure: string, tunnel: number, idx: number, args: AnyRest): void {
+  #callPredefined(enclosure: string, tunnel: number, idx: number, args: AnyArgs): void {
     this.#castEvent(`${enclosure}:predefined:call`, idx, args);
     try {
       if (!(idx in this.#predefined)) {
@@ -878,7 +878,7 @@ export class VMImplementation implements VM {
    * @param args - Arguments to associate to the event in question.
    * @see {@link validation.event} for additional exceptions thrown.
    */
-  #castEvent(name: string, ...args: AnyRest): void {
+  #castEvent(name: string, ...args: AnyArgs): void {
     _cast(`${_eventPrefix}:${this.#name}:${name}`, this, ...args);
   }
 
@@ -1075,7 +1075,7 @@ export class VMImplementation implements VM {
    * @param event - The event name to emit.
    * @param args - The arguments to associate to the given event.
    */
-  #postEmitMessage(enclosure: string, event: string, args: AnyRest): void {
+  #postEmitMessage(enclosure: string, event: string, args: AnyArgs): void {
     this.#worker?.shout({ args, enclosure, event: event, name: 'emit' });
   }
 
@@ -1637,7 +1637,7 @@ export class VMImplementation implements VM {
    * @param args - Associated arguments to emit alongside the event.
    * @returns `this`, for chaining.
    */
-  emit(enclosure: string, event: string, ...args: AnyRest): this {
+  emit(enclosure: string, event: string, ...args: AnyArgs): this {
     this.#postEmitMessage(validateEnclosure(enclosure), validateEvent(event), args);
     return this;
   }

@@ -29,7 +29,7 @@
  * @module
  */
 
-import type { AnyRest } from './dependency';
+import type { AnyArgs } from './dependency';
 
 import { event as validateEvent, filter as validateFilter } from './validation';
 
@@ -58,7 +58,7 @@ export type MethodInjector<T> = (entries: { [Method in keyof T]: T[Method] }) =>
  * @param name - The event name to pass on to the call back function.
  * @param args - Any additional arguments associated to the particular event instance.
  */
-export type EventCallback = (name: string, ...args: AnyRest) => void;
+export type EventCallback = (name: string, ...args: AnyArgs) => void;
 
 /**
  * The type of the _casting_ method of the {@link EventCasterImplementation} class (ie. [EventCasterImplementation.#cast](../classes/eventCaster.EventCasterImplementation.html#_cast)).
@@ -69,7 +69,7 @@ export type EventCallback = (name: string, ...args: AnyRest) => void;
  * @param args - The additional arguments associated to the event being cast.
  * @returns The {@link EventCasterImplementation} instance itself, for chaining.
  */
-export type EventCasterImplementation_Cast = (name: string, ...args: AnyRest) => EventCasterImplementation;
+export type EventCasterImplementation_Cast = (name: string, ...args: AnyArgs) => EventCasterImplementation;
 
 /**
  * The type of an {@link EventCasterImplementation}'s "`protected`" methods (ie. those that will be exposed via a {@link MethodInjector}).
@@ -213,7 +213,7 @@ export class EventCasterImplementation implements EventCaster {
     }>,
   ) {
     protectedMethodInjector?.({
-      cast: (name: string, ...args: AnyRest): this => this.#cast(name, ...args),
+      cast: (name: string, ...args: AnyArgs): this => this.#cast(name, ...args),
     });
   }
 
@@ -225,7 +225,7 @@ export class EventCasterImplementation implements EventCaster {
    * @returns `this`, for chaining.
    * @see {@link validation.event} for additional exceptions thrown.
    */
-  #cast(name: string, ...args: AnyRest): this {
+  #cast(name: string, ...args: AnyArgs): this {
     validateEvent(name);
 
     for (const [callback, filters] of this.#listeners.entries()) {
@@ -276,7 +276,7 @@ export class EventCasterImplementation implements EventCaster {
    * @see {@link EventCasterImplementation.on} for additional exceptions thrown.
    */
   once(filter: string, callback: EventCallback): this {
-    const wrapped: EventCallback = (name: string, ...args: AnyRest): void => {
+    const wrapped: EventCallback = (name: string, ...args: AnyArgs): void => {
       callback.bind(undefined)(name, ...args);
       this.off(wrapped);
     };

@@ -28,7 +28,7 @@
 
 // ------------------------------------------------------------------------------------------------
 
-import type { AnyFunction, AnyRest, Dependency, DependencyObject } from './dependency';
+import type { AnyArgs, AnyFunction, Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster } from './eventCaster';
 import type { ArgumentsMap } from './validation';
 import type { Enclosure, VM, WorkerTimings } from './vm';
@@ -47,7 +47,7 @@ const workerBuilder = _workerBuilder;
 
 const vmEvents = _vmEvents;
 
-export type { AnyFunction, AnyRest, Dependency, DependencyObject };
+export type { AnyArgs, AnyFunction, Dependency, DependencyObject };
 export type { EventCallback, EventCaster };
 export type { ArgumentsMap };
 export type { Enclosure, VM, WorkerTimings };
