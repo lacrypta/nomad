@@ -387,7 +387,7 @@ export const sort: <T extends Dependency>(dependencies: Iterable<T>, installed?:
     });
     newOnes.clear();
     pending.forEach((element: T): void => {
-      if (Object.keys(element.dependencies).every((dep: string): boolean => existing.has(dep))) {
+      if (Array.from(element.dependencies.values()).every((dep: string): boolean => existing.has(dep))) {
         newOnes.add(element);
       }
     });
@@ -571,7 +571,7 @@ export class DependencyImplementation implements Dependency {
    *
    */
   get dependencies(): Map<string, string> {
-    return new Map<string, string>(Object.entries(this.#dependencies));
+    return new Map<string, string>(this.#dependencies.entries());
   }
 
   /**
