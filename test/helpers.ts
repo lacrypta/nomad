@@ -26,11 +26,11 @@
 export type TestCaseInput<T extends (...args: any) => any> =
   | {
       error: Error;
-      expected: null;
+      expected?: null;
       input: Parameters<T>;
     }
   | {
-      error: null;
+      error?: null;
       expected: ReturnType<T>;
       input: Parameters<T>;
     };
@@ -41,18 +41,17 @@ export type TestCases<T extends (...args: any) => any> = {
 };
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, cases: Record<string, any>) => void = <
+export const testAll: <T extends (...args: any) => any>(it: jest.It, func: T, cases: TestCases<T>) => void = <
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   T extends (...args: any) => any,
 >(
   it: jest.It,
   func: T,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  cases: Record<string, any>,
+  cases: TestCases<T>,
 ): void => {
   describe(`${func.name}()`, (): void => {
     it.each(
-      Object.entries(cases as TestCases<T>).map(
+      Object.entries(cases).map(
         ([name, testCase]: [string, TestCaseInput<T>]): {
           name: string;
         } & TestCaseInput<T> => {
