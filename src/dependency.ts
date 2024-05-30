@@ -234,7 +234,7 @@ export const _removeComments: (code: string) => string = (code: string): string 
  * Type of an unknown number of additional parameters.
  *
  */
-export type AnyArgs = unknown[];
+export type AnyArgs = any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /**
  * Type of an unknown function (that is not a constructor or class).

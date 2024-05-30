@@ -863,6 +863,7 @@ export class VMImplementation implements VM {
       if (!(idx in this.#predefined)) {
         throw new Error(`unknown function index ${idx.toString()}`);
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.#postResolveMessage(tunnel, this.#predefined[idx]?.bind(undefined)(...args));
       this.#castEvent(`${enclosure}:predefined:call:ok`, idx, args);
     } catch (e) {
@@ -879,6 +880,7 @@ export class VMImplementation implements VM {
    * @see {@link validation.event} for additional exceptions thrown.
    */
   #castEvent(name: string, ...args: AnyArgs): void {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     _cast(`${_eventPrefix}:${this.#name}:${name}`, this, ...args);
   }
 
