@@ -532,8 +532,8 @@ describe('dependency', (): void => {
       },
       {
         'should set code': {
-          expected: 'gniht',
-          input: ['gniht'],
+          expected: '"else"',
+          input: ['"else"'],
         },
         'should throw on invalid code': {
           error: new Error('function code must be a valid strict-mode Function body'),
@@ -616,8 +616,8 @@ describe('dependency', (): void => {
       },
       {
         'should set code': {
-          expected: 'gniht',
-          input: ['gniht'],
+          expected: '"else"',
+          input: ['"else"'],
         },
         'should throw on invalid code': {
           error: new Error('function code must be a valid strict-mode Function body'),
