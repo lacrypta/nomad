@@ -231,7 +231,7 @@ export class EventCasterImplementation implements EventCaster {
     for (const [callback, filters] of this.#listeners.entries()) {
       if (Array.from(filters.values()).some((filter: RegExp): boolean => filter.test(name))) {
         setTimeout((): void => {
-          if (this.#listeners.has(callback)) {
+          if (Array.from(this.#listeners.get(callback) ?? []).some((filter: RegExp): boolean => filter.test(name))) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             callback.bind(undefined)(name, ...args);
           }
