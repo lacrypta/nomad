@@ -92,7 +92,6 @@
     "ts-jest": "^29.1.4",
     "tsx": "^4.11.0",
     "typedoc": "^0.25.13",
-    "typedoc-plugin-expand-object-like-types": "^0.1.2",
     "typedoc-plugin-keywords": "^1.6.0",
     "typedoc-plugin-mdn-links": "^3.1.27",
     "typedoc-plugin-mermaid": "^1.10.0",

@@ -74,9 +74,6 @@ importers:
       typedoc:
         specifier: ^0.25.13
         version: 0.25.13(typescript@5.4.5)
-      typedoc-plugin-expand-object-like-types:
-        specifier: ^0.1.2
-        version: 0.1.2(typedoc@0.25.13(typescript@5.4.5))
       typedoc-plugin-keywords:
         specifier: ^1.6.0
         version: 1.6.0(typedoc@0.25.13(typescript@5.4.5))
@@ -2413,11 +2410,6 @@ packages:
   typed-array-length@1.0.6:
     resolution: {integrity: sha512-/OxDN6OtAk5KBpGb28T+HZc2M+ADtvRxXrKKbUwtsLgdoxgX13hyy7ek6bFRl5+aBs2yZzB0c4CnQfAtVypW/g==, tarball: https://registry.npmjs.org/typed-array-length/-/typed-array-length-1.0.6.tgz}
     engines: {node: '>= 0.4'}
-
-  typedoc-plugin-expand-object-like-types@0.1.2:
-    resolution: {integrity: sha512-RRMOCWMElQHBOVraWMWrh/0tDqCdS5oxYwaWMZBB3KlUUUUCxKllpvJPsRH/uFLO1nOuy28CbJxGVU1umv7LOQ==, tarball: https://registry.npmjs.org/typedoc-plugin-expand-object-like-types/-/typedoc-plugin-expand-object-like-types-0.1.2.tgz}
-    peerDependencies:
-      typedoc: 0.22.x || 0.23.x
 
   typedoc-plugin-keywords@1.6.0:
     resolution: {integrity: sha512-URyCIHw6+Lwil0ywy6lVb2TckfDVGjAWnRnTAiiSZaRaglI6vaaP1EhhwEipOIlHaJSnHZfdwpWe1t4mffTIpA==, tarball: https://registry.npmjs.org/typedoc-plugin-keywords/-/typedoc-plugin-keywords-1.6.0.tgz}
@@ -5216,10 +5208,6 @@ snapshots:
       has-proto: 1.0.3
       is-typed-array: 1.1.13
       possible-typed-array-names: 1.0.0
-
-  typedoc-plugin-expand-object-like-types@0.1.2(typedoc@0.25.13(typescript@5.4.5)):
-    dependencies:
-      typedoc: 0.25.13(typescript@5.4.5)
 
   typedoc-plugin-keywords@1.6.0(typedoc@0.25.13(typescript@5.4.5)):
     dependencies:
