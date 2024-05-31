@@ -392,13 +392,13 @@ export const argumentsMap = (args: Map<string, unknown>): ArgumentsMap => {
  *
  * An enclosure identifier is a sequence of identifiers (as per {@link identifier}) separated by periods (`"."`).
  *
- * @param ns - The argument to validate.
+ * @param name - The argument to validate.
  * @returns The validated enclosure identifier.
  * @throws {Error} if the given argument is not a valid enclosure identifier.
  * @see {@link identifier} for additional exceptions thrown.
  */
-export const enclosure = (ns: string): string => {
-  return ns
+export const enclosure = (name: string): string => {
+  return name
     .split('.')
     .map((part: string): string => identifier(part))
     .join('.');
