@@ -30,16 +30,6 @@
  */
 
 /**
- * The type of a {@link VMWorker}-construction function.
- *
- * @param code - The code to initialize the {@link VMWorker} with.
- * @param tunnel - A tunnel ID to advertise successful booting on.
- * @param name - A name to give to the constructed {@link VMWorker}.
- * @returns The created {@link VMWorker}.
- */
-export type WorkerBuilder = (code: string, tunnel: number, name: string) => VMWorker;
-
-/**
  * The type of a normal message handler to attach to a {@link VMWorker}.
  *
  * @param data - The data being transmitted _from_ the {@link VMWorker}.
@@ -52,6 +42,20 @@ export type MessageCallback = (data: string) => void;
  * @param error - The {@link !Error} being thrown _from within_ the {@link VMWorker}.
  */
 export type ErrorCallback = (error: Error) => void;
+
+/**
+ * The interface a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) responds to.
+ *
+ */
+export interface WebWorker {
+  new (scriptURL: URL | string, options?: WorkerOptions): Worker;
+
+  /**
+   * The {@link !Worker} prototype.
+   *
+   */
+  prototype: Worker;
+}
 
 /**
  * An instance of an environment-agnostic worker.
@@ -90,7 +94,7 @@ export interface VMWorker {
  * An wrapper for a {@link !Worker}.
  *
  */
-export class BrowserWorker implements VMWorker {
+export class VMWorkerImplementation implements VMWorker {
   /**
    * A [`blob:`-URL](https://en.wikipedia.org/wiki/Blob_URI_scheme) containing the worker code (or `null` if killed).
    *
@@ -104,13 +108,14 @@ export class BrowserWorker implements VMWorker {
   #worker?: Worker | undefined;
 
   /**
-   * Construct a new {@link BrowserWorker} with the given parameters.
+   * Construct a new {@link VMWorkerImplementation} with the given parameters.
    *
    * @param code - The code the {@link !Worker} will, eventually, run.
    * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
    * @param name - The name to give to the {@link !Worker}.
+   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    */
-  constructor(code: string, tunnel: number, name: string) {
+  constructor(code: string, tunnel: number, name: string, workerCtor?: WebWorker) {
     this.#blobURL = URL.createObjectURL(
       new Blob(
         [
@@ -122,7 +127,7 @@ export class BrowserWorker implements VMWorker {
       ),
     );
 
-    this.#worker = new Worker(this.#blobURL, {
+    this.#worker = new (workerCtor ?? Worker)(this.#blobURL, {
       credentials: 'omit',
       name: name,
       type: 'classic',
@@ -169,12 +174,12 @@ export class BrowserWorker implements VMWorker {
   }
 
   /**
-   * Send the given data to the {@link BrowserWorker}.
+   * Send the given data to the {@link VMWorkerImplementation}.
    *
    * > [!warning]
    * > The given `data` object **MUST** be serializable via `JSON.serialize`.
    *
-   * @param data - object to send to the {@link BrowserWorker}.
+   * @param data - object to send to the {@link VMWorkerImplementation}.
    * @returns `this`, for chaining.
    */
   shout(data: object): this {
@@ -187,53 +192,3 @@ export class BrowserWorker implements VMWorker {
     Object.setPrototypeOf(this.prototype, null);
   }
 }
-
-/**
- * Determine whether the code is being run in a browser realm.
- *
- * @returns Whether we ar ein a browser realm.
- */
-export const _isBrowser: () => boolean = () =>
-  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
-  new Function('try { return this === window; } catch { return false; }')() as boolean;
-
-/**
- * Determine whether the code is being run in a NodeJS realm.
- *
- * @returns Whether we ar ein a NodeJS realm.
- */
-export const _isNode: () => boolean = () =>
-  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
-  new Function('try { return this === global; } catch { return false; }')() as boolean;
-
-/**
- * Get the {@link WorkerBuilder} to use under the current environment.
- *
- * @returns The {@link WorkerBuilder} to use under the current environment.
- * @see {@link https://stackoverflow.com/a/31090240}
- */
-export const builder: () => WorkerBuilder = (): WorkerBuilder => {
-  if (_isBrowser()) {
-    return (code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name);
-  } else if (_isNode()) {
-    throw new Error('Unsupported execution environment');
-  } else {
-    throw new Error('Cannot determine execution environment');
-  }
-};
-
-/**
- * Get the {@link VMWorker} constructed for the current environment using the given parameters.
- *
- * @param code - Code to set the {@link VMWorker} up with.
- * @param tunnel - Tunnel id tell the {@link VMWorker} to announce boot-up on.
- * @param name - Name to use for the {@link VMWorker}.
- * @returns A {@link VMWorker} constructed via the {@link VMWorker} for the current environment.
- */
-export const build: (code: string, tunnel: number, name: string) => VMWorker = (
-  code: string,
-  tunnel: number,
-  name: string,
-): VMWorker => {
-  return builder()(code, tunnel, name);
-};

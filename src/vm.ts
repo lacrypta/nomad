@@ -37,7 +37,7 @@ import type {
   EventCasterImplementation_ProtectedMethods,
 } from './eventCaster';
 import type { ArgumentsMap } from './validation';
-import type { VMWorker, WorkerBuilder } from './worker';
+import type { VMWorker, WebWorker } from './worker';
 
 import { sort } from './dependency';
 import { EventCasterImplementation } from './eventCaster';
@@ -49,7 +49,7 @@ import {
   nonNegativeInteger as validateNonNegativeInteger,
   timeDelta as validateTimeDelta,
 } from './validation';
-import { BrowserWorker } from './worker';
+import { VMWorkerImplementation } from './worker';
 import workerCode from './workerCode.cjs';
 
 /**
@@ -268,18 +268,13 @@ export interface VM extends EventCaster {
    * 2. Setting up the boot timeout callback (in case the {@link VMWorker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
-   * @param workerBuilder - The {@link WorkerBuilder} to use in order to build the worker instance (will default to the platform one if not given).
+   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
    * @param pingInterval - Number of milliseconds to wait between pings to the worker.
    * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(
-    workerBuilder?: WorkerBuilder,
-    timeout?: number,
-    pingInterval?: number,
-    pongLimit?: number,
-  ): Promise<WorkerTimings>;
+  start(workerCtor?: WebWorker, timeout?: number, pingInterval?: number, pongLimit?: number): Promise<WorkerTimings>;
 
   /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
@@ -2099,15 +2094,13 @@ export class VMImplementation implements VM {
    * 2. Setting up the boot timeout callback (in case the {@link VMWorker} takes too much time to boot).
    * 3. Setting up the event listeners for `message`, `error`, and `messageerror`.
    *
+   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves with a pair of boot duration times (as measured from "inside" and "outside" of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
+   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
+   * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(
-    workerBuilder?: WorkerBuilder,
-    timeout?: number,
-    pingInterval?: number,
-    pongLimit?: number,
-  ): Promise<WorkerTimings> {
+  start(workerCtor?: WebWorker, timeout?: number, pingInterval?: number, pongLimit?: number): Promise<WorkerTimings> {
     return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
       const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
@@ -2115,9 +2108,6 @@ export class VMImplementation implements VM {
       try {
         this.#castEvent('start');
         this.#assertCreated();
-
-        const theWorkerBuilder: WorkerBuilder =
-          workerBuilder ?? ((code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name));
 
         this.#state = 'booting';
 
@@ -2159,7 +2149,7 @@ export class VMImplementation implements VM {
           this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
         }, theTimeout);
 
-        this.#worker = theWorkerBuilder(workerCode.toString(), bootTunnel, this.name).listen(
+        this.#worker = new VMWorkerImplementation(workerCode.toString(), bootTunnel, this.name, workerCtor).listen(
           (data: string): void => {
             this.#messageHandler(data);
           },
