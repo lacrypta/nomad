@@ -189,25 +189,38 @@ export class BrowserWorker implements VMWorker {
 }
 
 /**
+ * Determine whether the code is being run in a browser realm.
+ *
+ * @returns Whether we ar ein a browser realm.
+ */
+export const _isBrowser: () => boolean = () =>
+  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
+  new Function('try { return this === window; } catch { return false; }')() as boolean;
+
+/**
+ * Determine whether the code is being run in a NodeJS realm.
+ *
+ * @returns Whether we ar ein a NodeJS realm.
+ */
+export const _isNode: () => boolean = () =>
+  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
+  new Function('try { return this === global; } catch { return false; }')() as boolean;
+
+/**
  * Get the {@link WorkerBuilder} to use under the current environment.
  *
  * @returns The {@link WorkerBuilder} to use under the current environment.
  * @see {@link https://stackoverflow.com/a/31090240}
  */
-export function builder(): WorkerBuilder {
-  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
-  const isBrowser: boolean = new Function('try { return this === window; } catch { return false; }')() as boolean;
-  /* eslint-disable-next-line @typescript-eslint/no-implied-eval */
-  const isNode: boolean = new Function('try { return this === global; } catch { return false; }')() as boolean;
-
-  if (isBrowser) {
+export const builder: () => WorkerBuilder = (): WorkerBuilder => {
+  if (_isBrowser()) {
     return (code: string, tunnel: number, name: string) => new BrowserWorker(code, tunnel, name);
-  } else if (isNode) {
+  } else if (_isNode()) {
     throw new Error('Unsupported execution environment');
   } else {
     throw new Error('Cannot determine execution environment');
   }
-}
+};
 
 /**
  * Get the {@link VMWorker} constructed for the current environment using the given parameters.
@@ -217,6 +230,10 @@ export function builder(): WorkerBuilder {
  * @param name - Name to use for the {@link VMWorker}.
  * @returns A {@link VMWorker} constructed via the {@link VMWorker} for the current environment.
  */
-export function build(code: string, tunnel: number, name: string): VMWorker {
+export const build: (code: string, tunnel: number, name: string) => VMWorker = (
+  code: string,
+  tunnel: number,
+  name: string,
+): VMWorker => {
   return builder()(code, tunnel, name);
-}
+};
