@@ -22,6 +22,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+import buffer from 'node:buffer';
+
 export type TestCaseInput<T, U> =
   | {
       error: Error;
@@ -144,3 +146,6 @@ export const testAllMethod: <T, U extends (this: T, ...args: any) => any>(
     );
   });
 };
+
+export const blobUriToText = async (uri: URL | string): Promise<string | undefined> =>
+  buffer.resolveObjectURL(uri.toString())?.text();
