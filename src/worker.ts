@@ -44,18 +44,12 @@ export type MessageCallback = (data: string) => void;
 export type ErrorCallback = (error: Error) => void;
 
 /**
- * The interface a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker) responds to.
+ * The type of a function that will construct a {@link !Worker} instance.
  *
+ * @param scriptURL - The URL to retrieve the {@link !Worker} code from.
+ * @param options - Any {@link !Worker} options to pass on.
  */
-export interface WebWorker {
-  new (scriptURL: URL | string, options?: WorkerOptions): Worker;
-
-  /**
-   * The {@link !Worker} prototype.
-   *
-   */
-  prototype: Worker;
-}
+export type WorkerConstructor = (scriptURL: URL | string, options?: WorkerOptions) => Worker;
 
 /**
  * An instance of an environment-agnostic worker.
@@ -113,9 +107,14 @@ export class VMWorkerImplementation implements VMWorker {
    * @param code - The code the {@link !Worker} will, eventually, run.
    * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
    * @param name - The name to give to the {@link !Worker}.
-   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
+   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to one constructing a {@link !Worker} if not given).
    */
-  constructor(code: string, tunnel: number, name: string, workerCtor?: WebWorker) {
+  constructor(
+    code: string,
+    tunnel: number,
+    name: string,
+    workerCtor?: (scriptURL: URL | string, options?: WorkerOptions) => Worker,
+  ) {
     this.#blobURL = URL.createObjectURL(
       new Blob(
         [
@@ -127,9 +126,11 @@ export class VMWorkerImplementation implements VMWorker {
       ),
     );
 
-    this.#worker = new (workerCtor ?? Worker)(this.#blobURL, {
+    this.#worker = (
+      workerCtor ?? ((scriptURL: URL | string, options?: WorkerOptions): Worker => new Worker(scriptURL, options))
+    )(this.#blobURL, {
       credentials: 'omit',
-      name: name,
+      name,
       type: 'classic',
     });
   }

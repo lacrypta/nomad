@@ -32,7 +32,7 @@ import type { AnyArgs, AnyFunction, Dependency, DependencyObject } from './depen
 import type { EventCallback, EventCaster } from './eventCaster';
 import type { ArgumentsMap } from './validation';
 import type { Enclosure, VM, WorkerTimings } from './vm';
-import type { ErrorCallback, MessageCallback, VMWorker, WebWorker } from './worker';
+import type { ErrorCallback, MessageCallback, VMWorker, WorkerConstructor } from './worker';
 
 import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
 import { create as _vmCreate, events as _vmEvents, get as _vmGet } from './vm';
@@ -48,7 +48,7 @@ export type { AnyArgs, AnyFunction, Dependency, DependencyObject };
 export type { EventCallback, EventCaster };
 export type { ArgumentsMap };
 export type { Enclosure, VM, WorkerTimings };
-export type { ErrorCallback, MessageCallback, VMWorker, WebWorker };
+export type { ErrorCallback, MessageCallback, VMWorker, WorkerConstructor };
 
 export { dependencyCreate, dependencyFrom };
 export { vmCreate, vmEvents, vmGet };

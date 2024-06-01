@@ -37,7 +37,7 @@ import type {
   EventCasterImplementation_ProtectedMethods,
 } from './eventCaster';
 import type { ArgumentsMap } from './validation';
-import type { VMWorker, WebWorker } from './worker';
+import type { VMWorker, WorkerConstructor } from './worker';
 
 import { sort } from './dependency';
 import { EventCasterImplementation } from './eventCaster';
@@ -274,7 +274,12 @@ export interface VM extends EventCaster {
    * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(workerCtor?: WebWorker, timeout?: number, pingInterval?: number, pongLimit?: number): Promise<WorkerTimings>;
+  start(
+    workerCtor?: WorkerConstructor,
+    timeout?: number,
+    pingInterval?: number,
+    pongLimit?: number,
+  ): Promise<WorkerTimings>;
 
   /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
@@ -2100,7 +2105,12 @@ export class VMImplementation implements VM {
    * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(workerCtor?: WebWorker, timeout?: number, pingInterval?: number, pongLimit?: number): Promise<WorkerTimings> {
+  start(
+    workerCtor?: WorkerConstructor,
+    timeout?: number,
+    pingInterval?: number,
+    pongLimit?: number,
+  ): Promise<WorkerTimings> {
     return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
       const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
