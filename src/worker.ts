@@ -212,16 +212,22 @@ addEventListener("rejectionhandled", (event) => {
     if (undefined === this.#worker) {
       throw new Error('worker terminated');
     }
-    this.#worker.addEventListener('message', (message: MessageEvent<unknown>): void => {
-      messageCallback('string' === typeof message.data ? message.data : '');
+    this.#worker.addEventListener('message', (message: MessageEvent<string>): void => {
+      messageCallback(message.data);
     });
-    this.#worker.addEventListener('error', (event: ErrorEvent): void => {
-      event.preventDefault();
-      errorCallback(new Error(event.type));
-    });
-    this.#worker.addEventListener('messageerror', (message: MessageEvent<unknown>): void => {
-      errorCallback(new Error('string' === typeof message.data ? message.data : 'unknown error'));
-    });
+    this.#worker.addEventListener('error',
+      /* istanbul ignore next */ // TODO: find a way to test this
+      (event: ErrorEvent): void => {
+        event.preventDefault();
+        errorCallback(new Error(event.type));
+      },
+    );
+    this.#worker.addEventListener('messageerror',
+      /* istanbul ignore next */ // TODO: find a way to test this
+      (message: MessageEvent<unknown>): void => {
+        errorCallback(new Error('string' === typeof message.data ? message.data : 'unknown error'));
+      },
+    );
     return this;
   }
 

@@ -149,3 +149,5 @@ export const testAllMethod: <T, U extends (this: T, ...args: any) => any>(
 
 export const blobUriToText = async (uri: URL | string): Promise<string | undefined> =>
   buffer.resolveObjectURL(uri.toString())?.text();
+
+export const stringToDataUri = (data: string): string => `data:application/javascript;base64,${btoa(data)}`;
