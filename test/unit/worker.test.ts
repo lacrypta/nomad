@@ -126,8 +126,13 @@ addEventListener("rejectionhandled", (event) => {
     test('should build with default constructor', (): void => {
       const workerCtor = jest.fn()
       global.Worker = workerCtor;
-      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME')).toBeInstanceOf(VMWorkerImplementation);
-      expect(workerCtor).toHaveBeenCalled();
+      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME GOES HERE')).toBeInstanceOf(VMWorkerImplementation);
+      expect(workerCtor).toHaveBeenCalledTimes(1);
+      expect(Array.isArray(workerCtor.mock.calls[0]));
+      expect(workerCtor.mock.calls[0].length).toStrictEqual(2);
+      const [url, options] = workerCtor.mock.calls[0];
+      expect(url).toMatch(/^blob:nodedata:.+$/);
+      expect(options).toStrictEqual({ credentials: "omit", name: "THE NAME GOES HERE", type: "classic" });
       jest.restoreAllMocks();
     });
 
