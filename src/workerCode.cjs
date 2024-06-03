@@ -29,10 +29,27 @@
 'use strict';
 
 /**
+ * @typedef MessageData
+ * @type {object}
+ * @property {string} name
+ * @property {unknown} payload
+ * @property {number} tunnel
+ * @property {string} error
+ * @property {unknown[]} args
+ * @property {string} enclosure
+ * @property {string} event
+ * @property {DependencyObject} dependency
+ * @property {string} function
+ * @property {number} idx
+ * @property {string} target
+ * @property {number} depth
+ */
+
+/**
  * Callback used for {@link Listener}s, accepting the data string sent from the host side.
  *
  * @callback ListenerCallback
- * @param {string} data - Data the host sent.
+ * @param {MessageData} data - Data the host sent.
  * @returns {void}
  */
 
@@ -240,7 +257,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
   const _Reflect = Reflect;
 
-  const _JSON = JSON;
   const _Math = Math;
 
   // ----------------------------------------------------------------------------------------------
@@ -3029,8 +3045,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     // -- Worker Event Listeners ------------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    _listen((data) => {
-      const parsedData = _JSON.parse(data);
+    _listen((parsedData) => {
+      //const parsedData = _JSON.parse(data);
       const { name } = parsedData;
       switch (name) {
         case 'ping':

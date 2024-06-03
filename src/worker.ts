@@ -118,7 +118,58 @@ export class VMWorkerImplementation implements VMWorker {
     this.#blobURL = URL.createObjectURL(
       new Blob(
         [
-          `'use strict';(${code})(this,${tunnel.toString()},((_addEventListener)=>(listener)=>_addEventListener('message',({data})=>listener(data)))(addEventListener),((_postMessage,_JSON_stringify)=>(message)=>_postMessage(_JSON_stringify(message)))(postMessage,JSON.stringify),((_setTimeout)=>(callback)=>void _setTimeout(callback,0))(setTimeout))`,
+          `"use strict";
+addEventListener("unhandledrejection", (event) => {
+  event.preventDefault();
+  event.type = "error";
+  dispatchEvent(event);
+});
+addEventListener("rejectionhandled", (event) => {
+  event.preventDefault();
+  event.type = "error";
+  dispatchEvent(event);
+});
+(${code})(
+  this,
+  ${tunnel.toString()},
+  ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
+    (listener) => {
+      _addEventListener('message', ({ data }) => {
+        try {
+          listener(_JSON_parse(data));
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      })
+    }
+  )(addEventListener, JSON.parse, Event, dispatchEvent),
+  ((_postMessage, _JSON_stringify, _Event, _dispatchEvent) =>
+    (message) => {
+      try {
+        _postMessage(_JSON_stringify(message));
+      } catch (e) {
+        const event = new _Event("error");
+        event.reason = "string" === typeof e.message ? e.message : "unknown error";
+        _dispatchEvent(event);
+      }
+    }
+  )(postMessage, JSON.stringify, Event, dispatchEvent),
+  ((_setTimeout, _Event, _dispatchEvent) =>
+    (callback) => {
+      _setTimeout(() => {
+        try {
+          callback();
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      }, 0);
+    }
+  )(setTimeout, Event, dispatchEvent),
+);`,
         ],
         {
           type: 'application/javascript',
