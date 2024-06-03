@@ -29,20 +29,174 @@
 'use strict';
 
 /**
- * @typedef MessageData
+ * @typedef MessagePing
  * @type {object}
- * @property {string} name
- * @property {unknown} payload
- * @property {number} tunnel
- * @property {string} error
- * @property {unknown[]} args
- * @property {string} enclosure
- * @property {string} event
- * @property {DependencyObject} dependency
- * @property {string} function
- * @property {number} idx
- * @property {string} target
- * @property {number} depth
+ * @property {"ping"} name - The message name.
+ */
+
+/**
+ * @typedef MessageResolve
+ * @type {object}
+ * @property {"resolve"} name - The message name.
+ * @property {unknown} payload - The resolution payload.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageReject
+ * @type {object}
+ * @property {string} error - The rejection error message.
+ * @property {"reject"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageEmit
+ * @type {object}
+ * @property {unknown[]} args - The event arguments to pass.
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {string} event - The event name to emit.
+ * @property {"emit"} name - The message name.
+ */
+
+/**
+ * @typedef MessageInstall
+ * @type {object}
+ * @property {DependencyObject} dependency - The dependency to install.
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"install"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageExecute
+ * @type {object}
+ * @property {unknown[]} args - The arguments to pass to the dependency.
+ * @property {DependencyObject} dependency - The dependency to execute.
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"execute"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessagePredefine
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {string} function - The function name to predefine.
+ * @property {number} idx - The predefined function index.
+ * @property {"predefine"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageCreate
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"create"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageDelete
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"delete"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageMerge
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"merge"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageLink
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"link"} name - The message name.
+ * @property {string} target - The target enclosure.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageUnlink
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"unlink"} name - The message name.
+ * @property {string} target - The target enclosure.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageMute
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"mute"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageUnmute
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"unmute"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageListRootEnclosures
+ * @type {object}
+ * @property {"listRootEnclosures"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageListInstalled
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"listInstalled"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageListLinksTo
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"listLinksTo"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageListLinkedFrom
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"listLinkedFrom"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageIsMuted
+ * @type {object}
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"isMuted"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageGetSubEnclosures
+ * @type {object}
+ * @property {number} depth - The maximum depth to retrieve results for.
+ * @property {string} enclosure - The enclosure to operate on.
+ * @property {"getSubEnclosures"} name - The message name.
+ * @property {number} tunnel - The tunnel to answer on.
+ */
+
+/**
+ * @typedef MessageData
+ * @type {MessagePing | MessageResolve | MessageReject | MessageEmit | MessageInstall | MessageExecute | MessagePredefine | MessageCreate | MessageDelete | MessageMerge | MessageLink | MessageUnlink | MessageMute | MessageUnmute | MessageListRootEnclosures | MessageListInstalled | MessageListLinksTo | MessageListLinkedFrom | MessageIsMuted | MessageGetSubEnclosures}
  */
 
 /**
@@ -3235,11 +3389,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           }
           break;
         default: {
-          const { tunnel } = parsedData;
-          if (undefined !== tunnel) {
-            postRejectMessage(tunnel, `unknown event name ${name.toString()}`);
+          const { name, tunnel } = parsedData;
+          if (undefined !== tunnel && 'string' === typeof name) {
+            postRejectMessage(tunnel, `unknown event name ${name}`);
           } else {
-            throw new _Error(`unknown event name ${name.toString()}`);
+            throw new _Error(`unknown event name`);
           }
         }
       }

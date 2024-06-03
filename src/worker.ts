@@ -32,9 +32,9 @@
 /**
  * The type of a normal message handler to attach to a {@link VMWorker}.
  *
- * @param data - The data being transmitted _from_ the {@link VMWorker}.
+ * @param data - The data object transmitted _from_ the {@link VMWorker}.
  */
-export type MessageCallback = (data: string) => void;
+export type MessageCallback = (data: Record<string, unknown>) => void;
 
 /**
  * The type of an error handler to attach to a {@link VMWorker}.
@@ -212,17 +212,26 @@ addEventListener("rejectionhandled", (event) => {
     if (undefined === this.#worker) {
       throw new Error('worker terminated');
     }
-    this.#worker.addEventListener('message', (message: MessageEvent<string>): void => {
-      messageCallback(message.data);
+    this.#worker.addEventListener('message', ({ data }: MessageEvent<string>): void => {
+      let parsedData: Record<string, unknown>;
+      try {
+        parsedData = JSON.parse(data) as Record<string, unknown>;
+      } catch {
+        errorCallback(new Error(`malformed message ${data}`));
+        return;
+      }
+      messageCallback(parsedData);
     });
-    this.#worker.addEventListener('error',
+    this.#worker.addEventListener(
+      'error',
       /* istanbul ignore next */ // TODO: find a way to test this
       (event: ErrorEvent): void => {
         event.preventDefault();
         errorCallback(new Error(event.type));
       },
     );
-    this.#worker.addEventListener('messageerror',
+    this.#worker.addEventListener(
+      'messageerror',
       /* istanbul ignore next */ // TODO: find a way to test this
       (message: MessageEvent<unknown>): void => {
         errorCallback(new Error('string' === typeof message.data ? message.data : 'unknown error'));

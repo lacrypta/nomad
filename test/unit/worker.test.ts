@@ -22,6 +22,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+/* eslint-disable sonarjs/no-duplicate-string */
+
 import WebWorker from 'web-worker';
 
 import { VMWorkerImplementation } from '../../src/worker';
@@ -124,15 +126,17 @@ addEventListener("rejectionhandled", (event) => {
     });
 
     test('should build with default constructor', (): void => {
-      const workerCtor = jest.fn()
+      const workerCtor = jest.fn();
       global.Worker = workerCtor;
-      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME GOES HERE')).toBeInstanceOf(VMWorkerImplementation);
+      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME GOES HERE')).toBeInstanceOf(
+        VMWorkerImplementation,
+      );
       expect(workerCtor).toHaveBeenCalledTimes(1);
       expect(Array.isArray(workerCtor.mock.calls[0]));
-      expect(workerCtor.mock.calls[0].length).toStrictEqual(2);
-      const [url, options] = workerCtor.mock.calls[0];
+      expect((workerCtor.mock.calls[0] as Array<unknown>).length).toStrictEqual(2);
+      const [url, options] = workerCtor.mock.calls[0] as Array<unknown>;
       expect(url).toMatch(/^blob:nodedata:.+$/);
-      expect(options).toStrictEqual({ credentials: "omit", name: "THE NAME GOES HERE", type: "classic" });
+      expect(options).toStrictEqual({ credentials: 'omit', name: 'THE NAME GOES HERE', type: 'classic' });
       jest.restoreAllMocks();
     });
 
@@ -188,10 +192,59 @@ addEventListener("rejectionhandled", (event) => {
       }
     });
 
+    test('should send error message if not a JSON shout', async (): Promise<void> => {
+      const theWorkers: Worker[] = [];
+      try {
+        const received: Error[] = [];
+
+        await new Promise<void>((done: () => void): void => {
+          const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
+            return theWorkers[
+              theWorkers.push(
+                new WebWorker(
+                  stringToDataUri(
+                    wrapCode(
+                      ((_this: unknown, _tunnel: number, addListener: (handler: (data: object) => void) => void) => {
+                        addListener((): void => {
+                          postMessage({});
+                        });
+                      }).toString(),
+                    ),
+                  ),
+                  {
+                    credentials: 'omit',
+                    name: 'THE NAME GOES HERE',
+                    type: 'classic',
+                  },
+                ),
+              ) - 1
+            ] as Worker;
+          });
+
+          worker.listen(
+            (data: Record<string, unknown>): void => {
+              throw new Error(`unexpected ${JSON.stringify(data)}`);
+            },
+            (error: Error): void => {
+              received.push(error);
+              done();
+            },
+          );
+          worker.shout({});
+        });
+
+        expect(received).toStrictEqual([new Error('malformed message [object Object]')]);
+      } finally {
+        theWorkers.forEach((worker: Worker): void => {
+          worker.terminate();
+        });
+      }
+    });
+
     test('should shout, listen, and schedule', async (): Promise<void> => {
       const theWorkers: Worker[] = [];
       try {
-        const received: string[] = [];
+        const received: Record<string, unknown>[] = [];
 
         await new Promise<void>((done: () => void): void => {
           const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
@@ -208,7 +261,9 @@ addEventListener("rejectionhandled", (event) => {
                         schedule: (callback: () => void) => void,
                       ) => {
                         addListener((data: object): void => {
-                          schedule(() => shout(data));
+                          schedule(() => {
+                            shout(data);
+                          });
                         });
                       }).toString(),
                     ),
@@ -224,16 +279,18 @@ addEventListener("rejectionhandled", (event) => {
           });
 
           worker.listen(
-            (data: string): void => {
+            (data: Record<string, unknown>): void => {
               received.push(data);
               done();
             },
-            (_error: Error): void => {},
+            (_error: Error): void => {
+              throw _error;
+            },
           );
           worker.shout({ something: 'here' });
         });
 
-        expect(received).toStrictEqual(['{"something":"here"}']);
+        expect(received).toStrictEqual([{ something: 'here' }]);
       } finally {
         theWorkers.forEach((worker: Worker): void => {
           worker.terminate();

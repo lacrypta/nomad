@@ -949,52 +949,46 @@ export class VMImplementation implements VM {
    * 2. executing the corresponding sub-handler.
    * 3. if the `name` is not supported, try to signal rejection to the tunnel index if existing, or simply emit an error message otherwise.
    *
-   * @param data - The message's `data` field, a JSON-encoded string.
+   * @param data - The message's `data` field, JSON-decoded into an object.
    */
-  #messageHandler(data: string): void {
+  #messageHandler(data: Record<string, unknown>): void {
     try {
-      let parsedData: Record<string, unknown>;
-      try {
-        parsedData = JSON.parse(data) as Record<string, unknown>;
-      } catch {
-        throw new Error(`malformed message ${data}`);
-      }
-      switch (parsedData.name) {
+      switch (data.name) {
         case 'pong':
           this.#lastPong = Date.now();
           break;
         case 'resolve':
           {
-            const { payload, tunnel }: Message_Resolve = parsedData as Message_Resolve;
+            const { payload, tunnel }: Message_Resolve = data as Message_Resolve;
             this.#resolveTunnel(tunnel, payload);
           }
           break;
         case 'reject':
           {
-            const { error, tunnel }: Message_Reject = parsedData as Message_Reject;
+            const { error, tunnel }: Message_Reject = data as Message_Reject;
             this.#rejectTunnel(tunnel, new Error(error));
           }
           break;
         case 'call':
           {
-            const { args, enclosure, idx, tunnel }: Message_Call = parsedData as Message_Call;
+            const { args, enclosure, idx, tunnel }: Message_Call = data as Message_Call;
             this.#callPredefined(enclosure, tunnel, idx, args);
           }
           break;
         case 'emit':
           {
-            const { args, event }: Message_Emit = parsedData as Message_Emit;
+            const { args, event }: Message_Emit = data as Message_Emit;
             this.#castEvent(event, args);
           }
           break;
         default: {
-          if ('string' === typeof parsedData.name) {
-            if ('tunnel' in parsedData) {
-              this.#postRejectMessage(parsedData.tunnel as number, `unknown event name ${parsedData.name}`);
+          if ('string' === typeof data.name) {
+            if ('tunnel' in data) {
+              this.#postRejectMessage(data.tunnel as number, `unknown event name ${data.name}`);
             }
-            throw new Error(`unknown event name ${parsedData.name}`);
+            throw new Error(`unknown event name ${data.name}`);
           } else {
-            throw new Error(`malformed event ${JSON.stringify(parsedData)}`);
+            throw new Error(`malformed event ${JSON.stringify(data)}`);
           }
         }
       }
@@ -2160,7 +2154,7 @@ export class VMImplementation implements VM {
         }, theTimeout);
 
         this.#worker = new VMWorkerImplementation(workerCode.toString(), bootTunnel, this.name, workerCtor).listen(
-          (data: string): void => {
+          (data: Record<string, unknown>): void => {
             this.#messageHandler(data);
           },
           (error: Error): void => {
