@@ -212,14 +212,14 @@ addEventListener("rejectionhandled", (event) => {
     if (undefined === this.#worker) {
       throw new Error('worker terminated');
     }
-    this.#worker.addEventListener('message', (message: MessageEvent): void => {
+    this.#worker.addEventListener('message', (message: MessageEvent<unknown>): void => {
       messageCallback('string' === typeof message.data ? message.data : '');
     });
-    this.#worker.addEventListener('error', (event: Event): void => {
+    this.#worker.addEventListener('error', (event: ErrorEvent): void => {
       event.preventDefault();
       errorCallback(new Error(event.type));
     });
-    this.#worker.addEventListener('messageerror', (message: MessageEvent): void => {
+    this.#worker.addEventListener('messageerror', (message: MessageEvent<unknown>): void => {
       errorCallback(new Error('string' === typeof message.data ? message.data : 'unknown error'));
     });
     return this;
