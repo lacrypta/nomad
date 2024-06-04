@@ -2137,7 +2137,7 @@ export class VMImplementation implements VM {
         };
         const bootReject: Rejection = (error: Error): void => {
           this.#castEvent('start:error', error);
-          this.stop().then(
+          this.#doStop(
             (): void => {
               reject(error);
             },
