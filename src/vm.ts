@@ -921,12 +921,12 @@ export class VMImplementation implements VM {
         });
         this.#tunnels = [];
       }
+      this.#castEvent('stop:ok');
+      resolve?.();
     } catch (e) {
       this.#castEvent('stop:error', e);
       reject?.(_makeError(e));
     }
-    this.#castEvent('stop:ok');
-    resolve?.();
   }
 
   /**
