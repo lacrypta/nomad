@@ -99,6 +99,27 @@ describe('vm', (): void => {
   });
 
   describe('VMImplementation', (): void => {
+    const dummyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
+      new WebWorker(
+        stringToDataUri(
+          wrapCode(
+            ((
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+              _schedule: (callback: () => void) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            }).toString(),
+          ),
+        ),
+        options,
+      );
+
     describe('constructor', (): void => {
       test('should construct an instance with no arguments', (): void => {
         expect(new VMImplementation()).toBeInstanceOf(VMImplementation);
@@ -234,27 +255,6 @@ describe('vm', (): void => {
         }
       });
 
-      const dummyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-        new WebWorker(
-          stringToDataUri(
-            wrapCode(
-              ((
-                _this: object,
-                _bootTunnel: number,
-                _listen: (data: object) => void,
-                _shout: (message: object) => void,
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                _schedule: (callback: () => void) => void,
-              ) => {
-                setTimeout(() => {
-                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-                }, 10);
-              }).toString(),
-            ),
-          ),
-          options,
-        );
-
       test('should start correctly', async (): Promise<void> => {
         const vm = create('test-VMImplementation-start-13');
         const { inside, outside } = await vm.start(dummyWorkerCtor);
@@ -308,6 +308,42 @@ describe('vm', (): void => {
         expect(outside).toBeGreaterThanOrEqual(0);
         await new Promise((resolve) => setTimeout(resolve, 20));
         await vm.stop();
+      });
+    });
+
+    describe('stop()', (): void => {
+      test('should reject on errors', async (): Promise<void> => {
+        const theWorkers: Worker[] = [];
+        const intervalsToClear: (number | undefined)[] = [];
+        const originalClearInterval = global.clearInterval;
+        global.clearInterval = ((id: number | undefined) => {
+          intervalsToClear.push(id)
+          throw new Error('something');
+        }) as typeof global.clearInterval;
+        try {
+          const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker => {
+            const theWorker = dummyWorkerCtor(_scriptURL, options);
+            theWorkers.push(theWorker);
+            return theWorker;
+          };
+          const vm = create('test-VMImplementation-stop-1');
+          await vm.start(workerCtor);
+          await expect(vm.stop()).rejects.toStrictEqual(new Error('something'));
+        } finally {
+          theWorkers.forEach((worker: Worker): void => {
+            worker.terminate();
+          });
+          global.clearInterval = originalClearInterval;
+          intervalsToClear.forEach((id: number | undefined): void => {
+            clearInterval(id);
+          });
+        }
+      });
+
+      test('should resolve correctly', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-stop-2');
+        await vm.start(dummyWorkerCtor);
+        await expect(vm.stop()).resolves.toBeUndefined();
       });
     });
 
