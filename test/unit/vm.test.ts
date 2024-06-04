@@ -309,6 +309,25 @@ describe('vm', (): void => {
         await new Promise((resolve) => setTimeout(resolve, 20));
         await vm.stop();
       });
+
+      test('should transit states', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-start-17');
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([true, false, false, false]);
+        let to: ReturnType<typeof setTimeout> | undefined;
+        let states: boolean[] | undefined;
+        try {
+          to = setTimeout(() => {
+            states = [vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped];
+          }, 5);
+          await vm.start(dummyWorkerCtor);
+          expect(states).toStrictEqual([false, true, false, false]);
+          expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, true, false]);
+          await vm.stop();
+          expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, false, true]);
+        } catch {
+          clearTimeout(to);
+        }
+      });
     });
 
     describe('stop()', (): void => {
