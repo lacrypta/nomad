@@ -85,40 +85,16 @@ export interface VMWorker {
 }
 
 /**
- * An wrapper for a {@link !Worker}.
+ * Wrap the given code with the common worker infrastructure, using the given tunnel index to shout boot sequence finished.
  *
+ * @param code - The code to wrap.
+ * @param tunnel - The boot tunnel to use.
+ * @returns The wrapped code.
  */
-export class VMWorkerImplementation implements VMWorker {
-  /**
-   * A [`blob:`-URL](https://en.wikipedia.org/wiki/Blob_URI_scheme) containing the worker code (or `null` if killed).
-   *
-   */
-  #blobURL?: string | undefined;
-
-  /**
-   * The {@link !Worker} instance (or `null` if killed).
-   *
-   */
-  #worker?: Worker | undefined;
-
-  /**
-   * Construct a new {@link VMWorkerImplementation} with the given parameters.
-   *
-   * @param code - The code the {@link !Worker} will, eventually, run.
-   * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
-   * @param name - The name to give to the {@link !Worker}.
-   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to one constructing a {@link !Worker} if not given).
-   */
-  constructor(
-    code: string,
-    tunnel: number,
-    name: string,
-    workerCtor?: (scriptURL: URL | string, options?: WorkerOptions) => Worker,
-  ) {
-    this.#blobURL = URL.createObjectURL(
-      new Blob(
-        [
-          `"use strict";
+export const _wrapCode: (code: string, tunnel: number) => string = (
+  code: string,
+  tunnel: number,
+): string => `"use strict";
 addEventListener("unhandledrejection", (event) => {
   if (undefined !== event.preventDefault) {
     event.preventDefault();
@@ -173,13 +149,40 @@ addEventListener("rejectionhandled", (event) => {
       }, 0);
     }
   )(setTimeout, Event, dispatchEvent),
-);`,
-        ],
-        {
-          type: 'application/javascript',
-        },
-      ),
-    );
+);`;
+
+/**
+ * An wrapper for a {@link !Worker}.
+ *
+ */
+export class VMWorkerImplementation implements VMWorker {
+  /**
+   * A [`blob:`-URL](https://en.wikipedia.org/wiki/Blob_URI_scheme) containing the worker code (or `null` if killed).
+   *
+   */
+  #blobURL?: string | undefined;
+
+  /**
+   * The {@link !Worker} instance (or `null` if killed).
+   *
+   */
+  #worker?: Worker | undefined;
+
+  /**
+   * Construct a new {@link VMWorkerImplementation} with the given parameters.
+   *
+   * @param code - The code the {@link !Worker} will, eventually, run.
+   * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
+   * @param name - The name to give to the {@link !Worker}.
+   * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to one constructing a {@link !Worker} if not given).
+   */
+  constructor(
+    code: string,
+    tunnel: number,
+    name: string,
+    workerCtor?: (scriptURL: URL | string, options?: WorkerOptions) => Worker,
+  ) {
+    this.#blobURL = URL.createObjectURL(new Blob([_wrapCode(code, tunnel)], { type: 'application/javascript' }));
 
     this.#worker = (
       workerCtor ?? ((scriptURL: URL | string, options?: WorkerOptions): Worker => new Worker(scriptURL, options))

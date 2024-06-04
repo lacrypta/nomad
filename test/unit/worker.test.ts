@@ -26,10 +26,73 @@
 
 import WebWorker from 'web-worker';
 
-import { VMWorkerImplementation } from '../../src/worker';
-import { blobUriToText, stringToDataUri, wrapCode } from '../helpers';
+import { _wrapCode, VMWorkerImplementation } from '../../src/worker';
+import { blobUriToText, stringToDataUri } from '../helpers';
 
 describe('worker', (): void => {
+  describe('_wrapCode()', (): void => {
+    test('wraps the code appropriately', (): void => {
+      expect(_wrapCode('THE CODE GOES HERE', 123456)).toStrictEqual(
+        `"use strict";
+addEventListener("unhandledrejection", (event) => {
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
+  event.type = "error";
+  dispatchEvent(event);
+});
+addEventListener("rejectionhandled", (event) => {
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
+  event.type = "error";
+  dispatchEvent(event);
+});
+(THE CODE GOES HERE)(
+  this,
+  123456,
+  ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
+    (listener) => {
+      _addEventListener('message', ({ data }) => {
+        try {
+          listener(_JSON_parse(data));
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      })
+    }
+  )(addEventListener, JSON.parse, Event, dispatchEvent),
+  ((_postMessage, _JSON_stringify, _Event, _dispatchEvent) =>
+    (message) => {
+      try {
+        _postMessage(_JSON_stringify(message));
+      } catch (e) {
+        const event = new _Event("error");
+        event.reason = "string" === typeof e.message ? e.message : "unknown error";
+        _dispatchEvent(event);
+      }
+    }
+  )(postMessage, JSON.stringify, Event, dispatchEvent),
+  ((_setTimeout, _Event, _dispatchEvent) =>
+    (callback) => {
+      _setTimeout(() => {
+        try {
+          callback();
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      }, 0);
+    }
+  )(setTimeout, Event, dispatchEvent),
+);`,
+      );
+    });
+  });
+
   describe('VMWorkerImplementation', (): void => {
     test('should build a VMWorkerImplementation', async (): Promise<void> => {
       const workerCtor = jest.fn();
@@ -43,7 +106,7 @@ describe('worker', (): void => {
         WorkerOptions | undefined,
       ];
 
-      expect(await blobUriToText(scriptUrl)).toStrictEqual(wrapCode('THE CODE GOES HERE'));
+      expect(await blobUriToText(scriptUrl)).toStrictEqual(_wrapCode('THE CODE GOES HERE', 0));
 
       expect(options).toStrictEqual({ credentials: 'omit', name: 'THE NAME GOES HERE', type: 'classic' });
     });
@@ -55,7 +118,7 @@ describe('worker', (): void => {
           new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
             return theWorkers[
               theWorkers.push(
-                new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), {
+                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
                   credentials: 'omit',
                   name: 'THE NAME GOES HERE',
                   type: 'classic',
@@ -92,7 +155,7 @@ describe('worker', (): void => {
         const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
           return theWorkers[
             theWorkers.push(
-              new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), {
+              new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
                 credentials: 'omit',
                 name: 'THE NAME GOES HERE',
                 type: 'classic',
@@ -115,7 +178,7 @@ describe('worker', (): void => {
         const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
           return theWorkers[
             theWorkers.push(
-              new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), {
+              new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
                 credentials: 'omit',
                 name: 'THE NAME GOES HERE',
                 type: 'classic',
@@ -149,12 +212,13 @@ describe('worker', (): void => {
               theWorkers.push(
                 new WebWorker(
                   stringToDataUri(
-                    wrapCode(
+                    _wrapCode(
                       ((_this: unknown, _tunnel: number, addListener: (handler: (data: object) => void) => void) => {
                         addListener((): void => {
                           postMessage({});
                         });
                       }).toString(),
+                      0,
                     ),
                   ),
                   {
@@ -198,7 +262,7 @@ describe('worker', (): void => {
               theWorkers.push(
                 new WebWorker(
                   stringToDataUri(
-                    wrapCode(
+                    _wrapCode(
                       ((
                         _this: unknown,
                         _tunnel: number,
@@ -212,6 +276,7 @@ describe('worker', (): void => {
                           });
                         });
                       }).toString(),
+                      0,
                     ),
                   ),
                   {

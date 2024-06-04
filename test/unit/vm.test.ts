@@ -30,8 +30,8 @@ import type { VM } from '../../src/vm';
 
 import { EventCasterImplementation } from '../../src/eventCaster';
 import { _errorMessage, _makeError, _pseudoRandomString, VMImplementation, create, events, get } from '../../src/vm';
-import { WorkerConstructor } from '../../src/worker';
-import { stringToDataUri, testAll, wrapCode } from '../helpers';
+import { _wrapCode, WorkerConstructor } from '../../src/worker';
+import { stringToDataUri, testAll } from '../helpers';
 
 describe('vm', (): void => {
   describe('_pseudoRandomString()', (): void => {
@@ -102,7 +102,7 @@ describe('vm', (): void => {
     const dummyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
       new WebWorker(
         stringToDataUri(
-          wrapCode(
+          _wrapCode(
             ((
               _this: object,
               _bootTunnel: number,
@@ -115,6 +115,7 @@ describe('vm', (): void => {
                 _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
               }, 10);
             }).toString(),
+            0,
           ),
         ),
         options,
@@ -199,7 +200,7 @@ describe('vm', (): void => {
 
       test('should reject if no boot signal received', async (): Promise<void> => {
         const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-          new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), options);
+          new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
         await expect(create('test-VMImplementation-start-10').start(workerCtor, 0)).rejects.toStrictEqual(
           new Error('boot timed out'),
         );
@@ -237,7 +238,7 @@ describe('vm', (): void => {
         }) as typeof global.clearInterval;
         try {
           const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker => {
-            const theWorker = new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), options);
+            const theWorker = new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
             theWorkers.push(theWorker);
             return theWorker;
           };
@@ -284,7 +285,7 @@ describe('vm', (): void => {
         const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
           new WebWorker(
             stringToDataUri(
-              wrapCode(
+              _wrapCode(
                 ((
                   _this: object,
                   _bootTunnel: number,
@@ -298,6 +299,7 @@ describe('vm', (): void => {
                     dispatchEvent(new Event('error'));
                   }, 10);
                 }).toString(),
+                0,
               ),
             ),
             options,
