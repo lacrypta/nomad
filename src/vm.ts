@@ -2162,8 +2162,9 @@ export class VMImplementation implements VM {
           },
         );
       } catch (e) {
-        this.#castEvent('start:error', e);
-        reject(_makeError(e));
+        const error = _makeError(e);
+        this.#castEvent('start:error', error);
+        reject(error);
       }
     });
   }
