@@ -155,12 +155,16 @@ export const stringToDataUri = (data: string): string => `data:application/javas
 export const wrapCode: (code: string) => string = (code: string): string =>
   `"use strict";
 addEventListener("unhandledrejection", (event) => {
-  event.preventDefault();
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
   event.type = "error";
   dispatchEvent(event);
 });
 addEventListener("rejectionhandled", (event) => {
-  event.preventDefault();
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
   event.type = "error";
   dispatchEvent(event);
 });

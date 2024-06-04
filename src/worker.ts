@@ -120,12 +120,16 @@ export class VMWorkerImplementation implements VMWorker {
         [
           `"use strict";
 addEventListener("unhandledrejection", (event) => {
-  event.preventDefault();
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
   event.type = "error";
   dispatchEvent(event);
 });
 addEventListener("rejectionhandled", (event) => {
-  event.preventDefault();
+  if (undefined !== event.preventDefault) {
+    event.preventDefault();
+  }
   event.type = "error";
   dispatchEvent(event);
 });
@@ -226,7 +230,10 @@ addEventListener("rejectionhandled", (event) => {
       'error',
       /* istanbul ignore next */ // TODO: find a way to test this
       (event: ErrorEvent): void => {
-        event.preventDefault();
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (undefined !== event.preventDefault) {
+          event.preventDefault();
+        }
         errorCallback(new Error(event.type));
       },
     );
