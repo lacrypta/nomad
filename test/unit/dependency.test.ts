@@ -782,5 +782,11 @@ describe('dependency', (): void => {
       },
       'removeImport()',
     );
+
+    describe('prototype', (): void => {
+      test('should be null', (): void => {
+        expect(Object.getPrototypeOf(DependencyImplementation.prototype)).toBeNull();
+      });
+    });
   });
 });

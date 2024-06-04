@@ -297,5 +297,11 @@ addEventListener("rejectionhandled", (event) => {
         });
       }
     });
+
+    describe('prototype', (): void => {
+      test('should be null', (): void => {
+        expect(Object.getPrototypeOf(VMWorkerImplementation.prototype)).toBeNull();
+      });
+    });
   });
 });

@@ -212,5 +212,11 @@ describe('eventCaster', (): void => {
         expect(cb).not.toHaveBeenCalled();
       });
     });
+
+    describe('prototype', (): void => {
+      test('should be null', (): void => {
+        expect(Object.getPrototypeOf(EventCasterImplementation.prototype)).toBeNull();
+      });
+    });
   });
 });
