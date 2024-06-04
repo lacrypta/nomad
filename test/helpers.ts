@@ -153,3 +153,14 @@ export const blobUriToText: (uri: URL | string) => Promise<string | undefined> =
 
 export const stringToDataUri: (data: string) => string = (data: string): string =>
   `data:application/javascript;base64,${btoa(data)}`;
+
+export const withFakeTimers: (callback: () => void) => () => void = (callback: () => void): (() => void) => {
+  return (): void => {
+    jest.useFakeTimers();
+    try {
+      callback();
+    } finally {
+      jest.useRealTimers();
+    }
+  };
+};

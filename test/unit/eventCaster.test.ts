@@ -22,8 +22,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/* eslint-disable sonarjs/no-duplicate-string */
-
 import type {
   EventCaster,
   EventCasterImplementation_Cast,
@@ -31,7 +29,7 @@ import type {
 } from '../../src/eventCaster';
 
 import { _filterToRegExp, EventCasterImplementation } from '../../src/eventCaster';
-import { testAll } from '../helpers';
+import { testAll, withFakeTimers } from '../helpers';
 
 const newEventCaster: () => [EventCaster, EventCasterImplementation_Cast] = (): [
   EventCaster,
@@ -105,112 +103,92 @@ describe('eventCaster', (): void => {
     });
 
     describe('on()', (): void => {
-      test('should call listener on positive cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
+      test(
+        'should call listener on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
 
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
+          const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
 
-        eci.on('something', cb);
-        cast('something', 1, 2, 3);
-        jest.runAllTimers();
+          eci.on('something', cb);
+          cast('something', 1, 2, 3);
+          jest.runAllTimers();
 
-        expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
-      });
+          expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
+        }),
+      );
 
-      test('should not call listener on negative cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
+      test(
+        'should not call listener on negative cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
 
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
+          const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
 
-        eci.on('something', cb);
-        cast('else', 1, 2, 3);
-        jest.runAllTimers();
+          eci.on('something', cb);
+          cast('else', 1, 2, 3);
+          jest.runAllTimers();
 
-        expect(cb).not.toHaveBeenCalled();
-      });
+          expect(cb).not.toHaveBeenCalled();
+        }),
+      );
     });
 
     describe('once()', (): void => {
-      test('should call listener once on positive cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
+      test(
+        'should call listener once on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
 
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
+          const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
 
-        eci.once('something', cb);
-        cast('something', 1, 2, 3);
-        cast('something', 4, 5, 6);
-        jest.runAllTimers();
+          eci.once('something', cb);
+          cast('something', 1, 2, 3);
+          cast('something', 4, 5, 6);
+          jest.runAllTimers();
 
-        expect(cb).toHaveBeenCalledTimes(1);
-        expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
-      });
+          expect(cb).toHaveBeenCalledTimes(1);
+          expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
+        }),
+      );
 
-      test('should not call listener on negative cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
+      test(
+        'should not call listener on negative cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
 
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
+          const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
 
-        eci.once('something', cb);
-        cast('else', 1, 2, 3);
-        cast('else', 4, 5, 6);
-        jest.runAllTimers();
+          eci.once('something', cb);
+          cast('else', 1, 2, 3);
+          cast('else', 4, 5, 6);
+          jest.runAllTimers();
 
-        expect(cb).not.toHaveBeenCalled();
-      });
+          expect(cb).not.toHaveBeenCalled();
+        }),
+      );
     });
 
     describe('off()', (): void => {
-      test('should not call listener on positive cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
+      test(
+        'should not call listener on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
 
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
+          const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
 
-        eci.on('something', cb);
-        cast('something', 1, 2, 3);
-        jest.runAllTimers();
+          eci.on('something', cb);
+          cast('something', 1, 2, 3);
+          jest.runAllTimers();
 
-        eci.off(cb);
-        cast('something', 4, 5, 6);
-        jest.runAllTimers();
+          eci.off(cb);
+          cast('something', 4, 5, 6);
+          jest.runAllTimers();
 
-        expect(cb).toHaveBeenCalledTimes(1);
-        expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
-      });
-    });
-
-    describe('once()', (): void => {
-      test('should call listener once on positive cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
-
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
-
-        eci.once('something', cb);
-        cast('something', 1, 2, 3);
-        cast('something', 4, 5, 6);
-        jest.runAllTimers();
-
-        expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
-      });
-
-      test('should not call listener on negative cast', (): void => {
-        jest.useFakeTimers();
-        const cb = jest.fn();
-
-        const [eci, cast]: [EventCaster, EventCasterImplementation_Cast] = newEventCaster();
-
-        eci.once('something', cb);
-        cast('else', 1, 2, 3);
-        cast('else', 4, 5, 6);
-        jest.runAllTimers();
-
-        expect(cb).not.toHaveBeenCalled();
-      });
+          expect(cb).toHaveBeenCalledTimes(1);
+          expect(cb).toHaveBeenCalledWith('something', 1, 2, 3);
+        }),
+      );
     });
 
     describe('prototype', (): void => {
