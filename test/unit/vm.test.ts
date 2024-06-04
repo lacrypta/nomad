@@ -185,10 +185,12 @@ describe('vm', (): void => {
       });
 
       test('stop() errors should not shadow boot rejection on worker constructor failure', async (): Promise<void> => {
+        const intervalsToClear: (number | undefined)[] = [];
         const originalClearInterval = global.clearInterval;
-        global.clearInterval = () => {
-          throw new Error('something else');
-        };
+        global.clearInterval = ((id: number | undefined) => {
+          intervalsToClear.push(id)
+          throw new Error('something');
+        }) as typeof global.clearInterval;
         try {
           const workerCtor: WorkerConstructor = (): Worker => {
             throw new Error('something');
@@ -198,15 +200,20 @@ describe('vm', (): void => {
           );
         } finally {
           global.clearInterval = originalClearInterval;
+          intervalsToClear.forEach((id: number | undefined): void => {
+            clearInterval(id);
+          });
         }
       });
 
       test('stop() errors should not shadow boot rejection on boot timeout', async (): Promise<void> => {
         const theWorkers: Worker[] = [];
+        const intervalsToClear: (number | undefined)[] = [];
         const originalClearInterval = global.clearInterval;
-        global.clearInterval = () => {
+        global.clearInterval = ((id: number | undefined) => {
+          intervalsToClear.push(id)
           throw new Error('something');
-        };
+        }) as typeof global.clearInterval;
         try {
           const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker => {
             const theWorker = new WebWorker(stringToDataUri(wrapCode((() => {}).toString())), options);
@@ -221,6 +228,9 @@ describe('vm', (): void => {
             worker.terminate();
           });
           global.clearInterval = originalClearInterval;
+          intervalsToClear.forEach((id: number | undefined): void => {
+            clearInterval(id);
+          });
         }
       });
 
