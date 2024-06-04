@@ -373,5 +373,89 @@ describe('vm', (): void => {
         );
       });
     });
+
+    describe('[get isCreated]', (): void => {
+      test('should retrieve correctly', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-get-isCreated');
+        expect(vm.isCreated).toStrictEqual(true);
+        let to: ReturnType<typeof setTimeout> | undefined;
+        let value: boolean | undefined;
+        try {
+          to = setTimeout(() => {
+            value = vm.isCreated;
+          }, 5);
+          await vm.start(dummyWorkerCtor);
+          expect(value).toStrictEqual(false);
+          expect(vm.isCreated).toStrictEqual(false);
+          await vm.stop();
+          expect(vm.isCreated).toStrictEqual(false);
+        } catch {
+          clearTimeout(to);
+        }
+      });
+    });
+
+    describe('[get isBooting]', (): void => {
+      test('should retrieve correctly', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-get-isBooting');
+        expect(vm.isBooting).toStrictEqual(false);
+        let to: ReturnType<typeof setTimeout> | undefined;
+        let value: boolean | undefined;
+        try {
+          to = setTimeout(() => {
+            value = vm.isBooting;
+          }, 5);
+          await vm.start(dummyWorkerCtor);
+          expect(value).toStrictEqual(true);
+          expect(vm.isBooting).toStrictEqual(false);
+          await vm.stop();
+          expect(vm.isBooting).toStrictEqual(false);
+        } catch {
+          clearTimeout(to);
+        }
+      });
+    });
+
+    describe('[get isRunning]', (): void => {
+      test('should retrieve correctly', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-get-isRunning');
+        expect(vm.isRunning).toStrictEqual(false);
+        let to: ReturnType<typeof setTimeout> | undefined;
+        let value: boolean | undefined;
+        try {
+          to = setTimeout(() => {
+            value = vm.isRunning;
+          }, 5);
+          await vm.start(dummyWorkerCtor);
+          expect(value).toStrictEqual(false);
+          expect(vm.isRunning).toStrictEqual(true);
+          await vm.stop();
+          expect(vm.isRunning).toStrictEqual(false);
+        } catch {
+          clearTimeout(to);
+        }
+      });
+    });
+
+    describe('[get isStopped]', (): void => {
+      test('should retrieve correctly', async (): Promise<void> => {
+        const vm = create('test-VMImplementation-get-isStopped');
+        expect(vm.isStopped).toStrictEqual(false);
+        let to: ReturnType<typeof setTimeout> | undefined;
+        let value: boolean | undefined;
+        try {
+          to = setTimeout(() => {
+            value = vm.isStopped;
+          }, 5);
+          await vm.start(dummyWorkerCtor);
+          expect(value).toStrictEqual(false);
+          expect(vm.isStopped).toStrictEqual(false);
+          await vm.stop();
+          expect(vm.isStopped).toStrictEqual(true);
+        } catch {
+          clearTimeout(to);
+        }
+      });
+    });
   });
 });
