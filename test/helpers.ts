@@ -151,3 +151,57 @@ export const blobUriToText = async (uri: URL | string): Promise<string | undefin
   buffer.resolveObjectURL(uri.toString())?.text();
 
 export const stringToDataUri = (data: string): string => `data:application/javascript;base64,${btoa(data)}`;
+
+export const wrapCode: (code: string) => string = (code: string): string =>
+  `"use strict";
+addEventListener("unhandledrejection", (event) => {
+  event.preventDefault();
+  event.type = "error";
+  dispatchEvent(event);
+});
+addEventListener("rejectionhandled", (event) => {
+  event.preventDefault();
+  event.type = "error";
+  dispatchEvent(event);
+});
+(${code})(
+  this,
+  0,
+  ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
+    (listener) => {
+      _addEventListener('message', ({ data }) => {
+        try {
+          listener(_JSON_parse(data));
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      })
+    }
+  )(addEventListener, JSON.parse, Event, dispatchEvent),
+  ((_postMessage, _JSON_stringify, _Event, _dispatchEvent) =>
+    (message) => {
+      try {
+        _postMessage(_JSON_stringify(message));
+      } catch (e) {
+        const event = new _Event("error");
+        event.reason = "string" === typeof e.message ? e.message : "unknown error";
+        _dispatchEvent(event);
+      }
+    }
+  )(postMessage, JSON.stringify, Event, dispatchEvent),
+  ((_setTimeout, _Event, _dispatchEvent) =>
+    (callback) => {
+      _setTimeout(() => {
+        try {
+          callback();
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      }, 0);
+    }
+  )(setTimeout, Event, dispatchEvent),
+);`;
