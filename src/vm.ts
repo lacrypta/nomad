@@ -2158,6 +2158,7 @@ export class VMImplementation implements VM {
             (data: Record<string, unknown>): void => {
               this.#messageHandler(data);
             },
+            /* istanbul ignore next */ // TODO: find a way to test this
             (error: Error): void => {
               this.#errorHandler(error);
             },

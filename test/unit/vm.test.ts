@@ -26,7 +26,9 @@
 
 import WebWorker from 'web-worker';
 
+import type { AnyArgs } from '../../src/dependency';
 import type { VM } from '../../src/vm';
+import type { WorkerConstructor } from '../../src/worker';
 
 import { EventCasterImplementation } from '../../src/eventCaster';
 import {
@@ -40,8 +42,8 @@ import {
   events,
   get,
 } from '../../src/vm';
-import { _wrapCode, WorkerConstructor } from '../../src/worker';
-import { stringToDataUri, testAll, withFakeTimers } from '../helpers';
+import { _wrapCode } from '../../src/worker';
+import { asyncWithFakeTimers, stringToDataUri, testAll, withFakeTimers } from '../helpers';
 
 describe('vm', (): void => {
   describe('_pseudoRandomString()', (): void => {
@@ -109,6 +111,13 @@ describe('vm', (): void => {
   });
 
   describe('VMImplementation', (): void => {
+    const errorWorkerCtor: WorkerConstructor = (): Worker => {
+      throw new Error('something');
+    };
+
+    const emptyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
+      new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
+
     const dummyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
       new WebWorker(
         stringToDataUri(
@@ -200,43 +209,59 @@ describe('vm', (): void => {
       });
 
       test('should reject if worker constructor fails', async (): Promise<void> => {
-        const workerCtor: WorkerConstructor = (): Worker => {
-          throw new Error('something');
-        };
-        await expect(create('test-VMImplementation-start-9').start(workerCtor)).rejects.toStrictEqual(
+        await expect(create('test-VMImplementation-start-9').start(errorWorkerCtor)).rejects.toStrictEqual(
           new Error('something'),
         );
       });
 
       test('should reject if no boot signal received', async (): Promise<void> => {
-        const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-          new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
-        await expect(create('test-VMImplementation-start-10').start(workerCtor, 0)).rejects.toStrictEqual(
-          new Error('boot timed out'),
-        );
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create('test-VMImplementation-start-10');
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await expect(vm.start(emptyWorkerCtor, 0)).rejects.toStrictEqual(new Error('boot timed out'));
+
+        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-10:start', vm]]);
       });
 
-      test('stop() errors should not shadow boot rejection on worker constructor failure', async (): Promise<void> => {
-        const intervalsToClear: (number | undefined)[] = [];
-        const originalClearInterval = global.clearInterval;
-        global.clearInterval = ((id: number | undefined) => {
-          intervalsToClear.push(id);
-          throw new Error('something');
-        }) as typeof global.clearInterval;
-        try {
-          const workerCtor: WorkerConstructor = (): Worker => {
-            throw new Error('something');
-          };
-          await expect(create('test-VMImplementation-start-11').start(workerCtor)).rejects.toStrictEqual(
-            new Error('something'),
-          );
-        } finally {
-          global.clearInterval = originalClearInterval;
-          intervalsToClear.forEach((id: number | undefined): void => {
-            clearInterval(id);
-          });
-        }
-      });
+      test(
+        'stop() errors should not shadow boot rejection on worker constructor failure',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const intervalsToClear: (number | undefined)[] = [];
+          const originalClearInterval = global.clearInterval;
+          global.clearInterval = ((id: number | undefined) => {
+            intervalsToClear.push(id);
+            throw new Error('else');
+          }) as typeof global.clearInterval;
+          try {
+            const castEvents: [string, ...AnyArgs][] = [];
+            const vm = create('test-VMImplementation-start-11');
+            vm.on('**', (name: string, ...rest: AnyArgs): void => {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              castEvents.push([name, ...rest]);
+            });
+
+            await expect(vm.start(errorWorkerCtor)).rejects.toStrictEqual(new Error('something'));
+
+            jest.advanceTimersByTime(1);
+
+            expect(castEvents).toStrictEqual([
+              ['nomadvm:test-VMImplementation-start-11:start', vm],
+              ['nomadvm:test-VMImplementation-start-11:start:error', vm, new Error('something')],
+              ['nomadvm:test-VMImplementation-start-11:stop', vm],
+              ['nomadvm:test-VMImplementation-start-11:stop:error', vm, new Error('else')],
+            ]);
+          } finally {
+            global.clearInterval = originalClearInterval;
+            intervalsToClear.forEach((id: number | undefined): void => {
+              clearInterval(id);
+            });
+          }
+        }),
+      );
 
       test('stop() errors should not shadow boot rejection on boot timeout', async (): Promise<void> => {
         const theWorkers: Worker[] = [];
@@ -247,14 +272,22 @@ describe('vm', (): void => {
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
-          const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker => {
-            const theWorker = new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
+          const workerCtor: WorkerConstructor = (scriptURL: URL | string, options?: WorkerOptions): Worker => {
+            const theWorker = emptyWorkerCtor(scriptURL, options);
             theWorkers.push(theWorker);
             return theWorker;
           };
-          await expect(create('test-VMImplementation-start-12').start(workerCtor)).rejects.toStrictEqual(
-            new Error('boot timed out'),
-          );
+
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-start-12');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.start(workerCtor)).rejects.toStrictEqual(new Error('boot timed out'));
+
+          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-12:start', vm]]);
         } finally {
           theWorkers.forEach((worker: Worker): void => {
             worker.terminate();
@@ -267,79 +300,90 @@ describe('vm', (): void => {
       });
 
       test('should start correctly', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
         const vm = create('test-VMImplementation-start-13');
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
         const { inside, outside } = await vm.start(dummyWorkerCtor);
         expect(inside).toStrictEqual(123456);
         expect(outside).toBeGreaterThanOrEqual(0);
+
+        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-13:start', vm]]);
+
         await vm.stop();
       });
 
-      test('should stop vm upon failing to receive a pong', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-start-14');
-        const { inside, outside } = await vm.start(dummyWorkerCtor, undefined, 1, 1);
-        expect(inside).toStrictEqual(123456);
-        expect(outside).toBeGreaterThanOrEqual(0);
+      test(
+        'should stop vm upon failing to receive a pong',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-start-14');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
 
-        await new Promise((resolve) => setTimeout(resolve, 15));
-        expect(vm.isStopped).toStrictEqual(true);
-      });
+          const { inside, outside } = await vm.start(dummyWorkerCtor, undefined, 1, 1);
+          expect(inside).toStrictEqual(123456);
+          expect(outside).toBeGreaterThanOrEqual(0);
+
+          jest.advanceTimersByTime(15);
+
+          expect(vm.isStopped).toStrictEqual(true);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-start-14:start', vm],
+            ['nomadvm:test-VMImplementation-start-14:start:ok', vm],
+            ['nomadvm:test-VMImplementation-start-14:worker:unresponsive', vm, 2],
+            ['nomadvm:test-VMImplementation-start-14:stop', vm],
+            ['nomadvm:test-VMImplementation-start-14:stop:ok', vm],
+          ]);
+        }),
+      );
 
       test('should reject if starting a stopped vm', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
         const vm = create('test-VMImplementation-start-15');
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
         await vm.start(dummyWorkerCtor);
         await vm.stop();
         await expect(vm.start(dummyWorkerCtor)).rejects.toStrictEqual(new Error("expected state to be 'created'"));
+
+        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-15:start', vm]]);
       });
 
-      test('should route error messages', async (): Promise<void> => {
-        const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-          new WebWorker(
-            stringToDataUri(
-              _wrapCode(
-                ((
-                  _this: object,
-                  _bootTunnel: number,
-                  _listen: (data: object) => void,
-                  _shout: (message: object) => void,
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                  _schedule: (callback: () => void) => void,
-                ) => {
-                  setTimeout(() => {
-                    _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-                    dispatchEvent(new Event('error'));
-                  }, 10);
-                }).toString(),
-                0,
-              ),
-            ),
-            options,
-          );
-        const vm = create('test-VMImplementation-start-16');
-        const { inside, outside } = await vm.start(workerCtor);
-        expect(inside).toStrictEqual(123456);
-        expect(outside).toBeGreaterThanOrEqual(0);
-        await new Promise((resolve) => setTimeout(resolve, 20));
-        await vm.stop();
-      });
+      test(
+        'should transit states',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-start-17');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
 
-      test('should transit states', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-start-17');
-        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([true, false, false, false]);
-        let to: ReturnType<typeof setTimeout> | undefined;
-        let states: boolean[] | undefined;
-        try {
-          to = setTimeout(() => {
-            states = [vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped];
-          }, 5);
-          await vm.start(dummyWorkerCtor);
-          expect(states).toStrictEqual([false, true, false, false]);
+          expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([true, false, false, false]);
+
+          const start = vm.start(dummyWorkerCtor);
+          jest.advanceTimersByTime(5);
+          expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, true, false, false]);
+
+          await start;
           expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, true, false]);
+
           await vm.stop();
           expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, false, true]);
-        } catch {
-          clearTimeout(to);
-        }
-      });
+
+          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-17:start', vm]]);
+        }),
+      );
     });
 
     describe('stop()', (): void => {
@@ -357,9 +401,17 @@ describe('vm', (): void => {
             theWorkers.push(theWorker);
             return theWorker;
           };
+          const castEvents: [string, ...AnyArgs][] = [];
           const vm = create('test-VMImplementation-stop-1');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
           await vm.start(workerCtor);
           await expect(vm.stop()).rejects.toStrictEqual(new Error('something'));
+
+          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-stop-1:start', vm]]);
         } finally {
           theWorkers.forEach((worker: Worker): void => {
             worker.terminate();
@@ -372,9 +424,17 @@ describe('vm', (): void => {
       });
 
       test('should resolve correctly', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
         const vm = create('test-VMImplementation-stop-2');
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
         await vm.start(dummyWorkerCtor);
         await expect(vm.stop()).resolves.toBeUndefined();
+
+        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-stop-2:start', vm]]);
       });
     });
 
@@ -387,87 +447,83 @@ describe('vm', (): void => {
     });
 
     describe('[get isCreated]', (): void => {
-      test('should retrieve correctly', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-get-isCreated');
-        expect(vm.isCreated).toStrictEqual(true);
-        let to: ReturnType<typeof setTimeout> | undefined;
-        let value: boolean | undefined;
-        try {
-          to = setTimeout(() => {
-            value = vm.isCreated;
-          }, 5);
-          await vm.start(dummyWorkerCtor);
-          expect(value).toStrictEqual(false);
+      test(
+        'should retrieve correctly',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create('test-VMImplementation-get-isCreated');
+          expect(vm.isCreated).toStrictEqual(true);
+
+          const start = vm.start(dummyWorkerCtor);
+          jest.advanceTimersByTime(5);
           expect(vm.isCreated).toStrictEqual(false);
+
+          await start;
+          expect(vm.isCreated).toStrictEqual(false);
+
           await vm.stop();
           expect(vm.isCreated).toStrictEqual(false);
-        } catch {
-          clearTimeout(to);
-        }
-      });
+        }),
+      );
     });
 
     describe('[get isBooting]', (): void => {
-      test('should retrieve correctly', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-get-isBooting');
-        expect(vm.isBooting).toStrictEqual(false);
-        let to: ReturnType<typeof setTimeout> | undefined;
-        let value: boolean | undefined;
-        try {
-          to = setTimeout(() => {
-            value = vm.isBooting;
-          }, 5);
-          await vm.start(dummyWorkerCtor);
-          expect(value).toStrictEqual(true);
+      test(
+        'should retrieve correctly',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create('test-VMImplementation-get-isBooting');
           expect(vm.isBooting).toStrictEqual(false);
+
+          const start = vm.start(dummyWorkerCtor);
+          jest.advanceTimersByTime(5);
+          expect(vm.isBooting).toStrictEqual(true);
+
+          await start;
+          expect(vm.isBooting).toStrictEqual(false);
+
           await vm.stop();
           expect(vm.isBooting).toStrictEqual(false);
-        } catch {
-          clearTimeout(to);
-        }
-      });
+        }),
+      );
     });
 
     describe('[get isRunning]', (): void => {
-      test('should retrieve correctly', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-get-isRunning');
-        expect(vm.isRunning).toStrictEqual(false);
-        let to: ReturnType<typeof setTimeout> | undefined;
-        let value: boolean | undefined;
-        try {
-          to = setTimeout(() => {
-            value = vm.isRunning;
-          }, 5);
-          await vm.start(dummyWorkerCtor);
-          expect(value).toStrictEqual(false);
+      test(
+        'should retrieve correctly',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create('test-VMImplementation-get-isRunning');
+          expect(vm.isRunning).toStrictEqual(false);
+
+          const start = vm.start(dummyWorkerCtor);
+          jest.advanceTimersByTime(5);
+          expect(vm.isRunning).toStrictEqual(false);
+
+          await start;
           expect(vm.isRunning).toStrictEqual(true);
+
           await vm.stop();
           expect(vm.isRunning).toStrictEqual(false);
-        } catch {
-          clearTimeout(to);
-        }
-      });
+        }),
+      );
     });
 
     describe('[get isStopped]', (): void => {
-      test('should retrieve correctly', async (): Promise<void> => {
-        const vm = create('test-VMImplementation-get-isStopped');
-        expect(vm.isStopped).toStrictEqual(false);
-        let to: ReturnType<typeof setTimeout> | undefined;
-        let value: boolean | undefined;
-        try {
-          to = setTimeout(() => {
-            value = vm.isStopped;
-          }, 5);
-          await vm.start(dummyWorkerCtor);
-          expect(value).toStrictEqual(false);
+      test(
+        'should retrieve correctly',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create('test-VMImplementation-get-isStopped');
           expect(vm.isStopped).toStrictEqual(false);
+
+          const start = vm.start(dummyWorkerCtor);
+          jest.advanceTimersByTime(5);
+          expect(vm.isStopped).toStrictEqual(false);
+
+          await start;
+          expect(vm.isStopped).toStrictEqual(false);
+
           await vm.stop();
           expect(vm.isStopped).toStrictEqual(true);
-        } catch {
-          clearTimeout(to);
-        }
-      });
+        }),
+      );
     });
 
     describe('on()', (): void => {
