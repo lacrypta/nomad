@@ -209,7 +209,7 @@ describe('vm', (): void => {
         const intervalsToClear: (number | undefined)[] = [];
         const originalClearInterval = global.clearInterval;
         global.clearInterval = ((id: number | undefined) => {
-          intervalsToClear.push(id)
+          intervalsToClear.push(id);
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
@@ -232,7 +232,7 @@ describe('vm', (): void => {
         const intervalsToClear: (number | undefined)[] = [];
         const originalClearInterval = global.clearInterval;
         global.clearInterval = ((id: number | undefined) => {
-          intervalsToClear.push(id)
+          intervalsToClear.push(id);
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
@@ -336,7 +336,7 @@ describe('vm', (): void => {
         const intervalsToClear: (number | undefined)[] = [];
         const originalClearInterval = global.clearInterval;
         global.clearInterval = ((id: number | undefined) => {
-          intervalsToClear.push(id)
+          intervalsToClear.push(id);
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
