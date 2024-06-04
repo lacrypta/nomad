@@ -2149,18 +2149,22 @@ export class VMImplementation implements VM {
 
         const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
 
-        this.#bootTimeout = setTimeout((): void => {
-          this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
-        }, theTimeout);
+        try {
+          this.#bootTimeout = setTimeout((): void => {
+            this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
+          }, theTimeout);
 
-        this.#worker = new VMWorkerImplementation(workerCode.toString(), bootTunnel, this.name, workerCtor).listen(
-          (data: Record<string, unknown>): void => {
-            this.#messageHandler(data);
-          },
-          (error: Error): void => {
-            this.#errorHandler(error);
-          },
-        );
+          this.#worker = new VMWorkerImplementation(workerCode.toString(), bootTunnel, this.name, workerCtor).listen(
+            (data: Record<string, unknown>): void => {
+              this.#messageHandler(data);
+            },
+            (error: Error): void => {
+              this.#errorHandler(error);
+            },
+          );
+        } catch (e) {
+          this.#rejectTunnel(bootTunnel, _makeError(e));
+        }
       } catch (e) {
         const error = _makeError(e);
         this.#castEvent('start:error', error);
