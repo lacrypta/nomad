@@ -29,9 +29,19 @@ import WebWorker from 'web-worker';
 import type { VM } from '../../src/vm';
 
 import { EventCasterImplementation } from '../../src/eventCaster';
-import { _errorMessage, _makeError, _pseudoRandomString, VMImplementation, create, events, get } from '../../src/vm';
+import {
+  _cast,
+  _errorMessage,
+  _eventPrefix,
+  _makeError,
+  _pseudoRandomString,
+  VMImplementation,
+  create,
+  events,
+  get,
+} from '../../src/vm';
 import { _wrapCode, WorkerConstructor } from '../../src/worker';
-import { stringToDataUri, testAll } from '../helpers';
+import { stringToDataUri, testAll, withFakeTimers } from '../helpers';
 
 describe('vm', (): void => {
   describe('_pseudoRandomString()', (): void => {
@@ -458,6 +468,90 @@ describe('vm', (): void => {
           clearTimeout(to);
         }
       });
+    });
+
+    describe('on()', (): void => {
+      test(
+        'should call listener on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
+          const vm: VM = create('test-VMImplementation-on-1');
+
+          vm.on('something', cb);
+          _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+          jest.runAllTimers();
+
+          expect(cb).toHaveBeenCalledWith(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+        }),
+      );
+
+      test(
+        'should not call listener on negative cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
+          const vm: VM = create('test-VMImplementation-on-2');
+
+          vm.on('something', cb);
+          _cast(`${_eventPrefix}:${vm.name}:else`, 1, 2, 3);
+          jest.runAllTimers();
+
+          expect(cb).not.toHaveBeenCalled();
+        }),
+      );
+    });
+
+    describe('once()', (): void => {
+      test(
+        'should call listener once on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
+          const vm: VM = create('test-VMImplementation-once-1');
+
+          vm.once('something', cb);
+          _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+          _cast(`${_eventPrefix}:${vm.name}:something`, 4, 5, 6);
+          jest.runAllTimers();
+
+          expect(cb).toHaveBeenCalledTimes(1);
+          expect(cb).toHaveBeenCalledWith(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+        }),
+      );
+
+      test(
+        'should not call listener on negative cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
+          const vm: VM = create('test-VMImplementation-once-2');
+
+          vm.once('something', cb);
+          _cast(`${_eventPrefix}:${vm.name}:else`, 1, 2, 3);
+          _cast(`${_eventPrefix}:${vm.name}:else`, 4, 5, 6);
+          jest.runAllTimers();
+
+          expect(cb).not.toHaveBeenCalled();
+        }),
+      );
+    });
+
+    describe('off()', (): void => {
+      test(
+        'should not call listener on positive cast',
+        withFakeTimers((): void => {
+          const cb = jest.fn();
+          const vm: VM = create('test-VMImplementation-off-1');
+
+          vm.on('something', cb);
+          _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+          jest.runAllTimers();
+
+          vm.off(cb);
+          _cast(`${_eventPrefix}:${vm.name}:something`, 4, 5, 6);
+          jest.runAllTimers();
+
+          expect(cb).toHaveBeenCalledTimes(1);
+          expect(cb).toHaveBeenCalledWith(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+        }),
+      );
     });
   });
 });
