@@ -111,34 +111,31 @@ describe('vm', (): void => {
   });
 
   describe('VMImplementation', (): void => {
+    const makeWorkerCtor: (body: (...args: AnyArgs) => void) => WorkerConstructor =
+      (body: (...args: AnyArgs) => void): WorkerConstructor =>
+      (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
+        new WebWorker(stringToDataUri(_wrapCode(body.toString().toString(), 0)), options);
+
     const errorWorkerCtor: WorkerConstructor = (): Worker => {
       throw new Error('something');
     };
 
-    const emptyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-      new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), options);
+    const emptyWorkerCtor: WorkerConstructor = makeWorkerCtor(() => {});
 
-    const dummyWorkerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-      new WebWorker(
-        stringToDataUri(
-          _wrapCode(
-            ((
-              _this: object,
-              _bootTunnel: number,
-              _listen: (data: object) => void,
-              _shout: (message: object) => void,
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              _schedule: (callback: () => void) => void,
-            ) => {
-              setTimeout(() => {
-                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-              }, 10);
-            }).toString(),
-            0,
-          ),
-        ),
-        options,
-      );
+    const dummyWorkerCtor: WorkerConstructor = makeWorkerCtor(
+      (
+        _this: object,
+        _bootTunnel: number,
+        _listen: (data: object) => void,
+        _shout: (message: object) => void,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _schedule: (callback: () => void) => void,
+      ) => {
+        setTimeout(() => {
+          _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+        }, 10);
+      },
+    );
 
     describe('constructor', (): void => {
       test('should construct an instance with no arguments', (): void => {
