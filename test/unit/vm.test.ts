@@ -27,7 +27,7 @@
 import WebWorker from 'web-worker';
 
 import type { AnyArgs } from '../../src/dependency';
-import type { VM } from '../../src/vm';
+import type { Enclosure, VM } from '../../src/vm';
 import type { WorkerConstructor } from '../../src/worker';
 
 import { EventCasterImplementation } from '../../src/eventCaster';
@@ -37,6 +37,7 @@ import {
   _eventPrefix,
   _makeError,
   _pseudoRandomString,
+  EnclosureImplementation,
   VMImplementation,
   create,
   events,
@@ -603,6 +604,135 @@ describe('vm', (): void => {
 
           expect(cb).toHaveBeenCalledTimes(1);
           expect(cb).toHaveBeenCalledWith(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
+        }),
+      );
+    });
+
+    describe('createEnclosure()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-createEnclosure-1');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('create' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.createEnclosure('something')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-createEnclosure-1:something:create', vm],
+            ['nomadvm:test-VMImplementation-createEnclosure-1:something:create:error', vm, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-createEnclosure-2');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.createEnclosure('something')).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-createEnclosure-2:something:create', vm],
+            [
+              'nomadvm:test-VMImplementation-createEnclosure-2:something:create:error',
+              vm,
+              new Error("expected state to be 'running'"),
+            ],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should create an enclosure and return a handler for it',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-createEnclosure-3');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('create' === name) {
+                    _shout({ name: 'resolve', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const enclosure: Enclosure = await vm.createEnclosure('something');
+
+          jest.advanceTimersByTime(10);
+
+          expect(enclosure).toBeInstanceOf(EnclosureImplementation);
+          expect(enclosure.enclosure).toStrictEqual('something');
+          expect(enclosure.vm).toStrictEqual(vm);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-createEnclosure-3:something:create', vm],
+            ['nomadvm:test-VMImplementation-createEnclosure-3:something:create:ok', vm],
+          ]);
+
+          await vm.stop();
         }),
       );
     });
