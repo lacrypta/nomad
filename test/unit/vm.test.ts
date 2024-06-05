@@ -736,5 +736,132 @@ describe('vm', (): void => {
         }),
       );
     });
+
+    describe('deleteEnclosure()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-deleteEnclosure-1');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('delete' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.deleteEnclosure('something')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-deleteEnclosure-1:something:delete', vm],
+            ['nomadvm:test-VMImplementation-deleteEnclosure-1:something:delete:error', vm, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-deleteEnclosure-2');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.deleteEnclosure('something')).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-deleteEnclosure-2:something:delete', vm],
+            [
+              'nomadvm:test-VMImplementation-deleteEnclosure-2:something:delete:error',
+              vm,
+              new Error("expected state to be 'running'"),
+            ],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should delete an enclosure and return an array',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-deleteEnclosure-3');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ enclosure, name, tunnel }: { enclosure: string; name: string; tunnel: number }) => {
+                  if ('delete' === name) {
+                    _shout({ name: 'resolve', payload: [enclosure], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const removed: string[] = await vm.deleteEnclosure('something');
+
+          jest.advanceTimersByTime(10);
+
+          expect(removed).toStrictEqual(['something']);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete', vm],
+            ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete:ok', vm, ['something']],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
   });
 });
