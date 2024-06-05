@@ -621,12 +621,8 @@ describe('vm', (): void => {
                 _listen: (data: object) => void,
                 _shout: (message: object) => void,
               ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('create' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
                 });
                 setTimeout(() => {
                   _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
@@ -659,27 +655,7 @@ describe('vm', (): void => {
         'should reject on invalid enclosure name',
         asyncWithFakeTimers(async (): Promise<void> => {
           const vm = create();
-          await vm.start(
-            makeWorkerCtor(
-              (
-                _this: object,
-                _bootTunnel: number,
-                _listen: (data: object) => void,
-                _shout: (message: object) => void,
-              ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('create' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
-                });
-                setTimeout(() => {
-                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-                }, 10);
-              },
-            ),
-          );
+          await vm.start(dummyWorkerCtor);
 
           jest.advanceTimersByTime(20);
 
@@ -782,12 +758,8 @@ describe('vm', (): void => {
                 _listen: (data: object) => void,
                 _shout: (message: object) => void,
               ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('delete' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
                 });
                 setTimeout(() => {
                   _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
@@ -820,27 +792,7 @@ describe('vm', (): void => {
         'should reject on invalid enclosure name',
         asyncWithFakeTimers(async (): Promise<void> => {
           const vm = create();
-          await vm.start(
-            makeWorkerCtor(
-              (
-                _this: object,
-                _bootTunnel: number,
-                _listen: (data: object) => void,
-                _shout: (message: object) => void,
-              ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('create' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
-                });
-                setTimeout(() => {
-                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-                }, 10);
-              },
-            ),
-          );
+          await vm.start(dummyWorkerCtor);
 
           jest.advanceTimersByTime(20);
 
@@ -941,12 +893,8 @@ describe('vm', (): void => {
                 _listen: (data: object) => void,
                 _shout: (message: object) => void,
               ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('execute' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
                 });
                 setTimeout(() => {
                   _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
@@ -981,27 +929,7 @@ describe('vm', (): void => {
         'should reject on invalid enclosure name',
         asyncWithFakeTimers(async (): Promise<void> => {
           const vm = create();
-          await vm.start(
-            makeWorkerCtor(
-              (
-                _this: object,
-                _bootTunnel: number,
-                _listen: (data: object) => void,
-                _shout: (message: object) => void,
-              ) => {
-                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                  if ('create' === name) {
-                    _shout({ error: 'some error', name: 'reject', tunnel });
-                  } else {
-                    _shout({ error: 'not supported', name: 'reject', tunnel });
-                  }
-                });
-                setTimeout(() => {
-                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
-                }, 10);
-              },
-            ),
-          );
+          await vm.start(dummyWorkerCtor);
 
           jest.advanceTimersByTime(20);
 
@@ -1082,11 +1010,11 @@ describe('vm', (): void => {
 
           const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
           const args: Map<string, string> = new Map<string, string>();
-          const removed: unknown = await vm.execute('root', dep, args);
+          const results: unknown = await vm.execute('root', dep, args);
 
           jest.advanceTimersByTime(10);
 
-          expect(removed).toStrictEqual([{ something: 'else' }]);
+          expect(results).toStrictEqual([{ something: 'else' }]);
 
           expect(castEvents).toStrictEqual([
             [`${_eventPrefix}:${vm.name}:root:execute`, vm, dep, args],
