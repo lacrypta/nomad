@@ -1152,5 +1152,140 @@ describe('vm', (): void => {
         }),
       );
     });
+
+    describe('install()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+          await expect(vm.install('root', dep)).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:install`, vm, dep],
+            [`${_eventPrefix}:${vm.name}:root:install:error`, vm, dep, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(
+            vm.install('_something', new DependencyImplementation('whatever', '', new Map<string, string>())),
+          ).rejects.toStrictEqual(new Error("identifier must adhere to '/^[a-z]\\w*$/i'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+          await expect(vm.install('root', dep)).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:install`, vm, dep],
+            [`${_eventPrefix}:${vm.name}:root:install:error`, vm, dep, new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should install a dependency',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('install' === name) {
+                    _shout({ name: 'resolve', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+
+          await expect(vm.install('root', dep)).resolves.toBeUndefined();
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:install`, vm, dep],
+            [`${_eventPrefix}:${vm.name}:root:install:ok`, vm, dep],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
   });
 });
