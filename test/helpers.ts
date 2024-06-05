@@ -180,3 +180,26 @@ export const asyncWithFakeTimers: (callback: () => Promise<void>) => () => Promi
     }
   };
 };
+
+export const restoringMocks: (callback: () => void) => () => void = (callback: () => void): (() => void) => {
+  return (): void => {
+    try {
+      callback();
+    } finally {
+      jest.restoreAllMocks();
+    }
+  };
+};
+
+export const asyncRestoringMocks: (callback: () => Promise<void>) => () => Promise<void> = (
+  callback: () => Promise<void>,
+): (() => Promise<void>) => {
+  return async (): Promise<void> => {
+    try {
+      await callback();
+      return;
+    } finally {
+      jest.restoreAllMocks();
+    }
+  };
+};
