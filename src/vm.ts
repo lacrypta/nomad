@@ -1823,7 +1823,7 @@ export class VMImplementation implements VM {
           target,
         );
       } catch (e) {
-        this.#castEvent(`"${enclosure}:link:error`, target, e);
+        this.#castEvent(`${enclosure}:link:error`, target, e);
         reject(_makeError(e));
       }
     });
