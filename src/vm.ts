@@ -1913,24 +1913,24 @@ export class VMImplementation implements VM {
     return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
       validateEnclosure(enclosure);
       try {
-        this.#castEvent(`${enclosure}:merge`, enclosure);
+        this.#castEvent(`${enclosure}:merge`);
         this.#assertRunning();
 
         this.#postMergeMessage(
           enclosure,
           this.#addTunnel(
             (): void => {
-              this.#castEvent(`${enclosure}:merge:ok`, enclosure);
+              this.#castEvent(`${enclosure}:merge:ok`);
               resolve();
             },
             (error: Error): void => {
-              this.#castEvent(`${enclosure}:merge:error`, enclosure, error);
+              this.#castEvent(`${enclosure}:merge:error`, error);
               reject(error);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`"${enclosure}:merge:error`, enclosure, e);
+        this.#castEvent(`${enclosure}:merge:error`, e);
         reject(_makeError(e));
       }
     });
