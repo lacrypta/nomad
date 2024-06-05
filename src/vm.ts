@@ -183,9 +183,9 @@ export interface VM extends EventCaster {
    *
    * @param enclosure - "Source" enclosure to use.
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value if enclosure linking completed successfully (the value itself determining if a new link was added), and rejects with an {@link !Error} in case errors occur.
    */
-  linkEnclosures(enclosure: string, target: string): Promise<void>;
+  linkEnclosures(enclosure: string, target: string): Promise<boolean>;
 
   /**
    * List the dependencies (user-level and predefined) installed on the given enclosure or its prefixes.
@@ -373,9 +373,9 @@ export interface Enclosure extends EventCaster {
    * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
    *
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value if enclosure linking completed successfully (the value itself determining if a new link was added), and rejects with an {@link !Error} in case errors occur.
    */
-  link(target: string): Promise<void>;
+  link(target: string): Promise<boolean>;
 
   /**
    * List the dependencies (user-level and predefined) installed on the wrapped enclosure or its prefixes
@@ -1798,10 +1798,10 @@ export class VMImplementation implements VM {
    *
    * @param enclosure - "Source" enclosure to use.
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value if enclosure linking completed successfully (the value itself determining if a new link was added), and rejects with an {@link !Error} in case errors occur.
    */
-  linkEnclosures(enclosure: string, target: string): Promise<void> {
-    return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
+  linkEnclosures(enclosure: string, target: string): Promise<boolean> {
+    return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
       validateEnclosure(enclosure);
       validateEnclosure(target);
       try {
@@ -1811,9 +1811,9 @@ export class VMImplementation implements VM {
         this.#postLinkMessage(
           enclosure,
           this.#addTunnel(
-            (): void => {
-              this.#castEvent(`${enclosure}:link:ok`, target);
-              resolve();
+            (linked: boolean): void => {
+              this.#castEvent(`${enclosure}:link:ok`, target, linked);
+              resolve(linked);
             },
             (error: Error): void => {
               this.#castEvent(`${enclosure}:link:error`, target, error);
@@ -2390,9 +2390,9 @@ export class EnclosureImplementation implements Enclosure {
    * Link the wrapped enclosure to another, so that events cast on the wrapped enclosure are also handled in the other.
    *
    * @param target - "Destination" enclosure to use.
-   * @returns A {@link !Promise} that resolves with `void` if enclosure linking completed successfully, and rejects with an {@link !Error} in case errors occur.
+   * @returns A {@link !Promise} that resolves with a boolean value if enclosure linking completed successfully (the value itself determining if a new link was added), and rejects with an {@link !Error} in case errors occur.
    */
-  link(target: string): Promise<void> {
+  link(target: string): Promise<boolean> {
     return this.vm.linkEnclosures(this.enclosure, target);
   }
 
