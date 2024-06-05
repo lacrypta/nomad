@@ -145,77 +145,75 @@ describe('vm', (): void => {
       });
 
       test('should construct an instance with given name', (): void => {
-        expect(new VMImplementation('test-VMImplementation-constructor-1').name).toStrictEqual(
-          'test-VMImplementation-constructor-1',
+        expect(new VMImplementation('test-VMImplementation-constructor').name).toStrictEqual(
+          'test-VMImplementation-constructor',
         );
       });
 
       test('should throw if constructing with duplicate name', (): void => {
-        new VMImplementation('test-VMImplementation-constructor-2');
+        new VMImplementation('test-VMImplementation-constructor-dup');
         expect((): void => {
-          new VMImplementation('test-VMImplementation-constructor-2');
-        }).toThrow(new Error('duplicate name test-VMImplementation-constructor-2'));
+          new VMImplementation('test-VMImplementation-constructor-dup');
+        }).toThrow(new Error('duplicate name test-VMImplementation-constructor-dup'));
       });
     });
 
     describe('start()', (): void => {
       test('should reject for negative timeout', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-1').start(undefined, -1)).rejects.toStrictEqual(
+        await expect(create().start(undefined, -1)).rejects.toStrictEqual(
           new Error('expected datum to be non-negative'),
         );
       });
 
       test('should reject for non-integer timeout', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-2').start(undefined, 12.34)).rejects.toStrictEqual(
+        await expect(create().start(undefined, 12.34)).rejects.toStrictEqual(
           new Error('expected datum to be a safe integer'),
         );
       });
 
       test('should reject for timeout too large', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-3').start(undefined, (1 << 30) + 1)).rejects.toStrictEqual(
+        await expect(create().start(undefined, (1 << 30) + 1)).rejects.toStrictEqual(
           new Error('expected time delta to be at most 1073741824'),
         );
       });
 
       test('should reject for negative ping interval', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-4').start(undefined, undefined, -1)).rejects.toStrictEqual(
+        await expect(create().start(undefined, undefined, -1)).rejects.toStrictEqual(
           new Error('expected datum to be non-negative'),
         );
       });
 
       test('should reject for non-integer ping interval', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-5').start(undefined, undefined, 12.34)).rejects.toStrictEqual(
+        await expect(create().start(undefined, undefined, 12.34)).rejects.toStrictEqual(
           new Error('expected datum to be a safe integer'),
         );
       });
 
       test('should reject for ping interval too large', async (): Promise<void> => {
-        await expect(
-          create('test-VMImplementation-start-6').start(undefined, undefined, (1 << 30) + 1),
-        ).rejects.toStrictEqual(new Error('expected time delta to be at most 1073741824'));
+        await expect(create().start(undefined, undefined, (1 << 30) + 1)).rejects.toStrictEqual(
+          new Error('expected time delta to be at most 1073741824'),
+        );
       });
 
       test('should reject for negative pong limit', async (): Promise<void> => {
-        await expect(
-          create('test-VMImplementation-start-7').start(undefined, undefined, undefined, -1),
-        ).rejects.toStrictEqual(new Error('expected datum to be non-negative'));
+        await expect(create().start(undefined, undefined, undefined, -1)).rejects.toStrictEqual(
+          new Error('expected datum to be non-negative'),
+        );
       });
 
       test('should reject for non-integer pong limit', async (): Promise<void> => {
-        await expect(
-          create('test-VMImplementation-start-8').start(undefined, undefined, undefined, 12.34),
-        ).rejects.toStrictEqual(new Error('expected datum to be a safe integer'));
+        await expect(create().start(undefined, undefined, undefined, 12.34)).rejects.toStrictEqual(
+          new Error('expected datum to be a safe integer'),
+        );
       });
 
       test('should reject if worker constructor fails', async (): Promise<void> => {
-        await expect(create('test-VMImplementation-start-9').start(errorWorkerCtor)).rejects.toStrictEqual(
-          new Error('something'),
-        );
+        await expect(create().start(errorWorkerCtor)).rejects.toStrictEqual(new Error('something'));
       });
 
       test('should reject if no boot signal received', async (): Promise<void> => {
         const castEvents: [string, ...AnyArgs][] = [];
-        const vm = create('test-VMImplementation-start-10');
+        const vm = create();
         vm.on('**', (name: string, ...rest: AnyArgs): void => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           castEvents.push([name, ...rest]);
@@ -223,7 +221,7 @@ describe('vm', (): void => {
 
         await expect(vm.start(emptyWorkerCtor, 0)).rejects.toStrictEqual(new Error('boot timed out'));
 
-        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-10:start', vm]]);
+        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
       });
 
       test(
@@ -237,7 +235,7 @@ describe('vm', (): void => {
           }) as typeof global.clearInterval;
           try {
             const castEvents: [string, ...AnyArgs][] = [];
-            const vm = create('test-VMImplementation-start-11');
+            const vm = create();
             vm.on('**', (name: string, ...rest: AnyArgs): void => {
               // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               castEvents.push([name, ...rest]);
@@ -248,10 +246,10 @@ describe('vm', (): void => {
             jest.advanceTimersByTime(1);
 
             expect(castEvents).toStrictEqual([
-              ['nomadvm:test-VMImplementation-start-11:start', vm],
-              ['nomadvm:test-VMImplementation-start-11:start:error', vm, new Error('something')],
-              ['nomadvm:test-VMImplementation-start-11:stop', vm],
-              ['nomadvm:test-VMImplementation-start-11:stop:error', vm, new Error('else')],
+              [`${_eventPrefix}:${vm.name}:start`, vm],
+              [`${_eventPrefix}:${vm.name}:start:error`, vm, new Error('something')],
+              [`${_eventPrefix}:${vm.name}:stop`, vm],
+              [`${_eventPrefix}:${vm.name}:stop:error`, vm, new Error('else')],
             ]);
           } finally {
             global.clearInterval = originalClearInterval;
@@ -278,7 +276,7 @@ describe('vm', (): void => {
           };
 
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-start-12');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -286,7 +284,7 @@ describe('vm', (): void => {
 
           await expect(vm.start(workerCtor)).rejects.toStrictEqual(new Error('boot timed out'));
 
-          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-12:start', vm]]);
+          expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
         } finally {
           theWorkers.forEach((worker: Worker): void => {
             worker.terminate();
@@ -300,7 +298,7 @@ describe('vm', (): void => {
 
       test('should start correctly', async (): Promise<void> => {
         const castEvents: [string, ...AnyArgs][] = [];
-        const vm = create('test-VMImplementation-start-13');
+        const vm = create();
         vm.on('**', (name: string, ...rest: AnyArgs): void => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           castEvents.push([name, ...rest]);
@@ -310,7 +308,7 @@ describe('vm', (): void => {
         expect(inside).toStrictEqual(123456);
         expect(outside).toBeGreaterThanOrEqual(0);
 
-        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-13:start', vm]]);
+        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
 
         await vm.stop();
       });
@@ -319,7 +317,7 @@ describe('vm', (): void => {
         'should stop vm upon failing to receive a pong',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-start-14');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -334,18 +332,18 @@ describe('vm', (): void => {
           expect(vm.isStopped).toStrictEqual(true);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-start-14:start', vm],
-            ['nomadvm:test-VMImplementation-start-14:start:ok', vm],
-            ['nomadvm:test-VMImplementation-start-14:worker:unresponsive', vm, 2],
-            ['nomadvm:test-VMImplementation-start-14:stop', vm],
-            ['nomadvm:test-VMImplementation-start-14:stop:ok', vm],
+            [`${_eventPrefix}:${vm.name}:start`, vm],
+            [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+            [`${_eventPrefix}:${vm.name}:worker:unresponsive`, vm, 2],
+            [`${_eventPrefix}:${vm.name}:stop`, vm],
+            [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
           ]);
         }),
       );
 
       test('should reject if starting a stopped vm', async (): Promise<void> => {
         const castEvents: [string, ...AnyArgs][] = [];
-        const vm = create('test-VMImplementation-start-15');
+        const vm = create();
         vm.on('**', (name: string, ...rest: AnyArgs): void => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           castEvents.push([name, ...rest]);
@@ -355,14 +353,14 @@ describe('vm', (): void => {
         await vm.stop();
         await expect(vm.start(dummyWorkerCtor)).rejects.toStrictEqual(new Error("expected state to be 'created'"));
 
-        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-15:start', vm]]);
+        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
       });
 
       test(
         'should transit states',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-start-17');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -380,7 +378,7 @@ describe('vm', (): void => {
           await vm.stop();
           expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, false, true]);
 
-          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-start-17:start', vm]]);
+          expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
         }),
       );
     });
@@ -401,7 +399,7 @@ describe('vm', (): void => {
             return theWorker;
           };
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-stop-1');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -410,7 +408,7 @@ describe('vm', (): void => {
           await vm.start(workerCtor);
           await expect(vm.stop()).rejects.toStrictEqual(new Error('something'));
 
-          expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-stop-1:start', vm]]);
+          expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
         } finally {
           theWorkers.forEach((worker: Worker): void => {
             worker.terminate();
@@ -424,7 +422,7 @@ describe('vm', (): void => {
 
       test('should resolve correctly', async (): Promise<void> => {
         const castEvents: [string, ...AnyArgs][] = [];
-        const vm = create('test-VMImplementation-stop-2');
+        const vm = create();
         vm.on('**', (name: string, ...rest: AnyArgs): void => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           castEvents.push([name, ...rest]);
@@ -433,7 +431,7 @@ describe('vm', (): void => {
         await vm.start(dummyWorkerCtor);
         await expect(vm.stop()).resolves.toBeUndefined();
 
-        expect(castEvents).toStrictEqual([['nomadvm:test-VMImplementation-stop-2:start', vm]]);
+        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
       });
     });
 
@@ -449,7 +447,7 @@ describe('vm', (): void => {
       test(
         'should retrieve correctly',
         asyncWithFakeTimers(async (): Promise<void> => {
-          const vm = create('test-VMImplementation-get-isCreated');
+          const vm = create();
           expect(vm.isCreated).toStrictEqual(true);
 
           const start = vm.start(dummyWorkerCtor);
@@ -469,7 +467,7 @@ describe('vm', (): void => {
       test(
         'should retrieve correctly',
         asyncWithFakeTimers(async (): Promise<void> => {
-          const vm = create('test-VMImplementation-get-isBooting');
+          const vm = create();
           expect(vm.isBooting).toStrictEqual(false);
 
           const start = vm.start(dummyWorkerCtor);
@@ -489,7 +487,7 @@ describe('vm', (): void => {
       test(
         'should retrieve correctly',
         asyncWithFakeTimers(async (): Promise<void> => {
-          const vm = create('test-VMImplementation-get-isRunning');
+          const vm = create();
           expect(vm.isRunning).toStrictEqual(false);
 
           const start = vm.start(dummyWorkerCtor);
@@ -509,7 +507,7 @@ describe('vm', (): void => {
       test(
         'should retrieve correctly',
         asyncWithFakeTimers(async (): Promise<void> => {
-          const vm = create('test-VMImplementation-get-isStopped');
+          const vm = create();
           expect(vm.isStopped).toStrictEqual(false);
 
           const start = vm.start(dummyWorkerCtor);
@@ -530,7 +528,7 @@ describe('vm', (): void => {
         'should call listener on positive cast',
         withFakeTimers((): void => {
           const cb = jest.fn();
-          const vm: VM = create('test-VMImplementation-on-1');
+          const vm: VM = create();
 
           vm.on('something', cb);
           _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
@@ -544,7 +542,7 @@ describe('vm', (): void => {
         'should not call listener on negative cast',
         withFakeTimers((): void => {
           const cb = jest.fn();
-          const vm: VM = create('test-VMImplementation-on-2');
+          const vm: VM = create();
 
           vm.on('something', cb);
           _cast(`${_eventPrefix}:${vm.name}:else`, 1, 2, 3);
@@ -560,7 +558,7 @@ describe('vm', (): void => {
         'should call listener once on positive cast',
         withFakeTimers((): void => {
           const cb = jest.fn();
-          const vm: VM = create('test-VMImplementation-once-1');
+          const vm: VM = create();
 
           vm.once('something', cb);
           _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
@@ -576,7 +574,7 @@ describe('vm', (): void => {
         'should not call listener on negative cast',
         withFakeTimers((): void => {
           const cb = jest.fn();
-          const vm: VM = create('test-VMImplementation-once-2');
+          const vm: VM = create();
 
           vm.once('something', cb);
           _cast(`${_eventPrefix}:${vm.name}:else`, 1, 2, 3);
@@ -593,7 +591,7 @@ describe('vm', (): void => {
         'should not call listener on positive cast',
         withFakeTimers((): void => {
           const cb = jest.fn();
-          const vm: VM = create('test-VMImplementation-off-1');
+          const vm: VM = create();
 
           vm.on('something', cb);
           _cast(`${_eventPrefix}:${vm.name}:something`, 1, 2, 3);
@@ -614,7 +612,7 @@ describe('vm', (): void => {
         'should reject on errors',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-createEnclosure-1');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -649,8 +647,8 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-createEnclosure-1:something:create', vm],
-            ['nomadvm:test-VMImplementation-createEnclosure-1:something:create:error', vm, new Error('some error')],
+            [`${_eventPrefix}:${vm.name}:something:create`, vm],
+            [`${_eventPrefix}:${vm.name}:something:create:error`, vm, new Error('some error')],
           ]);
 
           await vm.stop();
@@ -661,7 +659,7 @@ describe('vm', (): void => {
         'should reject if not running',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-createEnclosure-2');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -674,12 +672,8 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-createEnclosure-2:something:create', vm],
-            [
-              'nomadvm:test-VMImplementation-createEnclosure-2:something:create:error',
-              vm,
-              new Error("expected state to be 'running'"),
-            ],
+            [`${_eventPrefix}:${vm.name}:something:create`, vm],
+            [`${_eventPrefix}:${vm.name}:something:create:error`, vm, new Error("expected state to be 'running'")],
           ]);
 
           await vm.stop();
@@ -690,7 +684,7 @@ describe('vm', (): void => {
         'should create an enclosure and return a handler for it',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-createEnclosure-3');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -729,8 +723,8 @@ describe('vm', (): void => {
           expect(enclosure.vm).toStrictEqual(vm);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-createEnclosure-3:something:create', vm],
-            ['nomadvm:test-VMImplementation-createEnclosure-3:something:create:ok', vm],
+            [`${_eventPrefix}:${vm.name}:something:create`, vm],
+            [`${_eventPrefix}:${vm.name}:something:create:ok`, vm],
           ]);
 
           await vm.stop();
@@ -743,7 +737,7 @@ describe('vm', (): void => {
         'should reject on errors',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-deleteEnclosure-1');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -778,8 +772,8 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-deleteEnclosure-1:something:delete', vm],
-            ['nomadvm:test-VMImplementation-deleteEnclosure-1:something:delete:error', vm, new Error('some error')],
+            [`${_eventPrefix}:${vm.name}:something:delete`, vm],
+            [`${_eventPrefix}:${vm.name}:something:delete:error`, vm, new Error('some error')],
           ]);
 
           await vm.stop();
@@ -790,7 +784,7 @@ describe('vm', (): void => {
         'should reject if not running',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-deleteEnclosure-2');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -803,12 +797,8 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-deleteEnclosure-2:something:delete', vm],
-            [
-              'nomadvm:test-VMImplementation-deleteEnclosure-2:something:delete:error',
-              vm,
-              new Error("expected state to be 'running'"),
-            ],
+            [`${_eventPrefix}:${vm.name}:something:delete`, vm],
+            [`${_eventPrefix}:${vm.name}:something:delete:error`, vm, new Error("expected state to be 'running'")],
           ]);
 
           await vm.stop();
@@ -819,7 +809,7 @@ describe('vm', (): void => {
         'should delete an enclosure and return an array',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-deleteEnclosure-3');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -856,8 +846,8 @@ describe('vm', (): void => {
           expect(removed).toStrictEqual(['something']);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete', vm],
-            ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete:ok', vm, ['something']],
+            [`${_eventPrefix}:${vm.name}:something:delete`, vm],
+            [`${_eventPrefix}:${vm.name}:something:delete:ok`, vm, ['something']],
           ]);
 
           await vm.stop();
@@ -870,7 +860,7 @@ describe('vm', (): void => {
         'should reject on errors',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-execute-1');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -907,8 +897,8 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-execute-1:root:execute', vm, dep, args],
-            ['nomadvm:test-VMImplementation-execute-1:root:execute:error', vm, dep, args, new Error('some error')],
+            [`${_eventPrefix}:${vm.name}:root:execute`, vm, dep, args],
+            [`${_eventPrefix}:${vm.name}:root:execute:error`, vm, dep, args, new Error('some error')],
           ]);
 
           await vm.stop();
@@ -919,7 +909,7 @@ describe('vm', (): void => {
         'should reject if not running',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-execute-2');
+          const vm = create();
           vm.on('**', (name: string, ...rest: AnyArgs): void => {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             castEvents.push([name, ...rest]);
@@ -934,9 +924,9 @@ describe('vm', (): void => {
           jest.advanceTimersByTime(10);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-execute-2:root:execute', vm, dep, args],
+            [`${_eventPrefix}:${vm.name}:root:execute`, vm, dep, args],
             [
-              'nomadvm:test-VMImplementation-execute-2:root:execute:error',
+              `${_eventPrefix}:${vm.name}:root:execute:error`,
               vm,
               dep,
               args,
@@ -952,7 +942,7 @@ describe('vm', (): void => {
         'should execute a dependency and return its result',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
-          const vm = create('test-VMImplementation-execute-3');
+          const vm = create();
           await vm.start(
             makeWorkerCtor(
               (
@@ -991,8 +981,8 @@ describe('vm', (): void => {
           expect(removed).toStrictEqual([{ something: 'else' }]);
 
           expect(castEvents).toStrictEqual([
-            ['nomadvm:test-VMImplementation-execute-3:root:execute', vm, dep, args],
-            ['nomadvm:test-VMImplementation-execute-3:root:execute:ok', vm, dep, args, [{ something: 'else' }]],
+            [`${_eventPrefix}:${vm.name}:root:execute`, vm, dep, args],
+            [`${_eventPrefix}:${vm.name}:root:execute:ok`, vm, dep, args, [{ something: 'else' }]],
           ]);
 
           await vm.stop();
