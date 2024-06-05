@@ -2591,5 +2591,105 @@ describe('vm', (): void => {
         }),
       );
     });
+
+    describe('emit()', (): void => {
+      test(
+        'should throw on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          expect((): void => {
+            vm.emit('_something', 'something');
+          }).toThrow(new Error("identifier must adhere to '/^[a-z]\\w*$/i'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should throw on invalid event name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          expect((): void => {
+            vm.emit('something', 'some thing');
+          }).toThrow(new Error('event name must adhere to /^[\\w/.-]+(?::[\\w/.-]+)*$/'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should throw if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          expect((): void => {
+            vm.emit('root', 'something');
+          }).toThrow(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should emit correctly',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                const receivedEvents: [string, string, unknown[]][] = [];
+                _listen((data: Record<string, unknown>) => {
+                  const { name, tunnel }: { name: string; tunnel: number } = data as { name: string; tunnel: number };
+                  if ('emit' === name) {
+                    const { args, enclosure, event }: { args: unknown[]; enclosure: string; event: string } = data as {
+                      args: unknown[];
+                      enclosure: string;
+                      event: string;
+                    };
+                    receivedEvents.push([enclosure, event, args]);
+                  } else if ('execute' === name) {
+                    _shout({ name: 'resolve', payload: receivedEvents, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.emit('root', 'event1', 1);
+          vm.emit('root', 'event2', 1, 2);
+          vm.emit('root', 'event3', 1, 2, 3);
+
+          await expect(
+            vm.execute('root', new DependencyImplementation('none', '', new Map<string, string>())),
+          ).resolves.toStrictEqual([
+            ['root', 'event1', [1]],
+            ['root', 'event2', [1, 2]],
+            ['root', 'event3', [1, 2, 3]],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
   });
 });
