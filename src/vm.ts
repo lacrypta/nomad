@@ -1634,6 +1634,7 @@ export class VMImplementation implements VM {
    * @returns `this`, for chaining.
    */
   emit(enclosure: string, event: string, ...args: AnyArgs): this {
+    this.#assertRunning();
     this.#postEmitMessage(validateEnclosure(enclosure), validateEvent(event), args);
     return this;
   }
