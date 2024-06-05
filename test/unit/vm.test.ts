@@ -1285,5 +1285,1311 @@ describe('vm', (): void => {
         }),
       );
     });
+
+    describe('isMuted()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.isMuted('root')).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.isMuted('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.isMuted('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should get muting status',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('isMuted' === name) {
+                    _shout({ name: 'resolve', payload: true, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.isMuted('root')).resolves.toStrictEqual(true);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('linkEnclosures()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.linkEnclosures('root', 'leaf')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:link`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:link:error`, vm, 'leaf', new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.linkEnclosures('_something', 'else')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid (target) enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.linkEnclosures('something', '_else')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.linkEnclosures('root', 'leaf')).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:link`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:link:error`, vm, 'leaf', new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should link enclosures and return true / false',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('link' === name) {
+                    _shout({ name: 'resolve', payload: true, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.linkEnclosures('root', 'leaf')).resolves.toStrictEqual(true);
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:link`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:link:ok`, vm, 'leaf', true],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('listInstalled()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listInstalled('root')).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listInstalled('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.listInstalled('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should list installed dependencies',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('listInstalled' === name) {
+                    _shout({ name: 'resolve', payload: ['one', 'two', 'three'], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listInstalled('root')).resolves.toStrictEqual(['one', 'two', 'three']);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('listLinkedFrom()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinkedFrom('root')).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinkedFrom('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.listLinkedFrom('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should list enclosures linking here',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('listLinkedFrom' === name) {
+                    _shout({ name: 'resolve', payload: ['one', 'two', 'three'], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinkedFrom('root')).resolves.toStrictEqual(['one', 'two', 'three']);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('listLinksTo()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinksTo('root')).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinksTo('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.listLinksTo('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should list enclosures linked from here',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('listLinksTo' === name) {
+                    _shout({ name: 'resolve', payload: ['one', 'two', 'three'], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listLinksTo('root')).resolves.toStrictEqual(['one', 'two', 'three']);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('listRootEnclosures()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listRootEnclosures()).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.listRootEnclosures()).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should list root enclosures',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('listRootEnclosures' === name) {
+                    _shout({ name: 'resolve', payload: ['one', 'two', 'three'], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.listRootEnclosures()).resolves.toStrictEqual(['one', 'two', 'three']);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('mergeEnclosure()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.mergeEnclosure('leaf')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:merge`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:merge:error`, vm, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.mergeEnclosure('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.mergeEnclosure('leaf')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:merge`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:merge:error`, vm, new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should merge enclosure to parent',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('merge' === name) {
+                    _shout({ name: 'resolve', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.mergeEnclosure('leaf')).resolves.toBeUndefined();
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:merge`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:merge:ok`, vm],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('muteEnclosure()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.muteEnclosure('leaf')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:mute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:mute:error`, vm, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.muteEnclosure('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.muteEnclosure('leaf')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:mute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:mute:error`, vm, new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should mute enclosure',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('mute' === name) {
+                    _shout({ name: 'resolve', payload: true, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.muteEnclosure('leaf')).resolves.toStrictEqual(true);
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:mute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:mute:ok`, vm, true],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('unlinkEnclosures()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unlinkEnclosures('root', 'leaf')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:unlink`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:unlink:error`, vm, 'leaf', new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.unlinkEnclosures('_something', 'else')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid (target) enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.unlinkEnclosures('something', '_else')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unlinkEnclosures('root', 'leaf')).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:unlink`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:unlink:error`, vm, 'leaf', new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should unlink enclosures and return true / false',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('unlink' === name) {
+                    _shout({ name: 'resolve', payload: true, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unlinkEnclosures('root', 'leaf')).resolves.toStrictEqual(true);
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:unlink`, vm, 'leaf'],
+            [`${_eventPrefix}:${vm.name}:root:unlink:ok`, vm, 'leaf', true],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('unmuteEnclosure()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unmuteEnclosure('leaf')).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:unmute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:unmute:error`, vm, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.unmuteEnclosure('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unmuteEnclosure('leaf')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:unmute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:unmute:error`, vm, new Error("expected state to be 'running'")],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should unmute enclosure',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('unmute' === name) {
+                    _shout({ name: 'resolve', payload: true, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          await expect(vm.unmuteEnclosure('leaf')).resolves.toStrictEqual(true);
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:leaf:unmute`, vm],
+            [`${_eventPrefix}:${vm.name}:leaf:unmute:ok`, vm, true],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('predefine()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const callback = (): void => {};
+          await expect(vm.predefine('root', 'something', callback)).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:predefined:add`, vm, 'something', callback, 0],
+            [
+              `${_eventPrefix}:${vm.name}:root:predefined:add:error`,
+              vm,
+              'something',
+              callback,
+              0,
+              new Error('some error'),
+            ],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.predefine('_something', 'something', (): void => {})).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid function name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.predefine('something', '_something', (): void => {})).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const callback = (): void => {};
+          await expect(vm.predefine('root', 'something', callback)).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:predefined:add`, vm, 'something', callback, 0],
+            [
+              `${_eventPrefix}:${vm.name}:root:predefined:add:error`,
+              vm,
+              'something',
+              callback,
+              0,
+              new Error("expected state to be 'running'"),
+            ],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should predefine a function',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('predefine' === name) {
+                    _shout({ name: 'resolve', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const callback = (): void => {};
+          await expect(vm.predefine('root', 'something', callback)).resolves.toBeUndefined();
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:root:predefined:add`, vm, 'something', callback, 0],
+            [`${_eventPrefix}:${vm.name}:root:predefined:add:ok`, vm, 'something', callback, 0],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
   });
 });
