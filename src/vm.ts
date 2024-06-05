@@ -2021,6 +2021,7 @@ export class VMImplementation implements VM {
       validateIdentifier(name);
       const idx: number =
         this.#predefined.push(() => {
+          /* istanbul ignore next */ // TODO: find a way to test this
           throw new Error('SHOULD NEVER HAPPEN');
         }) - 1;
       try {
