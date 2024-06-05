@@ -233,7 +233,7 @@ export const _codeAscii: number[] = [
  * @throws {Error} if the given function source code is not a valid strict mode function body.
  */
 export const functionCode = (code: string): string => {
-  if (code.split('').some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) as number))) {
+  if (Array.from(code).some((c: string): boolean => !_codeAscii.includes(c.codePointAt(0) as number))) {
     throw new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR');
   }
   try {
