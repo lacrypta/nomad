@@ -1130,7 +1130,7 @@ describe('vm', (): void => {
               ) => {
                 _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
                   if ('getSubEnclosures' === name) {
-                    _shout({ name: 'resolve', payload: [{ something: 'else' }], tunnel });
+                    _shout({ name: 'resolve', payload: ['one', 'two', 'three'], tunnel });
                   } else {
                     _shout({ error: 'not supported', name: 'reject', tunnel });
                   }
@@ -1144,7 +1144,7 @@ describe('vm', (): void => {
 
           jest.advanceTimersByTime(20);
 
-          await expect(vm.getSubEnclosures('root')).resolves.toStrictEqual([{ something: 'else' }]);
+          await expect(vm.getSubEnclosures('root')).resolves.toStrictEqual(['one', 'two', 'three']);
 
           await vm.stop();
         }),
