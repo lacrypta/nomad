@@ -1112,8 +1112,6 @@ describe('vm', (): void => {
 
           await expect(vm.getSubEnclosures('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
 
-          jest.advanceTimersByTime(10);
-
           await vm.stop();
         }),
       );
