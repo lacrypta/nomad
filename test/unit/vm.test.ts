@@ -656,6 +656,42 @@ describe('vm', (): void => {
       );
 
       test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('create' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.createEnclosure('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
         'should reject if not running',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
@@ -781,6 +817,42 @@ describe('vm', (): void => {
       );
 
       test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('create' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.deleteEnclosure('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
         'should reject if not running',
         asyncWithFakeTimers(async (): Promise<void> => {
           const castEvents: [string, ...AnyArgs][] = [];
@@ -900,6 +972,42 @@ describe('vm', (): void => {
             [`${_eventPrefix}:${vm.name}:root:execute`, vm, dep, args],
             [`${_eventPrefix}:${vm.name}:root:execute:error`, vm, dep, args, new Error('some error')],
           ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('create' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(
+            vm.execute('_something', new DependencyImplementation('whatever', '', new Map<string, string>())),
+          ).rejects.toStrictEqual(new Error("identifier must adhere to '/^[a-z]\\w*$/i'"));
 
           await vm.stop();
         }),
