@@ -26,11 +26,12 @@
 
 import WebWorker from 'web-worker';
 
-import type { AnyArgs } from '../../src/dependency';
+import type { AnyArgs, Dependency } from '../../src/dependency';
+import type { ArgumentsMap } from '../../src/validation';
 import type { Enclosure, VM } from '../../src/vm';
 import type { WorkerConstructor } from '../../src/worker';
 
-import { Dependency, DependencyImplementation } from '../../src/dependency';
+import { DependencyImplementation } from '../../src/dependency';
 import { EventCasterImplementation } from '../../src/eventCaster';
 import {
   _cast,
@@ -45,7 +46,14 @@ import {
   get,
 } from '../../src/vm';
 import { _wrapCode } from '../../src/worker';
-import { asyncWithFakeTimers, stringToDataUri, testAll, withFakeTimers } from '../helpers';
+import {
+  asyncRestoringMocks,
+  asyncWithFakeTimers,
+  restoringMocks,
+  stringToDataUri,
+  testAll,
+  withFakeTimers,
+} from '../helpers';
 
 describe('vm', (): void => {
   describe('_pseudoRandomString()', (): void => {
@@ -2688,6 +2696,330 @@ describe('vm', (): void => {
           ]);
 
           await vm.stop();
+        }),
+      );
+    });
+  });
+
+  describe('EnclosureImplementation', (): void => {
+    describe('constructor', (): void => {
+      test('should throw for invalid enclosure name', (): void => {
+        const vm: VMImplementation = new VMImplementation();
+        expect((): void => {
+          new EnclosureImplementation(vm, '_something');
+        }).toThrow(new Error("identifier must adhere to '/^[a-z]\\w*$/i'"));
+      });
+
+      test('should correctly construct', (): void => {
+        expect(new EnclosureImplementation(new VMImplementation(), 'something')).toBeInstanceOf(
+          EnclosureImplementation,
+        );
+      });
+    });
+
+    describe('[get vm]', (): void => {
+      test('should retrieve correctly', (): void => {
+        const vm: VMImplementation = new VMImplementation();
+        expect(new EnclosureImplementation(vm, 'something').vm).toStrictEqual(vm);
+      });
+    });
+
+    describe('[get enclosure]', (): void => {
+      test('should retrieve correctly', (): void => {
+        const vm: VMImplementation = new VMImplementation();
+        expect(new EnclosureImplementation(vm, 'something').enclosure).toStrictEqual('something');
+      });
+    });
+
+    describe('execute()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const dep: DependencyImplementation = new DependencyImplementation('foo', '', new Map<string, string>());
+          const args: ArgumentsMap = new Map<string, unknown>();
+
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'execute').mockImplementation(() => Promise.resolve(null));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.execute(dep, args);
+
+          expect(vm['execute']).toHaveBeenCalledTimes(1);
+          expect(vm['execute']).toHaveBeenCalledWith('something', dep, args);
+        }),
+      );
+    });
+
+    describe('getSubEnclosures()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const depth: number = 123;
+
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'getSubEnclosures').mockImplementation(() => Promise.resolve([]));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.getSubEnclosures(depth);
+
+          expect(vm['getSubEnclosures']).toHaveBeenCalledTimes(1);
+          expect(vm['getSubEnclosures']).toHaveBeenCalledWith('something', depth);
+        }),
+      );
+    });
+
+    describe('install()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const dep: DependencyImplementation = new DependencyImplementation('foo', '', new Map<string, string>());
+
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'install').mockImplementation(() => Promise.resolve());
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.install(dep);
+
+          expect(vm['install']).toHaveBeenCalledTimes(1);
+          expect(vm['install']).toHaveBeenCalledWith('something', dep);
+        }),
+      );
+    });
+
+    describe('installAll()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const deps: DependencyImplementation[] = [
+            new DependencyImplementation('foo', '', new Map<string, string>()),
+            new DependencyImplementation('bar', '', new Map<string, string>()),
+            new DependencyImplementation('baz', '', new Map<string, string>()),
+          ];
+
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'installAll').mockImplementation(() => Promise.resolve());
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.installAll(deps);
+
+          expect(vm['installAll']).toHaveBeenCalledTimes(1);
+          expect(vm['installAll']).toHaveBeenCalledWith('something', deps);
+        }),
+      );
+    });
+
+    describe('isMuted()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'isMuted').mockImplementation(() => Promise.resolve(true));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.isMuted();
+
+          expect(vm['isMuted']).toHaveBeenCalledTimes(1);
+          expect(vm['isMuted']).toHaveBeenCalledWith('something');
+        }),
+      );
+    });
+
+    describe('link()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'linkEnclosures').mockImplementation(() => Promise.resolve(true));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.link('target');
+
+          expect(vm['linkEnclosures']).toHaveBeenCalledTimes(1);
+          expect(vm['linkEnclosures']).toHaveBeenCalledWith('something', 'target');
+        }),
+      );
+    });
+
+    describe('listInstalled()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'listInstalled').mockImplementation(() => Promise.resolve([]));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.listInstalled();
+
+          expect(vm['listInstalled']).toHaveBeenCalledTimes(1);
+          expect(vm['listInstalled']).toHaveBeenCalledWith('something');
+        }),
+      );
+    });
+
+    describe('listLinkedFrom()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'listLinkedFrom').mockImplementation(() => Promise.resolve([]));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.listLinkedFrom();
+
+          expect(vm['listLinkedFrom']).toHaveBeenCalledTimes(1);
+          expect(vm['listLinkedFrom']).toHaveBeenCalledWith('something');
+        }),
+      );
+    });
+
+    describe('listLinksTo()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'listLinksTo').mockImplementation(() => Promise.resolve([]));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.listLinksTo();
+
+          expect(vm['listLinksTo']).toHaveBeenCalledTimes(1);
+          expect(vm['listLinksTo']).toHaveBeenCalledWith('something');
+        }),
+      );
+    });
+
+    describe('mute()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'muteEnclosure').mockImplementation(() => Promise.resolve(true));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.mute();
+
+          expect(vm['muteEnclosure']).toHaveBeenCalledTimes(1);
+          expect(vm['muteEnclosure']).toHaveBeenCalledWith('something');
+        }),
+      );
+    });
+
+    describe('off()', (): void => {
+      test(
+        'should forward correctly',
+        restoringMocks((): void => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'off').mockImplementation(() => vm);
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          const callback = () => {};
+
+          enc.off(callback);
+
+          expect(vm['off']).toHaveBeenCalledTimes(1);
+          expect(vm['off']).toHaveBeenCalledWith(callback);
+        }),
+      );
+    });
+
+    describe('on()', (): void => {
+      test(
+        'should forward correctly',
+        restoringMocks((): void => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'on').mockImplementation(() => vm);
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          const callback = () => {};
+
+          enc.on('filter', callback);
+
+          expect(vm['on']).toHaveBeenCalledTimes(1);
+          expect(vm['on']).toHaveBeenCalledWith('something:filter', callback);
+        }),
+      );
+    });
+
+    describe('once()', (): void => {
+      test(
+        'should forward correctly',
+        restoringMocks((): void => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'once').mockImplementation(() => vm);
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          const callback = () => {};
+
+          enc.once('filter', callback);
+
+          expect(vm['once']).toHaveBeenCalledTimes(1);
+          expect(vm['once']).toHaveBeenCalledWith('something:filter', callback);
+        }),
+      );
+    });
+
+    describe('predefine()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'predefine').mockImplementation(() => Promise.resolve());
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          const callback = () => {};
+
+          await enc.predefine('func', callback);
+
+          expect(vm['predefine']).toHaveBeenCalledTimes(1);
+          expect(vm['predefine']).toHaveBeenCalledWith('something', 'func', callback);
+        }),
+      );
+    });
+
+    describe('unlink()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'unlinkEnclosures').mockImplementation(() => Promise.resolve(true));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.unlink('target');
+
+          expect(vm['unlinkEnclosures']).toHaveBeenCalledTimes(1);
+          expect(vm['unlinkEnclosures']).toHaveBeenCalledWith('something', 'target');
+        }),
+      );
+    });
+
+    describe('unmute()', (): void => {
+      test(
+        'should forward correctly',
+        asyncRestoringMocks(async (): Promise<void> => {
+          const vm: VMImplementation = new VMImplementation();
+          jest.spyOn(vm, 'unmuteEnclosure').mockImplementation(() => Promise.resolve(true));
+
+          const enc: EnclosureImplementation = new EnclosureImplementation(vm, 'something');
+
+          await enc.unmute();
+
+          expect(vm['unmuteEnclosure']).toHaveBeenCalledTimes(1);
+          expect(vm['unmuteEnclosure']).toHaveBeenCalledWith('something');
         }),
       );
     });
