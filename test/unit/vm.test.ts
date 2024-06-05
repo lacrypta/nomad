@@ -1025,5 +1025,132 @@ describe('vm', (): void => {
         }),
       );
     });
+
+    describe('getSubEnclosures()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ tunnel }: { tunnel: number }) => {
+                  _shout({ error: 'some error', name: 'reject', tunnel });
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.getSubEnclosures('root')).rejects.toStrictEqual(new Error('some error'));
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.getSubEnclosures('_something')).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on non-integer depth',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.getSubEnclosures('root', 12.34)).rejects.toStrictEqual(
+            new Error('expected datum to be a safe integer'),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject on negative depth',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.getSubEnclosures('root', -12)).rejects.toStrictEqual(
+            new Error('expected datum to be non-negative'),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+
+          await expect(vm.getSubEnclosures('root')).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+
+          jest.advanceTimersByTime(10);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should get sub-enclosures',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('getSubEnclosures' === name) {
+                    _shout({ name: 'resolve', payload: [{ something: 'else' }], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.getSubEnclosures('root')).resolves.toStrictEqual([{ something: 'else' }]);
+
+          await vm.stop();
+        }),
+      );
+    });
   });
 });
