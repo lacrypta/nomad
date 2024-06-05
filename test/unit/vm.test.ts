@@ -30,6 +30,7 @@ import type { AnyArgs } from '../../src/dependency';
 import type { Enclosure, VM } from '../../src/vm';
 import type { WorkerConstructor } from '../../src/worker';
 
+import { Dependency, DependencyImplementation } from '../../src/dependency';
 import { EventCasterImplementation } from '../../src/eventCaster';
 import {
   _cast,
@@ -857,6 +858,141 @@ describe('vm', (): void => {
           expect(castEvents).toStrictEqual([
             ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete', vm],
             ['nomadvm:test-VMImplementation-deleteEnclosure-3:something:delete:ok', vm, ['something']],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+    });
+
+    describe('execute()', (): void => {
+      test(
+        'should reject on errors',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-execute-1');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('execute' === name) {
+                    _shout({ error: 'some error', name: 'reject', tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+          const args: Map<string, string> = new Map<string, string>();
+          await expect(vm.execute('root', dep, args)).rejects.toStrictEqual(new Error('some error'));
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-execute-1:root:execute', vm, dep, args],
+            ['nomadvm:test-VMImplementation-execute-1:root:execute:error', vm, dep, args, new Error('some error')],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should reject if not running',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-execute-2');
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+          const args: Map<string, string> = new Map<string, string>();
+          await expect(vm.execute('root', dep, args)).rejects.toStrictEqual(
+            new Error("expected state to be 'running'"),
+          );
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-execute-2:root:execute', vm, dep, args],
+            [
+              'nomadvm:test-VMImplementation-execute-2:root:execute:error',
+              vm,
+              dep,
+              args,
+              new Error("expected state to be 'running'"),
+            ],
+          ]);
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'should execute a dependency and return its result',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create('test-VMImplementation-execute-3');
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
+                  if ('execute' === name) {
+                    _shout({ name: 'resolve', payload: [{ something: 'else' }], tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const dep: Dependency = new DependencyImplementation('whatever', '', new Map<string, string>());
+          const args: Map<string, string> = new Map<string, string>();
+          const removed: unknown = await vm.execute('root', dep, args);
+
+          jest.advanceTimersByTime(10);
+
+          expect(removed).toStrictEqual([{ something: 'else' }]);
+
+          expect(castEvents).toStrictEqual([
+            ['nomadvm:test-VMImplementation-execute-3:root:execute', vm, dep, args],
+            ['nomadvm:test-VMImplementation-execute-3:root:execute:ok', vm, dep, args, [{ something: 'else' }]],
           ]);
 
           await vm.stop();
