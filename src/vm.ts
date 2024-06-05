@@ -1946,7 +1946,7 @@ export class VMImplementation implements VM {
     return new Promise<boolean>((resolve: Resolution<boolean>, reject: Rejection): void => {
       validateEnclosure(enclosure);
       try {
-        this.#castEvent(`${enclosure}:muteEnclosure`);
+        this.#castEvent(`${enclosure}:mute`);
         this.#assertRunning();
 
         this.#postMuteMessage(
