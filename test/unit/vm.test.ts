@@ -389,6 +389,50 @@ describe('vm', (): void => {
           expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
         }),
       );
+
+      test(
+        'should handle worker pongs',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                let pongs: number = 0;
+                _listen((data: Record<string, unknown>) => {
+                  const name: string = data.name as string;
+                  if ('ping' === name) {
+                    _shout({ name: 'pong' });
+                    pongs++;
+                  } else if ('execute' === name) {
+                    _shout({ name: 'resolve', payload: pongs, tunnel: data.tunnel as number });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+            undefined,
+            10,
+            20,
+          );
+
+          jest.advanceTimersByTime(20);
+
+          await expect(
+            vm.execute('root', new DependencyImplementation('something', '', new Map<string, string>())),
+          ).resolves.toStrictEqual(2);
+
+          await vm.stop();
+        }),
+      );
     });
 
     describe('stop()', (): void => {
