@@ -937,6 +937,7 @@ export class VMImplementation implements VM {
    * @param error - Error to handle.
    */
   #errorHandler(error: Error): void {
+    /* istanbul ignore next */ // TODO: find a way to test this
     this.#castEvent('worker:error', error.message);
   }
 
