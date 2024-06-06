@@ -99,15 +99,13 @@ addEventListener("unhandledrejection", (event) => {
   if (undefined !== event.preventDefault) {
     event.preventDefault();
   }
-  event.type = "error";
-  dispatchEvent(event);
+  throw event.reason;
 });
 addEventListener("rejectionhandled", (event) => {
   if (undefined !== event.preventDefault) {
     event.preventDefault();
   }
-  event.type = "error";
-  dispatchEvent(event);
+  throw event.reason;
 });
 (${code})(
   this,
