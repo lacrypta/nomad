@@ -979,7 +979,8 @@ export class VMImplementation implements VM {
         case 'emit':
           {
             const { args, event }: Message_Emit = data as Message_Emit;
-            this.#castEvent(event, args);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            this.#castEvent(`user:${event}`, ...args);
           }
           break;
         default: {
