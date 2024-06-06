@@ -2598,6 +2598,181 @@ describe('vm', (): void => {
           await vm.stop();
         }),
       );
+
+      test(
+        'predefined function should resolve for worker',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                let idx: number = 0;
+                let funcName: string = '';
+                let arg: string = '';
+                let tunnel: number = 0;
+
+                _listen((data: Record<string, unknown>) => {
+                  const name: string = data.name as string;
+                  if ('predefine' === name) {
+                    idx = data.idx as number;
+                    funcName = data.function as string;
+                    _shout({ name: 'resolve', tunnel: data.tunnel });
+                  } else if ('execute' === name) {
+                    arg = (data.args as Record<string, string>)['theArg'] ?? '';
+                    tunnel = data.tunnel as number;
+                    _shout({ args: [`(${arg})`], enclosure: 'root', idx, name: 'call', tunnel: 123 });
+                  } else if ('resolve' === name) {
+                    _shout({ name: 'resolve', payload: `${funcName}(${arg}) = ${data.payload as string}`, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          const callback = (x: string): string => `${x}---${x}`;
+          await vm.predefine('root', 'something', callback);
+
+          expect(
+            await vm.execute(
+              'root',
+              new DependencyImplementation('x', '', new Map<string, string>()),
+              new Map<string, unknown>([['theArg', 'abc']]),
+            ),
+          ).toStrictEqual('something(abc) = (abc)---(abc)');
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'predefined function should reject for worker',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                let idx: number = 0;
+                let funcName: string = '';
+                let arg: string = '';
+                let tunnel: number = 0;
+
+                _listen((data: Record<string, unknown>) => {
+                  const name: string = data.name as string;
+                  if ('predefine' === name) {
+                    idx = data.idx as number;
+                    funcName = data.function as string;
+                    _shout({ name: 'resolve', tunnel: data.tunnel });
+                  } else if ('execute' === name) {
+                    arg = (data.args as Record<string, string>)['theArg'] ?? '';
+                    tunnel = data.tunnel as number;
+                    _shout({ args: [`(${arg})`], enclosure: 'root', idx, name: 'call', tunnel: 123 });
+                  } else if ('reject' === name) {
+                    _shout({ name: 'resolve', payload: `${funcName}(${arg}) = <${data.error as string}>`, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          const callback = (): void => {
+            throw new Error('foo');
+          };
+          await vm.predefine('root', 'something', callback);
+
+          expect(
+            await vm.execute(
+              'root',
+              new DependencyImplementation('x', '', new Map<string, string>()),
+              new Map<string, unknown>([['theArg', 'abc']]),
+            ),
+          ).toStrictEqual('something(abc) = <foo>');
+
+          await vm.stop();
+        }),
+      );
+
+      test(
+        'unknown predefined function index should reject for worker',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(
+            makeWorkerCtor(
+              (
+                _this: object,
+                _bootTunnel: number,
+                _listen: (data: object) => void,
+                _shout: (message: object) => void,
+              ) => {
+                let idx: number = 0;
+                let funcName: string = '';
+                let arg: string = '';
+                let tunnel: number = 0;
+
+                _listen((data: Record<string, unknown>) => {
+                  const name: string = data.name as string;
+                  if ('predefine' === name) {
+                    idx = data.idx as number;
+                    funcName = data.function as string;
+                    _shout({ name: 'resolve', tunnel: data.tunnel });
+                  } else if ('execute' === name) {
+                    arg = (data.args as Record<string, string>)['theArg'] ?? '';
+                    tunnel = data.tunnel as number;
+                    _shout({ args: [`(${arg})`], enclosure: 'root', idx: idx + 1, name: 'call', tunnel: 123 });
+                  } else if ('reject' === name) {
+                    _shout({ name: 'resolve', payload: `${funcName}(${arg}) = <${data.error as string}>`, tunnel });
+                  } else {
+                    _shout({ error: 'not supported', name: 'reject', tunnel });
+                  }
+                });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                }, 10);
+              },
+            ),
+          );
+
+          jest.advanceTimersByTime(20);
+
+          const callback = (): void => {
+            throw new Error('foo');
+          };
+          await vm.predefine('root', 'something', callback);
+
+          expect(
+            await vm.execute(
+              'root',
+              new DependencyImplementation('x', '', new Map<string, string>()),
+              new Map<string, unknown>([['theArg', 'abc']]),
+            ),
+          ).toStrictEqual('something(abc) = <unknown function index 1>');
+
+          await vm.stop();
+        }),
+      );
     });
 
     describe('emit()', (): void => {
