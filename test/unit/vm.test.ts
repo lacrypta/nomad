@@ -630,7 +630,7 @@ describe('vm', (): void => {
       });
     });
 
-    describe('shutdown', (): void => {
+    describe('shutdown()', (): void => {
       test('should reject for negative timeout', async (): Promise<void> => {
         const vm = create();
         await vm.start(dummyWorkerCtor);
