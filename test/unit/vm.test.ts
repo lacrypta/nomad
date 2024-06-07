@@ -659,6 +659,78 @@ describe('vm', (): void => {
 
         await vm.stop();
       });
+
+      test('should shut down', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create();
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>) => {
+                const name: string = data.name as string;
+                if ('emit' === name) {
+                  _shout({ args: [data], event: 'host-emit', name: 'emit' });
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
+                } else if ('listRootEnclosures' === name) {
+                  _shout({ name: 'resolve', payload: ['enclosure1', 'enclosure2', 'enclosure3'], tunnel: data.tunnel });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await delay(25);
+
+        await vm.shutdown(10);
+
+        await delay(25);
+
+        expect(castEvents).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:start`, vm],
+          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+          [
+            `${_eventPrefix}:${vm.name}:user:host-emit`,
+            vm,
+            { args: [], enclosure: 'enclosure1', event: 'shutdown', name: 'emit' },
+          ],
+          [
+            `${_eventPrefix}:${vm.name}:user:host-emit`,
+            vm,
+            { args: [], enclosure: 'enclosure2', event: 'shutdown', name: 'emit' },
+          ],
+          [
+            `${_eventPrefix}:${vm.name}:user:host-emit`,
+            vm,
+            { args: [], enclosure: 'enclosure3', event: 'shutdown', name: 'emit' },
+          ],
+          [`${_eventPrefix}:${vm.name}:enclosure1:delete`, vm],
+          [`${_eventPrefix}:${vm.name}:enclosure2:delete`, vm],
+          [`${_eventPrefix}:${vm.name}:enclosure3:delete`, vm],
+          [`${_eventPrefix}:${vm.name}:enclosure1:delete:ok`, vm, ['enclosure1']],
+          [`${_eventPrefix}:${vm.name}:enclosure2:delete:ok`, vm, ['enclosure2']],
+          [`${_eventPrefix}:${vm.name}:enclosure3:delete:ok`, vm, ['enclosure3']],
+          [`${_eventPrefix}:${vm.name}:stop`, vm],
+          [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
+        ]);
+
+        await vm.stop();
+      });
     });
 
     describe('stop()', (): void => {
