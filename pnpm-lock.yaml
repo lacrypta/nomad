@@ -69,8 +69,8 @@ importers:
         specifier: ^29.1.4
         version: 29.1.4(@babel/core@7.24.7)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.24.7))(esbuild@0.21.4)(jest@29.7.0(@types/node@20.14.2))(typescript@5.4.5)
       tsx:
-        specifier: ^4.12.1
-        version: 4.12.1
+        specifier: ^4.13.0
+        version: 4.13.0
       typedoc:
         specifier: ^0.25.13
         version: 0.25.13(typescript@5.4.5)
@@ -2382,8 +2382,8 @@ packages:
   tsconfig-paths@3.15.0:
     resolution: {integrity: sha512-2Ac2RgzDe/cn48GvOe3M+o82pEFewD3UPbyoUHHdKasHwJKjds4fLXWf/Ux5kATBKN20oaFGu+jbElp1pos0mg==, tarball: https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.15.0.tgz}
 
-  tsx@4.12.1:
-    resolution: {integrity: sha512-roBBguHaP2EpOheka1uHkD4XMSsp1/K5KqtMOjuA+TqRzUsmwpVjHdoNTm/XJWltjB3opmPmYQoE8c2rCS2bqQ==, tarball: https://registry.npmjs.org/tsx/-/tsx-4.12.1.tgz}
+  tsx@4.13.0:
+    resolution: {integrity: sha512-kNY70P2aLMdVBii1Err5ENxDhQ6Vz2PbQGX68DcvzY2/PWK5NLBO6vI7lPr1/2xG3IKSt2MN+KOAyWDQSRlbCA==, tarball: https://registry.npmjs.org/tsx/-/tsx-4.13.0.tgz}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -5179,7 +5179,7 @@ snapshots:
       minimist: 1.2.8
       strip-bom: 3.0.0
 
-  tsx@4.12.1:
+  tsx@4.13.0:
     dependencies:
       esbuild: 0.20.2
       get-tsconfig: 4.7.5
