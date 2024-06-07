@@ -1061,7 +1061,7 @@ describe('vm', (): void => {
 
         await expect(
           vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
-        ).resolves.toStrictEqual(undefined);
+        ).resolves.toBeUndefined();
 
         await delay(25);
 
