@@ -482,7 +482,6 @@ let __cast: EventCasterImplementation_Cast;
  * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
  * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
  * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
- * - `nomadvm:{NAME}:stop:error:ignored(vm, error)`: when the VM `vm` has ignored error `error` while stopping (so as to complete the shutdown procedure).
  * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link VMWorker} encounters a non-fatal, yet reportable, error `error`.
  * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link VMWorker} encounters a fatal error `error`.
  * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMWorker} fails to respond to ping / pong messages for `delta` milliseconds.
@@ -913,11 +912,7 @@ export class VMImplementation implements VM {
         this.#worker = undefined;
 
         this.#tunnels.forEach((_: unknown, idx: number): void => {
-          try {
-            this.#rejectTunnel(idx, new Error('stopped'));
-          } catch (e) {
-            this.#castEvent('stop:error:ignored', _makeError(e));
-          }
+          this.#rejectTunnel(idx, new Error('stopped'));
         });
         this.#tunnels = [];
       }
