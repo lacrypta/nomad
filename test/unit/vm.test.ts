@@ -733,6 +733,370 @@ describe('vm', (): void => {
       });
     });
 
+    describe('installAll()', (): void => {
+      test(
+        'should reject on invalid enclosure name',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const vm = create();
+          await vm.start(dummyWorkerCtor);
+
+          jest.advanceTimersByTime(20);
+
+          await expect(vm.installAll('_something', [])).rejects.toStrictEqual(
+            new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+          );
+
+          await vm.stop();
+        }),
+      );
+
+      test('should handle enclosure creation failure', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ error: 'foobar', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(vm.installAll('something', [])).rejects.toStrictEqual(new Error('foobar'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle enclosure listing installed dependencies failure when failing to delete', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ error: 'foobar', name: 'reject', tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(vm.installAll('something', [])).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle enclosure listing installed dependencies failure', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(vm.installAll('something', [])).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle dependency install failure when failing to delete', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ error: 'foobar', name: 'reject', tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ name: 'resolve', payload: ['stuff'], tunnel: data.tunnel as number });
+                } else if ('install' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(
+          vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
+        ).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle dependency install failure', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ name: 'resolve', payload: ['stuff'], tunnel: data.tunnel as number });
+                } else if ('install' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(
+          vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
+        ).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle merging failure when failing to delete', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ error: 'foobar', name: 'reject', tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ name: 'resolve', payload: ['stuff'], tunnel: data.tunnel as number });
+                } else if ('install' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('merge' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(
+          vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
+        ).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle merging failure', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ name: 'resolve', payload: ['stuff'], tunnel: data.tunnel as number });
+                } else if ('install' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('merge' === name) {
+                  _shout({ error: 'foobaz', name: 'reject', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(
+          vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
+        ).rejects.toStrictEqual(new Error('foobaz'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should install all', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('create' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel as number });
+                } else if ('listInstalled' === name) {
+                  _shout({ name: 'resolve', payload: ['stuff'], tunnel: data.tunnel as number });
+                } else if ('install' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else if ('merge' === name) {
+                  _shout({ name: 'resolve', tunnel: data.tunnel as number });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(
+          vm.installAll('something', [new DependencyImplementation('bar', '', new Map<string, string>())]),
+        ).resolves.toStrictEqual(undefined);
+
+        await delay(25);
+
+        await vm.stop();
+      });
+
+      test('should handle stray errors', async (): Promise<void> => {
+        const vm = create();
+        jest.spyOn(vm, 'createEnclosure').mockImplementation(() => {
+          throw new Error('foobar');
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        await expect(vm.installAll('something', [])).rejects.toStrictEqual(new Error('foobar'));
+
+        await delay(25);
+
+        await vm.stop();
+      });
+    });
+
     describe('stop()', (): void => {
       test('should reject on errors', async (): Promise<void> => {
         const theWorkers: Worker[] = [];
