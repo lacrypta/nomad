@@ -1149,6 +1149,45 @@ describe('vm', (): void => {
 
         expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
       });
+
+      test('should deal with errors during final rejection', async (): Promise<void> => {
+        const vm = create();
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>): void => {
+                const name: string = data.name as string;
+                if ('listInstalled' === name) {
+                  // NOP
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+
+        let rejectError: Error | undefined = undefined;
+        void vm.listInstalled('whatever').then(
+          (): void => {
+            throw new Error('RESOLVED');
+          },
+          (error: Error): void => {
+            rejectError = error;
+          },
+        );
+
+        await expect(vm.stop()).resolves.toBeUndefined();
+
+        expect(rejectError).toStrictEqual(new Error('stopped'));
+      });
     });
 
     describe('[get name]', (): void => {
