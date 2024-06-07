@@ -680,6 +680,8 @@ describe('vm', (): void => {
                 const name: string = data.name as string;
                 if ('emit' === name) {
                   _shout({ args: [data], event: 'host-emit', name: 'emit' });
+                } else if ('ping' === name) {
+                  _shout({ name: 'pong' });
                 } else if ('delete' === name) {
                   _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
                 } else if ('listRootEnclosures' === name) {
@@ -697,9 +699,9 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        await vm.shutdown(10);
+        await vm.shutdown();
 
-        await delay(25);
+        await delay(10);
 
         expect(castEvents).toStrictEqual([
           [`${_eventPrefix}:${vm.name}:start`, vm],
