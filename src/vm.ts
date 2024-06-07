@@ -1535,7 +1535,7 @@ export class VMImplementation implements VM {
     if (!(tunnel in this.#tunnels)) {
       throw new Error(`tunnel ${tunnel.toString()} does not exist`);
     }
-    const result: TunnelDescriptor = this.#tunnels[tunnel] || { reject: () => {}, resolve: () => {} };
+    const result: TunnelDescriptor = this.#tunnels[tunnel] as TunnelDescriptor;
     /* eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete */
     delete this.#tunnels[tunnel];
     return result;
@@ -2121,7 +2121,7 @@ export class VMImplementation implements VM {
 
           this.#lastPong = Date.now();
           this.#pinger = setInterval(() => {
-            const delta: number = Date.now() - (this.#lastPong ?? -Infinity);
+            const delta: number = Date.now() - (this.#lastPong as number);
             if (thePongLimit < delta) {
               this.#castEvent('worker:unresponsive', delta);
               this.#doStop();
