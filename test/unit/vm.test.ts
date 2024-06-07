@@ -591,6 +591,43 @@ describe('vm', (): void => {
 
         await vm.stop();
       });
+
+      test('should deal with non-existing tunnel', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create();
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                setTimeout(() => {
+                  _shout({ name: 'resolve', payload: 789, tunnel: _bootTunnel });
+                }, 10);
+              }, 10);
+            },
+          ),
+        );
+
+        await delay(25);
+
+        expect(castEvents).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:start`, vm],
+          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('tunnel 0 does not exist')],
+        ]);
+
+        await vm.stop();
+      });
     });
 
     describe('stop()', (): void => {
