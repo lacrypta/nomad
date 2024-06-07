@@ -203,3 +203,8 @@ export const asyncRestoringMocks: (callback: () => Promise<void>) => () => Promi
     }
   };
 };
+
+export const delay: (ms: number) => Promise<void> = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });

@@ -49,6 +49,7 @@ import { _wrapCode } from '../../src/worker';
 import {
   asyncRestoringMocks,
   asyncWithFakeTimers,
+  delay,
   restoringMocks,
   stringToDataUri,
   testAll,
@@ -450,13 +451,6 @@ describe('vm', (): void => {
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
-              _listen(({ name, tunnel }: { name: string; tunnel: number }) => {
-                if ('create' === name) {
-                  _shout({ name: 'resolve', tunnel });
-                } else {
-                  _shout({ error: 'not supported', name: 'reject', tunnel });
-                }
-              });
               setTimeout(() => {
                 _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
                 setTimeout(() => {
@@ -467,16 +461,132 @@ describe('vm', (): void => {
           ),
         );
 
-        await new Promise((r) => {
-          setTimeout(() => {
-            r(undefined);
-          }, 25);
-        });
+        await delay(25);
 
         expect(castEvents).toStrictEqual([
           [`${_eventPrefix}:${vm.name}:start`, vm],
           [`${_eventPrefix}:${vm.name}:start:ok`, vm],
           [`${_eventPrefix}:${vm.name}:user:foobar`, vm],
+        ]);
+
+        await vm.stop();
+      });
+
+      test('should deal with malformed event', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create();
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                setTimeout(() => {
+                  _shout({ name: 123 });
+                }, 10);
+              }, 10);
+            },
+          ),
+        );
+
+        await delay(25);
+
+        expect(castEvents).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:start`, vm],
+          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('malformed event {"name":123}')],
+        ]);
+
+        await vm.stop();
+      });
+
+      test('should deal with unknown event', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create();
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>) => {
+                const name: string = data.name as string;
+                if ('reject' === name) {
+                  _shout({ args: [data.tunnel], event: 'foobar', name: 'emit' });
+                } else {
+                  _shout({ error: 'not supported', name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                setTimeout(() => {
+                  _shout({ name: 'foobar', tunnel: 123 });
+                }, 10);
+              }, 10);
+            },
+          ),
+        );
+
+        await delay(25);
+
+        expect(castEvents).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:start`, vm],
+          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('unknown event name foobar')],
+          [`${_eventPrefix}:${vm.name}:user:foobar`, vm, 123],
+        ]);
+
+        await vm.stop();
+      });
+
+      test('should deal with unknown event with no tunnel', async (): Promise<void> => {
+        const castEvents: [string, ...AnyArgs][] = [];
+        const vm = create();
+        vm.on('**', (name: string, ...rest: AnyArgs): void => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          castEvents.push([name, ...rest]);
+        });
+
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _this: object,
+              _bootTunnel: number,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+                setTimeout(() => {
+                  _shout({ name: 'foobar' });
+                }, 10);
+              }, 10);
+            },
+          ),
+        );
+
+        await delay(25);
+
+        expect(castEvents).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:start`, vm],
+          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('unknown event name foobar')],
         ]);
 
         await vm.stop();
