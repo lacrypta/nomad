@@ -630,6 +630,37 @@ describe('vm', (): void => {
       });
     });
 
+    describe('shutdown', (): void => {
+      test('should reject for negative timeout', async (): Promise<void> => {
+        const vm = create();
+        await vm.start(dummyWorkerCtor);
+
+        await expect(vm.shutdown(-1)).rejects.toStrictEqual(new Error('expected datum to be non-negative'));
+
+        await vm.stop();
+      });
+
+      test('should reject for non-integer timeout', async (): Promise<void> => {
+        const vm = create();
+        await vm.start(dummyWorkerCtor);
+
+        await expect(vm.shutdown(12.34)).rejects.toStrictEqual(new Error('expected datum to be a safe integer'));
+
+        await vm.stop();
+      });
+
+      test('should reject for timeout too large', async (): Promise<void> => {
+        const vm = create();
+        await vm.start(dummyWorkerCtor);
+
+        await expect(vm.shutdown((1 << 30) + 1)).rejects.toStrictEqual(
+          new Error('expected time delta to be at most 1073741824'),
+        );
+
+        await vm.stop();
+      });
+    });
+
     describe('stop()', (): void => {
       test('should reject on errors', async (): Promise<void> => {
         const theWorkers: Worker[] = [];
