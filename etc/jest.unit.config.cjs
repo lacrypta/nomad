@@ -2,8 +2,12 @@
 module.exports = {
   clearMocks: true,
   collectCoverage: true,
-  collectCoverageFrom: ['<rootDir>/src/**/*.ts', '<rootDir>/src/**/*.js', '<rootDir>/test/unit/**/*.ts'],
-  coveragePathIgnorePatterns: ['\\.test\\.ts'],
+  collectCoverageFrom: [
+    '<rootDir>/src/**/*.{m,c,}[jt]s',
+    '<rootDir>/src/**/*.{m,c,}[jt]s',
+    '<rootDir>/test/unit/**/*.{m,c,}[jt]s',
+  ],
+  coveragePathIgnorePatterns: ['\\.test\\.{m,c,}[jt]s'],
   coverageDirectory: '<rootDir>/dist/.coverage/unit',
   coverageProvider: 'babel',
   logHeapUsage: true,
@@ -14,7 +18,7 @@ module.exports = {
   restoreMocks: false,
   rootDir: '..',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/test/unit/**/*.test.ts'],
+  testMatch: ['<rootDir>/test/unit/**/*.test.{m,c,}[jt]s'],
   verbose: true,
   maxWorkers: 1,
 };

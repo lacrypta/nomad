@@ -10,7 +10,7 @@ module.exports = {
   restoreMocks: false,
   rootDir: '..',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/test/regression/**/*.test.ts'],
+  testMatch: ['<rootDir>/test/regression/**/*.test.{m,c,}[jt]s'],
   verbose: true,
   maxWorkers: 1,
 };
