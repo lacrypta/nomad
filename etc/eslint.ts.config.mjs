@@ -1,24 +1,36 @@
 import globals from 'globals';
 
-import eslint from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import eslintConfigPrettier from 'eslint-config-prettier';
-import importPlugin from 'eslint-plugin-import';
+import eslint_js from '@eslint/js';
+import eslint_config_prettier from 'eslint-config-prettier';
+import eslint_plugin_import from 'eslint-plugin-import';
+import eslint_plugin_jest from 'eslint-plugin-jest';
 import sonarjs from 'eslint-plugin-sonarjs';
 import arrayFunc from 'eslint-plugin-array-func';
 import * as regexpPlugin from 'eslint-plugin-regexp';
 import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
 
+import tseslint from 'typescript-eslint';
+
 export default tseslint.config(
-  eslint.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  eslintConfigPrettier,
+  eslint_js.configs.recommended,
+  eslint_config_prettier,
   sonarjs.configs.recommended,
   arrayFunc.configs.all,
   regexpPlugin.configs['flat/recommended'],
   perfectionistNatural,
+  ...tseslint.configs.strictTypeChecked,
   {
-    plugins: { import: importPlugin },
+    files: ['test/**/*.test.{m,c,}ts'],
+    ...eslint_plugin_jest.configs['flat/recommended'],
+    rules: {
+      ...eslint_plugin_jest.configs['flat/recommended'].rules,
+      'jest/prefer-expect-assertions': 'off',
+    },
+  },
+  {
+    plugins: {
+      import: eslint_plugin_import,
+    },
     ignores: ['pnpm-lock.yaml', 'dist/**'],
     languageOptions: {
       sourceType: 'module',

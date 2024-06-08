@@ -63,7 +63,7 @@ describe('vm', (): void => {
         new Array(20)
           .map((): string => _pseudoRandomString())
           .every((prs: string): boolean => /^[a-f0-9]{8}$/i.test(prs)),
-      );
+      ).toStrictEqual(true);
     });
   });
 
@@ -94,7 +94,7 @@ describe('vm', (): void => {
       expect(events).toBeInstanceOf(EventCasterImplementation);
     });
     test('events is frozen', (): void => {
-      expect(Object.isFrozen(events));
+      expect(Object.isFrozen(events)).toStrictEqual(true);
     });
   });
 

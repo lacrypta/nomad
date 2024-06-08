@@ -139,7 +139,7 @@ addEventListener("rejectionhandled", (event) => {
         VMWorkerImplementation,
       );
       expect(workerCtor).toHaveBeenCalledTimes(1);
-      expect(Array.isArray(workerCtor.mock.calls[0]));
+      expect(Array.isArray(workerCtor.mock.calls[0])).toStrictEqual(true);
       expect((workerCtor.mock.calls[0] as Array<unknown>).length).toStrictEqual(2);
       const [url, options] = workerCtor.mock.calls[0] as Array<unknown>;
       expect(url).toMatch(/^blob:nodedata:.+$/);
