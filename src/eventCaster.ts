@@ -233,7 +233,7 @@ export class EventCasterImplementation implements EventCaster {
         setTimeout((): void => {
           if (Array.from(this.#listeners.get(callback) ?? []).some((filter: RegExp): boolean => filter.test(name))) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-            callback.bind(undefined)(name, ...args);
+            callback.call(undefined, name, ...args);
           }
         });
       }
@@ -281,7 +281,7 @@ export class EventCasterImplementation implements EventCaster {
   once(filter: string, callback: EventCallback): this {
     const wrapped: EventCallback = (name: string, ...args: AnyArgs): void => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      callback.bind(undefined)(name, ...args);
+      callback.call(undefined, name, ...args);
       this.off(wrapped);
     };
     return this.on(filter, wrapped);

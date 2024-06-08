@@ -137,10 +137,10 @@ export const testAllMethod: <T, U extends (this: T, ...args: any) => any>(
       ({ error, expected, input }: TestCaseInput<Parameters<U>, ReturnType<U>>): void => {
         if (error instanceof Error) {
           expect((): void => {
-            method.apply(targetBuilder(), input);
+            method.call(targetBuilder(), ...input);
           }).toThrow(error);
         } else {
-          expect(method.apply(targetBuilder(), input)).toStrictEqual(expected);
+          expect(method.call(targetBuilder(), ...input)).toStrictEqual(expected);
         }
       },
     );

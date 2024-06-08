@@ -1975,7 +1975,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       }
     });
 
-    _Array.from(callbacks).forEach((callback) => _schedule(callback.apply(undefined, [event, ...args])));
+    _Array.from(callbacks).forEach((callback) => _schedule(callback.call(undefined, event, ...args)));
   };
 
   /**
@@ -2086,7 +2086,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
      * @returns {void}
      */
     const wrapped = (...args) => {
-      validateCallback(callback).apply(undefined, args);
+      validateCallback(callback).call(undefined, ...args);
       off(enclosure, wrapped);
     };
     on(enclosure, filter, wrapped);
