@@ -224,20 +224,6 @@
  */
 
 /**
- * Callback used for {@link Scheduler}s, simply scheduled for execution within this event loop iteration.
- *
- * @callback SchedulerCallback
- * @returns {void}
- */
-
-/**
- * The type of a scheduler, that will schedule the given callback for execution within this event loop iteration.
- *
- * @callback Scheduler
- * @param {SchedulerCallback} callback - The callback to schedule for execution.
- */
-
-/**
  * @typedef TunnelDescriptor
  * @type {object}
  * @property {Function} resolve - Resolution callback
@@ -331,10 +317,9 @@
  * @param {number} _bootTunnel - The tunnel index to use to signal when boot-up is complete.
  * @param {Listener} _listen - The `listener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
- * @param {Scheduler} _schedule - The `schedule` value to use (injected by the caller).
  * @returns {void}
  */
-const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
+const workerRunner = (_this, _bootTunnel, _listen, _shout) => {
   'use strict';
 
   /**
@@ -1975,7 +1960,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       }
     });
 
-    Array.from(callbacks).forEach((callback) => _schedule(callback.apply(undefined, [event, ...args])));
+    // ref: https://stackoverflow.com/a/77793581/1049859
+    _Array.from(callbacks).forEach((callback) => _Promise.resolve().then(callback.apply(undefined, [event, ...args])));
   };
 
   /**

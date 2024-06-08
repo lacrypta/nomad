@@ -73,19 +73,6 @@ addEventListener("rejectionhandled", (event) => {
       }
     }
   )(postMessage, JSON.stringify, Event, dispatchEvent),
-  ((_setTimeout, _Event, _dispatchEvent) =>
-    (callback) => {
-      _setTimeout(() => {
-        try {
-          callback();
-        } catch (e) {
-          const event = new _Event("error");
-          event.reason = "string" === typeof e.message ? e.message : "unknown error";
-          _dispatchEvent(event);
-        }
-      }, 0);
-    }
-  )(setTimeout, Event, dispatchEvent),
 );`,
       );
     });
@@ -266,12 +253,9 @@ addEventListener("rejectionhandled", (event) => {
                         _tunnel: number,
                         addListener: (handler: (data: object) => void) => void,
                         shout: (data: object) => void,
-                        schedule: (callback: () => void) => void,
                       ) => {
                         addListener((data: object): void => {
-                          schedule(() => {
-                            shout(data);
-                          });
+                          shout(data);
                         });
                       }).toString(),
                       0,
