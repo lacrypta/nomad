@@ -10,6 +10,7 @@ import * as regexpPlugin from 'eslint-plugin-regexp';
 import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
 
 import tseslint from 'typescript-eslint';
+import eslint_plugin_tsdoc from 'eslint-plugin-tsdoc';
 
 export default tseslint.config(
   eslint_js.configs.recommended,
@@ -30,6 +31,7 @@ export default tseslint.config(
   {
     plugins: {
       import: eslint_plugin_import,
+      tsdoc: eslint_plugin_tsdoc,
     },
     ignores: ['pnpm-lock.yaml', 'dist/**'],
     languageOptions: {
