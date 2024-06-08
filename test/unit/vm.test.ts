@@ -1099,6 +1099,60 @@ describe('vm', (): void => {
       });
     });
 
+    describe('startPinger()', (): void => {
+      test('should throw for non-running VM', async (): Promise<void> => {
+        expect(() => {create().startPinger()}).toThrow(new Error("expected state to be 'running'"));
+      });
+    });
+
+    describe('stopPinger()', (): void => {
+      test('should work even if not running', async (): Promise<void> => {
+        const vm = create();
+        expect(vm.stopPinger()).toStrictEqual(vm);
+      });
+
+      test('should stop twice', async (): Promise<void> => {
+        const vm = create();
+        expect(vm.stopPinger().stopPinger()).toStrictEqual(vm);
+      });
+
+      test('should stop then restart and not mark the worker as unresponsive',
+        asyncWithFakeTimers(async (): Promise<void> => {
+          const castEvents: [string, ...AnyArgs][] = [];
+          const vm = create();
+          vm.on('**', (name: string, ...rest: AnyArgs): void => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            castEvents.push([name, ...rest]);
+          });
+
+          const { inside, outside } = await vm.start(dummyWorkerCtor, undefined, 20, 1);
+          expect(inside).toStrictEqual(123456);
+          expect(outside).toBeGreaterThanOrEqual(0);
+
+          jest.advanceTimersByTime(15);
+
+          expect(vm.stopPinger()).toStrictEqual(vm);
+
+          jest.advanceTimersByTime(100);
+
+          expect(vm.startPinger()).toStrictEqual(vm);
+
+          jest.advanceTimersByTime(10);
+
+          await vm.stop();
+
+          jest.advanceTimersByTime(10);
+
+          expect(castEvents).toStrictEqual([
+            [`${_eventPrefix}:${vm.name}:start`, vm],
+            [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+            [`${_eventPrefix}:${vm.name}:stop`, vm],
+            [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
+          ]);
+        }),
+      );
+    });
+
     describe('stop()', (): void => {
       test('should reject on errors', async (): Promise<void> => {
         const theWorkers: Worker[] = [];

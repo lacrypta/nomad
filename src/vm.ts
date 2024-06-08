@@ -282,6 +282,13 @@ export interface VM extends EventCaster {
   ): Promise<WorkerTimings>;
 
   /**
+   * Start (or re-start) the pinger interval.
+   *
+   * @returns `this`, for chaining.
+   */
+  startPinger(): this;
+
+  /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
@@ -293,6 +300,13 @@ export interface VM extends EventCaster {
    * @returns A {@link !Promise} that resolves with `void` if the stopping procedure completed successfully, and rejects with an {@link !Error} in case errors occur.
    */
   stop(): Promise<void>;
+
+  /**
+   * Stop the pinger interval.
+   *
+   * @returns `this`, for chaining.
+   */
+  stopPinger(): this;
 
   /**
    * Unlink one enclosure from another, so that events cast on the first are no longer handled in the second.
@@ -743,10 +757,22 @@ export class VMImplementation implements VM {
   readonly #name: Readonly<string>;
 
   /**
+   * Number of milliseconds to wait between pings to the worker.
+   *
+   */
+  #pingInterval?: number | undefined;
+
+  /**
    * The interval ID for the pinger, or `null` if not yet set up.
    *
    */
   #pinger?: ReturnType<typeof setInterval> | undefined;
+
+  /**
+   * Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
+   *
+   */
+  #pongLimit?: number | undefined;
 
   /**
    * A list of predefined functions.
@@ -904,11 +930,11 @@ export class VMImplementation implements VM {
         this.#state = 'stopped';
 
         clearTimeout(this.#bootTimeout);
-        clearInterval(this.#pinger);
-        this.#worker?.kill();
-
         this.#bootTimeout = undefined;
-        this.#pinger = undefined;
+
+        this.stopPinger();
+
+        this.#worker?.kill();
         this.#worker = undefined;
 
         this.#tunnels.forEach((_: unknown, idx: number): void => {
@@ -2108,8 +2134,10 @@ export class VMImplementation implements VM {
   ): Promise<WorkerTimings> {
     return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
-      const thePingInterval: number = validateTimeDelta(pingInterval ?? _defaultPingInterval);
-      const thePongLimit: number = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
+
+      this.#pingInterval = validateTimeDelta(pingInterval ?? _defaultPingInterval);
+      this.#pongLimit = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
+
       try {
         this.#castEvent('start');
         this.#assertCreated();
@@ -2120,18 +2148,9 @@ export class VMImplementation implements VM {
         const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
           clearTimeout(this.#bootTimeout);
           this.#bootTimeout = undefined;
-
-          this.#lastPong = Date.now();
-          this.#pinger = setInterval(() => {
-            const delta: number = Date.now() - (this.#lastPong as number);
-            if (thePongLimit < delta) {
-              this.#castEvent('worker:unresponsive', delta);
-              this.#doStop();
-            }
-            this.#postPingMessage();
-          }, thePingInterval);
-
           this.#state = 'running';
+
+          this.startPinger();
           this.#castEvent('start:ok');
 
           resolve({ inside: internalBootTime, outside: Date.now() - externalBootTime });
@@ -2176,6 +2195,27 @@ export class VMImplementation implements VM {
   }
 
   /**
+   * Start (or re-start) the pinger interval.
+   *
+   * @returns `this`, for chaining.
+   */
+  startPinger(): this {
+    this.#assertRunning();
+
+    this.#lastPong = Date.now();
+    this.#pinger = setInterval(() => {
+      const delta: number = Date.now() - (this.#lastPong as number);
+      if ((this.#pongLimit as number) < delta) {
+        this.#castEvent('worker:unresponsive', delta);
+        this.#doStop();
+      }
+      this.#postPingMessage();
+    }, this.#pingInterval);
+
+    return this;
+  }
+
+  /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
    *
    * Stopping a Vm instance entails:
@@ -2190,6 +2230,18 @@ export class VMImplementation implements VM {
     return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
       this.#doStop(resolve, reject);
     });
+  }
+
+  /**
+   * Stop the pinger interval.
+   *
+   * @returns `this`, for chaining.
+   */
+  stopPinger(): this {
+    clearInterval(this.#pinger);
+    this.#pinger = undefined;
+
+    return this;
   }
 
   /**
