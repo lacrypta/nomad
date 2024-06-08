@@ -397,13 +397,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
   const _eval = eval;
   const _Date_now = Date.now;
 
+  const _Array = Array;
   const _Date = Date;
   const _Error = Error;
   const _Function = Function;
   const _Map = Map;
   const _Object = Object;
   const _Promise = Promise;
-  const _Proxy = Proxy;
   const _RegExp = RegExp;
   const _Set = Set;
   const _Symbol = Symbol;
@@ -452,7 +452,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
           /**
            * @type {any}
            */
-          const prox = new _Proxy(obj, {
+          const prox = new Proxy(obj, {
             construct() {
               return prox;
             },
@@ -1682,9 +1682,9 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const enclosureSubEnclosures = (enclosure, depth = 0) => {
     const limit = 0 < depth ? depth + enclosure.split('.').length : Infinity;
-    return Array.from(enclosures.keys()).filter(
-      (candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit,
-    );
+    return _Array
+      .from(enclosures.keys())
+      .filter((candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit);
   };
 
   /**
@@ -1747,11 +1747,11 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       ]),
     );
     {
-      const collisions = Array.from(newSubEnclosures.values()).filter((newSubEnclosure) =>
-        enclosures.has(newSubEnclosure),
-      );
+      const collisions = _Array
+        .from(newSubEnclosures.values())
+        .filter((newSubEnclosure) => enclosures.has(newSubEnclosure));
       if (0 < collisions.length) {
-        throw new Error(`collisions found on [${collisions.join(', ')}]`);
+        throw new _Error(`collisions found on [${collisions.join(', ')}]`);
       }
     }
 
@@ -1761,14 +1761,14 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       tunnels: parentTunnels,
     } = getEnclosure(parent);
 
-    Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
+    _Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
 
-    Array.from(listeners.entries()).forEach(([callback, filters]) => {
+    _Array.from(listeners.entries()).forEach(([callback, filters]) => {
       if (!parentListeners.has(callback)) {
         parentListeners.set(callback, new _Set());
       }
       const callbackFilters = parentListeners.get(callback);
-      Array.from(filters).forEach((filter) => callbackFilters?.add(filter));
+      _Array.from(filters).forEach((filter) => callbackFilters?.add(filter));
     });
 
     _Object.entries(dependencies).forEach(([name, value]) => {
@@ -1777,7 +1777,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
 
     enclosurePorts[port] = parent;
 
-    Array.from(newSubEnclosures.entries()).forEach(([subEnclosure, newSubEnclosure]) => {
+    _Array.from(newSubEnclosures.entries()).forEach(([subEnclosure, newSubEnclosure]) => {
       listLinkedFrom(subEnclosure).forEach((linkSource) => {
         const { linked } = getEnclosure(linkSource);
         linked.delete(subEnclosure);
@@ -1868,7 +1868,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {Array<string>} A list of root enclosures.
    */
   const listRootEnclosures = () => {
-    return Array.from(enclosures.keys())
+    return _Array
+      .from(enclosures.keys())
       .filter((enclosure) => -1 === enclosure.indexOf('.'))
       .sort();
   };
@@ -1968,7 +1969,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
     const callbacks = new _Set();
     [enclosure, ...enclosurePrefixes(enclosure), ...enclosureSubEnclosures(enclosure), ...linked].forEach((target) => {
       for (const [callback, filters] of getEnclosure(target).listeners.entries()) {
-        if (Array.from(filters.values()).some((filter) => filter.test(event))) {
+        if (_Array.from(filters.values()).some((filter) => filter.test(event))) {
           callbacks.add(callback);
         }
       }
@@ -2200,7 +2201,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @returns {Array<string>} A list of enclosures linked to by the given one.
    */
   const listLinksTo = (enclosure) => {
-    return Array.from(getEnclosure(enclosure).linked).sort();
+    return _Array.from(getEnclosure(enclosure).linked).sort();
   };
 
   /**
@@ -2211,7 +2212,8 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    */
   const listLinkedFrom = (enclosure) => {
     getEnclosure(enclosure);
-    return Array.from(enclosures.entries())
+    return _Array
+      .from(enclosures.entries())
       .filter(([, { linked }]) => linked.has(enclosure))
       .map(([name]) => name);
   };
@@ -2254,18 +2256,18 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       const missing = importedNames.filter((name) => !((dependency.dependencies[name] ?? '') in dependencies));
       if (0 !== missing.length) {
         throw new _Error(
-          `missing dependencies: [${Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
+          `missing dependencies: [${_Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
         );
       }
     }
-    const argumentNames = Array.from(args.keys());
+    const argumentNames = _Array.from(args.keys());
     {
       if (ARGUMENTS_LIMIT < argumentNames.length) {
         throw new _Error(`too many arguments 1024 < ${argumentNames.length.toString()}`);
       }
       const shadowed = argumentNames.filter((name) => name in dependency.dependencies);
       if (0 < shadowed.length) {
-        throw new _Error(`shadowing arguments [${Array.from(new _Set(shadowed)).sort().join(', ')}]`);
+        throw new _Error(`shadowing arguments [${_Array.from(new _Set(shadowed)).sort().join(', ')}]`);
       }
     }
 
@@ -2515,7 +2517,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "__lookupGetter__", // Deprecated
         // "__lookupSetter__", // Deprecated
       ];
-      keep['Boolean.prototype'] = Array.from(keep['Object.prototype']);
+      keep['Boolean.prototype'] = keep['Object.prototype'];
       keep['Symbol'] = [
         ...keep['Function.instance'],
         'prototype',
@@ -2535,23 +2537,23 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'for',
         'keyFor',
       ];
-      keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', Symbol.toPrimitive, Symbol.toStringTag];
+      keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', _Symbol.toPrimitive, _Symbol.toStringTag];
       keep['Error'] = [...keep['Function.instance'], 'prototype'];
       keep['Error.prototype'] = [...keep['Object.prototype'], 'name'];
-      keep['AggregateError'] = Array.from(keep['Error']);
-      keep['AggregateError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['EvalError'] = Array.from(keep['Error']);
-      keep['EvalError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['RangeError'] = Array.from(keep['Error']);
-      keep['RangeError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['ReferenceError'] = Array.from(keep['Error']);
-      keep['ReferenceError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['SyntaxError'] = Array.from(keep['Error']);
-      keep['SyntaxError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['TypeError'] = Array.from(keep['Error']);
-      keep['TypeError.prototype'] = Array.from(keep['Error.prototype']);
-      keep['URIError'] = Array.from(keep['Error']);
-      keep['URIError.prototype'] = Array.from(keep['Error.prototype']);
+      keep['AggregateError'] = keep['Error'];
+      keep['AggregateError.prototype'] = keep['Error.prototype'];
+      keep['EvalError'] = keep['Error'];
+      keep['EvalError.prototype'] = keep['Error.prototype'];
+      keep['RangeError'] = keep['Error'];
+      keep['RangeError.prototype'] = keep['Error.prototype'];
+      keep['ReferenceError'] = keep['Error'];
+      keep['ReferenceError.prototype'] = keep['Error.prototype'];
+      keep['SyntaxError'] = keep['Error'];
+      keep['SyntaxError.prototype'] = keep['Error.prototype'];
+      keep['TypeError'] = keep['Error'];
+      keep['TypeError.prototype'] = keep['Error.prototype'];
+      keep['URIError'] = keep['Error'];
+      keep['URIError.prototype'] = keep['Error.prototype'];
       keep['Number'] = [
         ...keep['Function.instance'],
         'prototype',
@@ -2580,7 +2582,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
       keep['BigInt'] = [...keep['Function.instance'], 'prototype', 'asIntN', 'asUintN'];
       keep['BigInt.prototype'] = [
         ...keep['Object.prototype'],
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         // "toLocaleString", // ---> BigInt.prototype.toString
       ];
       keep['Math'] = [
@@ -2592,7 +2594,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'PI',
         'SQRT1_2',
         'SQRT2',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'abs',
         'ceil',
         'floor',
@@ -2683,7 +2685,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "toLocaleTimeString", // ---> Date.prototype.toTimeString
         // "toString", // ---> Date.prototype.toISOString
         // "toLocaleString", // ---> Date.prototype.toString
-        Symbol.toPrimitive,
+        _Symbol.toPrimitive,
       ];
       keep['String'] = [...keep['Function.instance'], 'prototype', 'fromCharCode', 'fromCodePoint', 'raw'];
       keep['String.prototype'] = [
@@ -2722,7 +2724,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "toLocaleUpperCase", // ---> String.prototype.toLowerCase
         'toLowerCase',
         'toUpperCase',
-        Symbol.iterator,
+        _Symbol.iterator,
         // "anchor", // Deprecated
         // "big", // Deprecated
         // "blink", // Deprecated
@@ -2759,7 +2761,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "$`", // Deprecated // ???
         // "rightContext", // Deprecated // ???
         // "$'", // Deprecated // ???
-        Symbol.species,
+        _Symbol.species,
       ];
       keep['RegExp.prototype'] = [
         ...keep['Object.prototype'],
@@ -2777,16 +2779,24 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         // "compile", // Deprecated
         'exec',
         'test',
-        Symbol.match,
-        Symbol.matchAll,
-        Symbol.replace,
-        Symbol.split,
-        Symbol.search,
+        _Symbol.match,
+        _Symbol.matchAll,
+        _Symbol.replace,
+        _Symbol.split,
+        _Symbol.search,
       ];
-      keep['Array'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'from', 'fromAsync', 'isArray', 'of'];
+      keep['Array'] = [
+        ...keep['Function.instance'],
+        'prototype',
+        _Symbol.species,
+        'from',
+        'fromAsync',
+        'isArray',
+        'of',
+      ];
       keep['Array.prototype'] = [
         ...keep['Object.prototype'],
-        Symbol.unscopables,
+        _Symbol.unscopables,
         'at',
         'length',
         'concat',
@@ -2825,12 +2835,12 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'toSorted',
         'toSpliced',
         'with',
-        Symbol.iterator,
+        _Symbol.iterator,
       ];
       keep['TypedArray'] = [
         ...keep['Function.instance'],
         'prototype',
-        Symbol.species,
+        _Symbol.species,
         'BYTES_PER_ELEMENT',
         'from',
         'of',
@@ -2868,18 +2878,18 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'forEach',
         'includes',
         'join',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         // "toLocaleString", // ---> TypedArray.prototype.toString
         'toReversed',
         'toSorted',
         'with',
-        Symbol.iterator,
+        _Symbol.iterator,
       ];
-      keep['Map'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'groupBy'];
+      keep['Map'] = [...keep['Function.instance'], 'prototype', _Symbol.species, 'groupBy'];
       keep['Map.prototype'] = [
         ...keep['Object.prototype'],
         'size',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'delete',
         'get',
         'has',
@@ -2889,13 +2899,13 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'values',
         'clear',
         'forEach',
-        Symbol.iterator,
+        _Symbol.iterator,
       ];
-      keep['Set'] = [...keep['Function.instance'], 'prototype', Symbol.species];
+      keep['Set'] = [...keep['Function.instance'], 'prototype', _Symbol.species];
       keep['Set.prototype'] = [
         ...keep['Object.prototype'],
         'size',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'add',
         'clear',
         'delete',
@@ -2911,20 +2921,20 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'keys',
         'values',
         'forEach',
-        Symbol.iterator,
+        _Symbol.iterator,
       ];
-      keep['WeakMap'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
+      keep['WeakMap'] = [...keep['Function.instance'], 'prototype', _Symbol.toStringTag];
       keep['WeakMap.prototype'] = [...keep['Object.prototype'], 'delete', 'get', 'has', 'set'];
-      keep['WeakSet'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
+      keep['WeakSet'] = [...keep['Function.instance'], 'prototype', _Symbol.toStringTag];
       keep['WeakSet.prototype'] = [...keep['Object.prototype'], 'add', 'delete', 'has'];
-      keep['ArrayBuffer'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'isView'];
+      keep['ArrayBuffer'] = [...keep['Function.instance'], 'prototype', _Symbol.species, 'isView'];
       keep['ArrayBuffer.prototype'] = [
         ...keep['Object.prototype'],
         'byteLength',
         'maxByteLength',
         'detached',
         'resizable',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'resize',
         'slice',
         'transfer',
@@ -2936,7 +2946,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'buffer',
         'byteLength',
         'byteOffset',
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'getBigInt64',
         'getBigUint64',
         'getFloat32',
@@ -2959,7 +2969,7 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'setUint32',
       ];
       keep['Atomics'] = [
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'add',
         'and',
         'compareExchange',
@@ -2974,20 +2984,20 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'wait',
         'waitAsync',
       ];
-      keep['JSON'] = [Symbol.toStringTag, 'parse', 'stringify'];
+      keep['JSON'] = [_Symbol.toStringTag, 'parse', 'stringify'];
       keep['WeakRef'] = [...keep['Function.instance'], 'prototype'];
-      keep['WeakRef.prototype'] = [...keep['Object.prototype'], 'deref', Symbol.toStringTag];
+      keep['WeakRef.prototype'] = [...keep['Object.prototype'], 'deref', _Symbol.toStringTag];
       keep['FinalizationRegistry'] = [...keep['Function.instance'], 'prototype'];
       keep['FinalizationRegistry.prototype'] = [
         ...keep['Object.prototype'],
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'register',
         'unregister',
       ];
       keep['Promise'] = [
         ...keep['Function.instance'],
         'prototype',
-        Symbol.species,
+        _Symbol.species,
         'all',
         'allSettled',
         'any',
@@ -2996,16 +3006,16 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
         'resolve',
         'withResolvers',
       ];
-      keep['Promise.prototype'] = [...keep['Object.prototype'], Symbol.toStringTag, 'catch', 'finally', 'then'];
+      keep['Promise.prototype'] = [...keep['Object.prototype'], _Symbol.toStringTag, 'catch', 'finally', 'then'];
       keep['GeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['GeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['GeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
       keep['AsyncGeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['AsyncGeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['AsyncGeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
       keep['AsyncFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['AsyncFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
+      keep['AsyncFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
       keep['Proxy'] = [...keep['Function.instance'], 'revocable'];
       keep['Reflect'] = [
-        Symbol.toStringTag,
+        _Symbol.toStringTag,
         'apply',
         'construct',
         'defineProperty',
