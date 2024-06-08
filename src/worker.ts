@@ -134,6 +134,19 @@ addEventListener("rejectionhandled", (event) => {
       }
     }
   )(postMessage, JSON.stringify, Event, dispatchEvent),
+  ((_setTimeout, _Event, _dispatchEvent) =>
+    (callback) => {
+      _setTimeout(() => {
+        try {
+          callback();
+        } catch (e) {
+          const event = new _Event("error");
+          event.reason = "string" === typeof e.message ? e.message : "unknown error";
+          _dispatchEvent(event);
+        }
+      }, 0);
+    }
+  )(setTimeout, Event, dispatchEvent),
 );`;
 
 /**
