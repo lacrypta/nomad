@@ -740,7 +740,7 @@ export class VMImplementation implements VM {
    * The VM name to use.
    *
    */
-  #name: string;
+  readonly #name: Readonly<string>;
 
   /**
    * The interval ID for the pinger, or `null` if not yet set up.
