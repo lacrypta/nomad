@@ -270,23 +270,18 @@ export interface VM extends EventCaster {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
-   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(
-    workerCtor?: WorkerConstructor,
-    timeout?: number,
-    pingInterval?: number,
-    pongLimit?: number,
-  ): Promise<WorkerTimings>;
+  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<WorkerTimings>;
 
   /**
    * Start (or re-start) the pinger interval.
    *
+   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
+   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns `this`, for chaining.
    */
-  startPinger(): this;
+  startPinger(pingInterval?: number, pongLimit?: number): this;
 
   /**
    * Stop the {@link VMWorker} immediately and reject all pending tunnels.
@@ -2122,21 +2117,11 @@ export class VMImplementation implements VM {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
-   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
    */
-  start(
-    workerCtor?: WorkerConstructor,
-    timeout?: number,
-    pingInterval?: number,
-    pongLimit?: number,
-  ): Promise<WorkerTimings> {
+  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<WorkerTimings> {
     return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
-
-      this.#pingInterval = validateTimeDelta(pingInterval ?? _defaultPingInterval);
-      this.#pongLimit = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
 
       try {
         this.#castEvent('start');
@@ -2149,8 +2134,6 @@ export class VMImplementation implements VM {
           clearTimeout(this.#bootTimeout);
           this.#bootTimeout = undefined;
           this.#state = 'running';
-
-          this.startPinger();
           this.#castEvent('start:ok');
 
           resolve({ inside: internalBootTime, outside: Date.now() - externalBootTime });
@@ -2197,9 +2180,14 @@ export class VMImplementation implements VM {
   /**
    * Start (or re-start) the pinger interval.
    *
+   * @param pingInterval - Number of milliseconds to wait between pings to the worker.
+   * @param pongLimit - Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
    * @returns `this`, for chaining.
    */
-  startPinger(): this {
+  startPinger(pingInterval?: number, pongLimit?: number): this {
+    this.#pingInterval = validateTimeDelta(pingInterval ?? _defaultPingInterval);
+    this.#pongLimit = validateNonNegativeInteger(pongLimit ?? _defaultPongLimit);
+
     this.#assertRunning();
 
     this.#lastPong = Date.now();

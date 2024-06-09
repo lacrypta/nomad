@@ -166,21 +166,6 @@ export const withFakeTimers: (callback: () => void) => () => void = (callback: (
   };
 };
 
-export const asyncWithFakeTimers: (callback: () => Promise<void>) => () => Promise<void> = (
-  callback: () => Promise<void>,
-): (() => Promise<void>) => {
-  return async (): Promise<void> => {
-    jest.useFakeTimers();
-    try {
-      await callback();
-      return;
-    } finally {
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    }
-  };
-};
-
 export const restoringMocks: (callback: () => void) => () => void = (callback: () => void): (() => void) => {
   return (): void => {
     try {
