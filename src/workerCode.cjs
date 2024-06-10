@@ -2253,6 +2253,10 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
           `missing dependencies: [${_Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
         );
       }
+      const aliased = importedNames.filter((name) => name in _this);
+      if (0 !== aliased.length) {
+        throw new _Error(`aliased dependencies: [${_Array.from(new _Set(aliased)).join(', ')}]`);
+      }
     }
     const argumentNames = _Array.from(args.keys());
     {
