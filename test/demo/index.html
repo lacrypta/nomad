@@ -18,8 +18,8 @@
         'qpl',
       );
 
-      await vm.start().then(({ inside, outside }) => {
-        console.log(`STARTUP: ${inside} / ${outside}`);
+      await vm.start().then(() => {
+        console.log('BOOTED');
       });
 
       await vm.install('root', dbl);

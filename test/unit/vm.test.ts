@@ -273,11 +273,25 @@ describe('vm', (): void => {
           castEvents.push([name, ...rest]);
         });
 
-        const { inside, outside } = await vm.start(dummyWorkerCtor);
+        await expect(vm.start(dummyWorkerCtor)).resolves.toBeInstanceOf(EnclosureImplementation);
+
+        await delay(25);
+
+        expect(castEvents).toHaveLength(2);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+
+        const [name, evm, enclosure, inside, outside]: [string, VM, string, number, number] = castEvents[1] as [
+          string,
+          VM,
+          string,
+          number,
+          number,
+        ];
+        expect(name).toStrictEqual(`${_eventPrefix}:${vm.name}:start:ok`);
+        expect(evm).toStrictEqual(vm);
+        expect(enclosure).toStrictEqual('root');
         expect(inside).toStrictEqual(123456);
         expect(outside).toBeGreaterThanOrEqual(0);
-
-        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
 
         await vm.stop();
       });
@@ -349,11 +363,15 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
-          [`${_eventPrefix}:${vm.name}:user:foobar`, vm],
+        expect(castEvents).toHaveLength(3);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
         ]);
+        expect(castEvents[2]).toStrictEqual([`${_eventPrefix}:${vm.name}:user:foobar`, vm]);
 
         await vm.stop();
       });
@@ -387,10 +405,18 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
-          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('malformed event {"name":123}')],
+        expect(castEvents).toHaveLength(3);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect(castEvents[2]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:worker:error`,
+          vm,
+          new Error('malformed event {"name":123}'),
         ]);
 
         await vm.stop();
@@ -433,9 +459,15 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+        expect(castEvents).toHaveLength(4);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect([castEvents[2], castEvents[3]]).toStrictEqual([
           [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('unknown event name foobar')],
           [`${_eventPrefix}:${vm.name}:user:foobar`, vm, 123],
         ]);
@@ -472,10 +504,18 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
-          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('unknown event name foobar')],
+        expect(castEvents).toHaveLength(3);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect(castEvents[2]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:worker:error`,
+          vm,
+          new Error('unknown event name foobar'),
         ]);
 
         await vm.stop();
@@ -510,10 +550,18 @@ describe('vm', (): void => {
 
         await delay(25);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
-          [`${_eventPrefix}:${vm.name}:worker:error`, vm, new Error('tunnel 0 does not exist')],
+        expect(castEvents).toHaveLength(3);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect(castEvents[2]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:worker:error`,
+          vm,
+          new Error('tunnel 0 does not exist'),
         ]);
 
         await vm.stop();
@@ -594,9 +642,27 @@ describe('vm', (): void => {
 
         await delay(10);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+        expect(castEvents).toHaveLength(13);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect([
+          castEvents[2],
+          castEvents[3],
+          castEvents[4],
+          castEvents[5],
+          castEvents[6],
+          castEvents[7],
+          castEvents[8],
+          castEvents[9],
+          castEvents[10],
+          castEvents[11],
+          castEvents[12],
+        ]).toStrictEqual([
           [
             `${_eventPrefix}:${vm.name}:user:host-emit`,
             vm,
@@ -1046,9 +1112,7 @@ describe('vm', (): void => {
           castEvents.push([name, ...rest]);
         });
 
-        const { inside, outside } = await vm.start(dummyWorkerCtor, undefined);
-        expect(inside).toStrictEqual(123456);
-        expect(outside).toBeGreaterThanOrEqual(0);
+        await vm.start(dummyWorkerCtor, undefined);
         vm.startPinger(1, 1);
 
         await delay(15);
@@ -1056,17 +1120,20 @@ describe('vm', (): void => {
         expect(vm.isStopped).toStrictEqual(true);
 
         expect(castEvents).toHaveLength(5);
-        expect([castEvents[0], castEvents[1]]).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
-        ]);
-        expect([castEvents[3], castEvents[4]]).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:stop`, vm],
-          [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
         ]);
         expect([castEvents[2]?.[0], castEvents[2]?.[1]]).toStrictEqual([
           `${_eventPrefix}:${vm.name}:worker:unresponsive`,
           vm,
+        ]);
+        expect([castEvents[3], castEvents[4]]).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:stop`, vm],
+          [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
         ]);
       });
 
@@ -1131,9 +1198,7 @@ describe('vm', (): void => {
           castEvents.push([name, ...rest]);
         });
 
-        const { inside, outside } = await vm.start(dummyWorkerCtor, undefined);
-        expect(inside).toStrictEqual(123456);
-        expect(outside).toBeGreaterThanOrEqual(0);
+        await vm.start(dummyWorkerCtor, undefined);
         vm.startPinger(20, 1);
 
         await delay(15);
@@ -1150,9 +1215,15 @@ describe('vm', (): void => {
 
         await delay(10);
 
-        expect(castEvents).toStrictEqual([
-          [`${_eventPrefix}:${vm.name}:start`, vm],
-          [`${_eventPrefix}:${vm.name}:start:ok`, vm],
+        expect(castEvents).toHaveLength(4);
+        expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
+        expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
+          `${_eventPrefix}:${vm.name}:start:ok`,
+          vm,
+          'root',
+          123456,
+        ]);
+        expect([castEvents[2], castEvents[3]]).toStrictEqual([
           [`${_eventPrefix}:${vm.name}:stop`, vm],
           [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
         ]);

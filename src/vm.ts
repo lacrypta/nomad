@@ -270,9 +270,9 @@ export interface VM extends EventCaster {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper for the default enclosure if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors occur.
    */
-  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<WorkerTimings>;
+  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<EnclosureImplementation>;
 
   /**
    * Start (or re-start) the pinger interval.
@@ -486,7 +486,7 @@ let __cast: EventCasterImplementation_Cast;
  * The events cast on both {@link EventCasterImplementation}s are:
  *
  * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
- * - `nomadvm:{NAME}:start:ok(vm)`: when the VM `vm` has been successfully started.
+ * - `nomadvm:{NAME}:start:ok(vm, enclosure, inTime, outTime)`: when the VM `vm` has been successfully started, having created the default enclosure `enclosure`, and having spent `inTime` and `outTime` milliseconds to boot as measured from within and without the {@link VMWorker}.
  * - `nomadvm:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
  * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
  * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
@@ -2123,70 +2123,73 @@ export class VMImplementation implements VM {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
-   * @returns A {@link !Promise} that resolves to an object exposing the `inside` and `outside` boot duration times (as measured from inside and outside of the {@link VMWorker} respectively) if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors are found.
+   * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper for the default enclosure if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors occur.
    */
-  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<WorkerTimings> {
-    return new Promise<WorkerTimings>((resolve: Resolution<WorkerTimings>, reject: Rejection): void => {
-      const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
-
-      try {
-        this.#castEvent('start');
-        this.#assertCreated();
-
-        this.#state = 'booting';
-
-        const externalBootTime: number = Date.now();
-        const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
-          clearTimeout(this.#bootTimeout);
-          this.#bootTimeout = undefined;
-          this.#state = 'running';
-          this.#castEvent('start:ok');
-
-          resolve({ inside: internalBootTime, outside: Date.now() - externalBootTime });
-        };
-        const bootReject: Rejection = (error: Error): void => {
-          this.#castEvent('start:error', error);
-          this.#doStop(
-            (): void => {
-              reject(error);
-            },
-            (): void => {
-              reject(error);
-            },
-          );
-        };
-
-        const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
+  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<EnclosureImplementation> {
+    return new Promise<EnclosureImplementation>(
+      (resolve: Resolution<EnclosureImplementation>, reject: Rejection): void => {
+        const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
 
         try {
-          this.#bootTimeout = setTimeout((): void => {
-            this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
-          }, theTimeout);
+          this.#castEvent('start');
+          this.#assertCreated();
 
-          this.#worker = new VMWorkerImplementation(
-            workerCode.toString(),
-            bootTunnel,
-            _defaultEnclosure,
-            this.name,
-            workerCtor,
-          ).listen(
-            (data: Record<string, unknown>): void => {
-              this.#messageHandler(data);
-            },
-            /* istanbul ignore next */ // TODO: find a way to test this
-            (error: Error): void => {
-              this.#errorHandler(error);
-            },
-          );
+          this.#state = 'booting';
+
+          const externalBootTime: number = Date.now();
+          const bootResolve: (internalBootTime: number) => void = (internalBootTime: number): void => {
+            clearTimeout(this.#bootTimeout);
+            this.#bootTimeout = undefined;
+            this.#state = 'running';
+            this.#castEvent('start:ok', _defaultEnclosure, internalBootTime, Date.now() - externalBootTime);
+
+            resolve(new EnclosureImplementation(this, _defaultEnclosure));
+          };
+          const bootReject: Rejection = (error: Error): void => {
+            this.#castEvent('start:error', error);
+            this.#doStop(
+              (): void => {
+                reject(error);
+              },
+              (): void => {
+                reject(error);
+              },
+            );
+          };
+
+          const bootTunnel: number = this.#addTunnel(bootResolve, bootReject);
+
+          try {
+            this.#bootTimeout = setTimeout((): void => {
+              this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
+            }, theTimeout);
+
+            // TODO: TAKE _defaultEnclosure AS PARAMETER
+            this.#worker = new VMWorkerImplementation(
+              workerCode.toString(),
+              bootTunnel,
+              _defaultEnclosure,
+              this.name,
+              workerCtor,
+            ).listen(
+              (data: Record<string, unknown>): void => {
+                this.#messageHandler(data);
+              },
+              /* istanbul ignore next */ // TODO: find a way to test this
+              (error: Error): void => {
+                this.#errorHandler(error);
+              },
+            );
+          } catch (e) {
+            this.#rejectTunnel(bootTunnel, _makeError(e));
+          }
         } catch (e) {
-          this.#rejectTunnel(bootTunnel, _makeError(e));
+          const error = _makeError(e);
+          this.#castEvent('start:error', error);
+          reject(error);
         }
-      } catch (e) {
-        const error = _makeError(e);
-        this.#castEvent('start:error', error);
-        reject(error);
-      }
-    });
+      },
+    );
   }
 
   /**
