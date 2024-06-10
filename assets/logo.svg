@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="232.833mm" height="84.6667mm"
+ viewBox="0 0 660 240"
+ xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  version="1.2" baseProfile="tiny">
+<title>Qt SVG Document</title>
+<desc>Generated with Qt</desc>
+<defs>
+</defs>
+<g fill="none" stroke="black" stroke-width="1" fill-rule="evenodd" stroke-linecap="square" stroke-linejoin="bevel" >
+
+<g fill="#ffffff" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
+>
+<rect x="0" y="0" width="660" height="240"/>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M438,235 L387,162 L387,235 L438,235"/>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M86,5 L138,78 L138,5 L86,5"/>
+</g>
+
+<g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
+font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M13,5 L51,5 L166,168 L166,5 L205,5 L320,168 L320,5 L358,5 L473,168 L473,5 L511,5 L569,5 L571,5 L573,5 L575,5 L577,5 L579,6 L581,6 L583,6 L585,7 L587,7 L589,8 L591,8 L592,9 L594,9 L596,10 L598,11 L600,12 L602,12 L604,13 L605,14 L607,15 L609,16 L610,17 L612,18 L614,20 L615,21 L617,22 L618,23 L620,25 L621,26 L623,27 L624,29 L626,30 L627,32 L628,33 L630,35 L631,36 L632,38 L633,40 L634,41 L635,43 L636,45 L637,47 L638,48 L639,50 L640,52 L640,54 L641,56 L642,58 L642,60 L643,61 L643,63 L644,65 L644,67 L644,69 L645,71 L645,73 L645,75 L645,77 L645,79 L645,81 L646,82 L646,158 L645,160 L645,162 L645,164 L645,166 L645,168 L645,170 L644,172 L644,174 L643,176 L643,178 L642,180 L642,182 L641,184 L640,186 L640,188 L639,189 L638,191 L637,193 L636,195 L635,197 L634,198 L633,200 L632,202 L631,203 L630,205 L629,206 L627,208 L626,209 L625,211 L623,212 L622,214 L620,215 L619,216 L617,218 L616,219 L614,220 L612,221 L611,222 L609,224 L607,225 L606,226 L604,227 L602,227 L600,228 L598,229 L597,230 L595,230 L593,231 L591,232 L589,232 L587,233 L585,233 L583,234 L581,234 L579,234 L577,235 L575,235 L573,235 L571,235 L569,235 L550,235 L550,197 L569,197 L571,197 L573,196 L575,196 L577,196 L579,195 L581,195 L583,194 L584,193 L586,193 L588,192 L590,191 L591,189 L593,188 L594,187 L596,186 L597,184 L599,183 L600,181 L601,179 L602,178 L603,176 L604,174 L605,172 L605,170 L606,168 L606,166 L607,165 L607,163 L607,161 L607,159 L607,158 L607,82 L607,80 L607,78 L607,76 L606,74 L606,72 L605,70 L605,68 L604,66 L603,64 L602,63 L601,61 L600,59 L599,58 L597,56 L596,55 L595,53 L593,52 L591,51 L590,50 L588,49 L586,48 L585,47 L583,46 L581,45 L579,45 L577,44 L575,44 L573,44 L571,43 L569,43 L511,43 L511,235 L473,235 L358,72 L358,235 L320,235 L205,72 L205,235 L166,235 L51,72 L51,235 L13,235 L13,5"/>
+</g>
+
+<g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" transform="matrix(1,0,0,1,0,0)"
+font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
+>
+<polyline fill="none" vector-effect="non-scaling-stroke" points="13,235 13,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="13,5 51,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="51,235 13,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="166,5 205,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="205,235 166,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="51,72 166,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="166,168 51,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="166,168 166,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="51,72 51,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="320,5 358,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="358,235 320,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="205,72 320,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="320,168 205,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="320,168 320,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="473,5 511,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="511,235 473,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="358,72 473,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="473,168 358,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="473,168 473,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="205,72 205,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="358,72 358,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="511,43 511,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="387,235 438,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="387,162 387,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="387,162 438,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="138,5 86,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="138,78 138,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="138,78 86,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="607,158 607,82 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="646,82 646,158 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="607,82 607,80 607,78 607,76 606,74 606,72 605,70 605,68 604,66 603,64 602,63 601,61 600,59 599,58 597,56 596,55 595,53 593,52 591,51 590,50 588,49 586,48 585,47 583,46 581,45 579,45 577,44 575,44 573,44 571,43 569,43 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="646,82 645,80 645,78 645,76 645,74 645,72 645,70 644,68 644,66 643,64 643,62 642,60 642,58 641,56 640,54 640,52 639,51 638,49 637,47 636,45 635,43 634,42 633,40 632,38 631,37 630,35 629,34 627,32 626,31 625,29 623,28 622,26 620,25 619,24 617,22 616,21 614,20 612,19 611,18 609,16 607,15 606,14 604,13 602,13 600,12 598,11 597,10 595,10 593,9 591,8 589,8 587,7 585,7 583,6 581,6 579,6 577,5 575,5 573,5 571,5 569,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="569,197 571,197 573,196 575,196 577,196 579,195 581,195 583,194 584,193 586,193 588,192 590,191 591,189 593,188 594,187 596,186 597,184 599,183 600,181 601,179 602,178 603,176 604,174 605,172 605,170 606,168 606,166 607,165 607,163 607,161 607,159 607,158 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="569,235 571,235 573,235 575,235 577,235 579,234 581,234 583,234 585,233 587,233 589,232 591,232 592,231 594,231 596,230 598,229 600,228 602,228 604,227 605,226 607,225 609,224 610,223 612,222 614,220 615,219 617,218 618,217 620,215 621,214 623,213 624,211 626,210 627,208 628,207 630,205 631,204 632,202 633,200 634,199 635,197 636,195 637,193 638,192 639,190 640,188 640,186 641,184 642,182 642,180 643,179 643,177 644,175 644,173 644,171 645,169 645,167 645,165 645,163 645,161 645,159 646,158 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="550,197 550,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="511,43 569,43 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="569,5 511,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="569,197 550,197 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="550,235 569,235 " />
+</g>
+</g>
+</svg>
