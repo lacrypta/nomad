@@ -561,6 +561,12 @@ export const _eventPrefix: Readonly<string> = 'nomadvm';
 export const _namesPrefix: Readonly<string> = 'nomadvm';
 
 /**
+ * Default enclosure name to use for new VMs.
+ *
+ */
+export const _defaultEnclosure: string = 'root';
+
+/**
  * Global mapping of VM names to VM {@link !WeakRef}s.
  *
  */
@@ -2157,7 +2163,13 @@ export class VMImplementation implements VM {
             this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
           }, theTimeout);
 
-          this.#worker = new VMWorkerImplementation(workerCode.toString(), bootTunnel, this.name, workerCtor).listen(
+          this.#worker = new VMWorkerImplementation(
+            workerCode.toString(),
+            bootTunnel,
+            _defaultEnclosure,
+            this.name,
+            workerCtor,
+          ).listen(
             (data: Record<string, unknown>): void => {
               this.#messageHandler(data);
             },

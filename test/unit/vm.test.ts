@@ -117,7 +117,7 @@ describe('vm', (): void => {
     const makeWorkerCtor: (body: (...args: AnyArgs) => void) => WorkerConstructor =
       (body: (...args: AnyArgs) => void): WorkerConstructor =>
       (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-        new WebWorker(stringToDataUri(_wrapCode(body.toString().toString(), 0)), options);
+        new WebWorker(stringToDataUri(_wrapCode(body.toString().toString(), 0, 'root')), options);
 
     const errorWorkerCtor: WorkerConstructor = (): Worker => {
       throw new Error('something');
@@ -129,6 +129,7 @@ describe('vm', (): void => {
       (
         _this: object,
         _bootTunnel: number,
+        _defaultEnclosureName: string,
         _listen: (data: object) => void,
         _shout: (message: object) => void,
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -332,6 +333,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -369,6 +371,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -406,6 +409,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -452,6 +456,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -489,6 +494,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -557,6 +563,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -641,6 +648,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -674,6 +682,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -711,6 +720,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -748,6 +758,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -789,6 +800,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -830,6 +842,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -873,6 +886,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -916,6 +930,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -962,6 +977,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1061,6 +1077,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1201,6 +1218,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1402,6 +1420,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1477,6 +1496,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1527,6 +1547,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1602,6 +1623,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1650,6 +1672,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1727,6 +1750,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1776,6 +1800,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1850,6 +1875,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1884,6 +1910,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -1959,6 +1986,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2006,6 +2034,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2054,6 +2083,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2088,6 +2118,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2176,6 +2207,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2221,6 +2253,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2269,6 +2302,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2302,6 +2336,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2350,6 +2385,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2383,6 +2419,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2431,6 +2468,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2464,6 +2502,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2499,6 +2538,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2533,6 +2573,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2606,6 +2647,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2652,6 +2694,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2725,6 +2768,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2771,6 +2815,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2859,6 +2904,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2905,6 +2951,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -2978,6 +3025,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3024,6 +3072,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3128,6 +3177,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3172,6 +3222,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3226,6 +3277,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3282,6 +3334,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {
@@ -3376,6 +3429,7 @@ describe('vm', (): void => {
             (
               _this: object,
               _bootTunnel: number,
+              _defaultEnclosureName: string,
               _listen: (data: object) => void,
               _shout: (message: object) => void,
             ) => {

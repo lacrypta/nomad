@@ -329,12 +329,13 @@
  *
  * @param {Record<string, any>} _this - The `this` value to use (injected by the caller).
  * @param {number} _bootTunnel - The tunnel index to use to signal when boot-up is complete.
+ * @param {string} _defaultEnclosureName - The name of the default enclosure created.
  * @param {Listener} _listen - The `listener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
  * @param {Scheduler} _schedule - The `schedule` value to use (injected by the caller).
  * @returns {void}
  */
-const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
+const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout, _schedule) => {
   'use strict';
 
   /**
@@ -359,13 +360,6 @@ const workerRunner = (_this, _bootTunnel, _listen, _shout, _schedule) => {
    * @type {number}
    */
   const ARGUMENTS_LIMIT = 1024;
-
-  /**
-   * Default enclosure name to use for initial enclosure.
-   *
-   * @type {string}
-   */
-  const DEFAULT_NAMESPACE_NAME = 'root';
 
   /**
    * Name to use for the event caster parameter.
@@ -3207,7 +3201,7 @@ return null;`,
     // -- Create Default Enclosure ----------------------------------------------------------------
     // --------------------------------------------------------------------------------------------
 
-    addEnclosure(DEFAULT_NAMESPACE_NAME);
+    addEnclosure(_defaultEnclosureName);
 
     // --------------------------------------------------------------------------------------------
     // -- Worker Event Listeners ------------------------------------------------------------------

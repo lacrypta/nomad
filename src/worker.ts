@@ -89,11 +89,13 @@ export interface VMWorker {
  *
  * @param code - The code to wrap.
  * @param tunnel - The boot tunnel to use.
+ * @param defaultEnclosure - The default enclosure name to use.
  * @returns The wrapped code.
  */
-export const _wrapCode: (code: string, tunnel: number) => string = (
+export const _wrapCode: (code: string, tunnel: number, defaultEnclosure: string) => string = (
   code: string,
   tunnel: number,
+  defaultEnclosure: string,
 ): string => `"use strict";
 addEventListener("unhandledrejection", (event) => {
   if (undefined !== event.preventDefault) {
@@ -110,6 +112,7 @@ addEventListener("rejectionhandled", (event) => {
 (${code})(
   this,
   ${tunnel.toString()},
+  "${defaultEnclosure}",
   ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
     (listener) => {
       _addEventListener('message', ({ data }) => {
@@ -171,16 +174,20 @@ export class VMWorkerImplementation implements VMWorker {
    *
    * @param code - The code the {@link !Worker} will, eventually, run.
    * @param tunnel - Tunnel id tell the {@link !Worker} to announce boot-up on.
+   * @param defaultEnclosure - The default enclosure name to use.
    * @param name - The name to give to the {@link !Worker}.
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to one constructing a {@link !Worker} if not given).
    */
   constructor(
     code: string,
     tunnel: number,
+    defaultEnclosure: string,
     name: string,
     workerCtor?: (scriptURL: URL | string, options?: WorkerOptions) => Worker,
   ) {
-    this.#blobURL = URL.createObjectURL(new Blob([_wrapCode(code, tunnel)], { type: 'application/javascript' }));
+    this.#blobURL = URL.createObjectURL(
+      new Blob([_wrapCode(code, tunnel, defaultEnclosure)], { type: 'application/javascript' }),
+    );
 
     this.#worker = (
       workerCtor ?? ((scriptURL: URL | string, options?: WorkerOptions): Worker => new Worker(scriptURL, options))

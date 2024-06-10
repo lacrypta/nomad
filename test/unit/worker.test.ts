@@ -32,7 +32,7 @@ import { blobUriToText, stringToDataUri } from '../helpers';
 describe('worker', (): void => {
   describe('_wrapCode()', (): void => {
     test('wraps the code appropriately', (): void => {
-      expect(_wrapCode('THE CODE GOES HERE', 123456)).toStrictEqual(
+      expect(_wrapCode('THE CODE GOES HERE', 123456, 'root')).toStrictEqual(
         `"use strict";
 addEventListener("unhandledrejection", (event) => {
   if (undefined !== event.preventDefault) {
@@ -49,6 +49,7 @@ addEventListener("rejectionhandled", (event) => {
 (THE CODE GOES HERE)(
   this,
   123456,
+  "root",
   ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
     (listener) => {
       _addEventListener('message', ({ data }) => {
@@ -95,16 +96,16 @@ addEventListener("rejectionhandled", (event) => {
     test('should build a VMWorkerImplementation', async (): Promise<void> => {
       const workerCtor = jest.fn();
 
-      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME GOES HERE', workerCtor)).toBeInstanceOf(
-        VMWorkerImplementation,
-      );
+      expect(
+        new VMWorkerImplementation('THE CODE GOES HERE', 0, 'root', 'THE NAME GOES HERE', workerCtor),
+      ).toBeInstanceOf(VMWorkerImplementation);
 
       const [scriptUrl, options]: [URL | string, WorkerOptions | undefined] = workerCtor.mock.calls[0] as [
         URL | string,
         WorkerOptions | undefined,
       ];
 
-      expect(await blobUriToText(scriptUrl)).toStrictEqual(_wrapCode('THE CODE GOES HERE', 0));
+      expect(await blobUriToText(scriptUrl)).toStrictEqual(_wrapCode('THE CODE GOES HERE', 0, 'root'));
 
       expect(options).toStrictEqual({ credentials: 'omit', name: 'THE NAME GOES HERE', type: 'classic' });
     });
@@ -113,10 +114,10 @@ addEventListener("rejectionhandled", (event) => {
       const theWorkers: Worker[] = [];
       try {
         expect(
-          new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
+          new VMWorkerImplementation('', 0, 'root', 'THE NAME GOES HERE', (): Worker => {
             return theWorkers[
               theWorkers.push(
-                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
+                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
                   credentials: 'omit',
                   name: 'THE NAME GOES HERE',
                   type: 'classic',
@@ -135,7 +136,7 @@ addEventListener("rejectionhandled", (event) => {
     test('should build with default constructor', (): void => {
       const workerCtor = jest.fn();
       global.Worker = workerCtor;
-      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'THE NAME GOES HERE')).toBeInstanceOf(
+      expect(new VMWorkerImplementation('THE CODE GOES HERE', 0, 'root', 'THE NAME GOES HERE')).toBeInstanceOf(
         VMWorkerImplementation,
       );
       expect(workerCtor).toHaveBeenCalledTimes(1);
@@ -150,17 +151,23 @@ addEventListener("rejectionhandled", (event) => {
     test('should handle killing twice', (): void => {
       const theWorkers: Worker[] = [];
       try {
-        const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
-          return theWorkers[
-            theWorkers.push(
-              new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
-                credentials: 'omit',
-                name: 'THE NAME GOES HERE',
-                type: 'classic',
-              }),
-            ) - 1
-          ] as Worker;
-        });
+        const worker: VMWorkerImplementation = new VMWorkerImplementation(
+          '',
+          0,
+          'root',
+          'THE NAME GOES HERE',
+          (): Worker => {
+            return theWorkers[
+              theWorkers.push(
+                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
+                  credentials: 'omit',
+                  name: 'THE NAME GOES HERE',
+                  type: 'classic',
+                }),
+              ) - 1
+            ] as Worker;
+          },
+        );
 
         expect(worker.kill().kill()).toStrictEqual(worker);
       } finally {
@@ -173,17 +180,23 @@ addEventListener("rejectionhandled", (event) => {
     test('should throw if listening after killing', (): void => {
       const theWorkers: Worker[] = [];
       try {
-        const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
-          return theWorkers[
-            theWorkers.push(
-              new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0)), {
-                credentials: 'omit',
-                name: 'THE NAME GOES HERE',
-                type: 'classic',
-              }),
-            ) - 1
-          ] as Worker;
-        });
+        const worker: VMWorkerImplementation = new VMWorkerImplementation(
+          '',
+          0,
+          'root',
+          'THE NAME GOES HERE',
+          (): Worker => {
+            return theWorkers[
+              theWorkers.push(
+                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
+                  credentials: 'omit',
+                  name: 'THE NAME GOES HERE',
+                  type: 'classic',
+                }),
+              ) - 1
+            ] as Worker;
+          },
+        );
 
         worker.kill();
         expect(() => {
@@ -205,29 +218,41 @@ addEventListener("rejectionhandled", (event) => {
         const received: Error[] = [];
 
         await new Promise<void>((done: () => void): void => {
-          const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
-            return theWorkers[
-              theWorkers.push(
-                new WebWorker(
-                  stringToDataUri(
-                    _wrapCode(
-                      ((_this: unknown, _tunnel: number, addListener: (handler: (data: object) => void) => void) => {
-                        addListener((): void => {
-                          postMessage({});
-                        });
-                      }).toString(),
-                      0,
+          const worker: VMWorkerImplementation = new VMWorkerImplementation(
+            '',
+            0,
+            'root',
+            'THE NAME GOES HERE',
+            (): Worker => {
+              return theWorkers[
+                theWorkers.push(
+                  new WebWorker(
+                    stringToDataUri(
+                      _wrapCode(
+                        ((
+                          _this: unknown,
+                          _tunnel: number,
+                          _defaultEnclosure: string,
+                          addListener: (handler: (data: object) => void) => void,
+                        ) => {
+                          addListener((): void => {
+                            postMessage({});
+                          });
+                        }).toString(),
+                        0,
+                        'root',
+                      ),
                     ),
+                    {
+                      credentials: 'omit',
+                      name: 'THE NAME GOES HERE',
+                      type: 'classic',
+                    },
                   ),
-                  {
-                    credentials: 'omit',
-                    name: 'THE NAME GOES HERE',
-                    type: 'classic',
-                  },
-                ),
-              ) - 1
-            ] as Worker;
-          });
+                ) - 1
+              ] as Worker;
+            },
+          );
 
           worker.listen(
             (data: Record<string, unknown>): void => {
@@ -255,37 +280,45 @@ addEventListener("rejectionhandled", (event) => {
         const received: Record<string, unknown>[] = [];
 
         await new Promise<void>((done: () => void): void => {
-          const worker: VMWorkerImplementation = new VMWorkerImplementation('', 0, 'THE NAME GOES HERE', (): Worker => {
-            return theWorkers[
-              theWorkers.push(
-                new WebWorker(
-                  stringToDataUri(
-                    _wrapCode(
-                      ((
-                        _this: unknown,
-                        _tunnel: number,
-                        addListener: (handler: (data: object) => void) => void,
-                        shout: (data: object) => void,
-                        schedule: (callback: () => void) => void,
-                      ) => {
-                        addListener((data: object): void => {
-                          schedule(() => {
-                            shout(data);
+          const worker: VMWorkerImplementation = new VMWorkerImplementation(
+            '',
+            0,
+            'root',
+            'THE NAME GOES HERE',
+            (): Worker => {
+              return theWorkers[
+                theWorkers.push(
+                  new WebWorker(
+                    stringToDataUri(
+                      _wrapCode(
+                        ((
+                          _this: unknown,
+                          _tunnel: number,
+                          _defaultEnclosure: string,
+                          addListener: (handler: (data: object) => void) => void,
+                          shout: (data: object) => void,
+                          schedule: (callback: () => void) => void,
+                        ) => {
+                          addListener((data: object): void => {
+                            schedule(() => {
+                              shout(data);
+                            });
                           });
-                        });
-                      }).toString(),
-                      0,
+                        }).toString(),
+                        0,
+                        'root',
+                      ),
                     ),
+                    {
+                      credentials: 'omit',
+                      name: 'THE NAME GOES HERE',
+                      type: 'classic',
+                    },
                   ),
-                  {
-                    credentials: 'omit',
-                    name: 'THE NAME GOES HERE',
-                    type: 'classic',
-                  },
-                ),
-              ) - 1
-            ] as Worker;
-          });
+                ) - 1
+              ] as Worker;
+            },
+          );
 
           worker.listen(
             (data: Record<string, unknown>): void => {
