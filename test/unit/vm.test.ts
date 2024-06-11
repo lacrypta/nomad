@@ -140,8 +140,13 @@ describe('vm', (): void => {
           switch (name) {
             case 'ping':
               _shout({ name: 'pong' });
+              break;
             case 'resolve':
+              // NOP
+              break;
             case 'reject':
+              // NOP
+              break;
             case 'emit':
               // NOP
               break;
@@ -1211,7 +1216,22 @@ describe('vm', (): void => {
           castEvents.push([name, ...rest]);
         });
 
-        await vm.start(dummyWorkerCtor, undefined);
+        await vm.start(
+          makeWorkerCtor(
+            (
+              _bootTunnel: number,
+              _defaultEnclosureName: string,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+          undefined,
+        );
+
         vm.startPinger(1, 1);
 
         await delay(15);
