@@ -117,7 +117,10 @@ describe('vm', (): void => {
     const makeWorkerCtor: (body: (...args: AnyArgs) => void) => WorkerConstructor =
       (body: (...args: AnyArgs) => void): WorkerConstructor =>
       (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
-        new WebWorker(stringToDataUri(_wrapCode(body.toString().toString(), 0, 'root')), options);
+        new WebWorker(
+          stringToDataUri(_wrapCode(body.toString().toString(), 0, 'root').replaceAll('ErrorEvent', 'Event')),
+          options,
+        );
 
     const errorWorkerCtor: WorkerConstructor = (): Worker => {
       throw new Error('something');
@@ -132,8 +135,6 @@ describe('vm', (): void => {
         _defaultEnclosureName: string,
         _listen: (data: object) => void,
         _shout: (message: object) => void,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _schedule: (callback: () => void) => void,
       ) => {
         setTimeout(() => {
           _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });

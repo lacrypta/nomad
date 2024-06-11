@@ -50,43 +50,40 @@ addEventListener("rejectionhandled", (event) => {
   this,
   123456,
   "root",
-  ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
+  ((_addEventListener, _JSON_parse, _ErrorEvent, _dispatchEvent) =>
     (listener) => {
       _addEventListener('message', ({ data }) => {
         try {
           listener(_JSON_parse(data));
         } catch (e) {
-          const event = new _Event("error");
-          event.reason = "string" === typeof e.message ? e.message : "unknown error";
-          _dispatchEvent(event);
+          _dispatchEvent(
+            new _ErrorEvent('error', {
+              message:
+                'object' === typeof e && null !== e && 'message' in e && 'string' === typeof e.message
+                  ? e.message
+                  : 'unknown error',
+            }),
+          );
         }
       })
     }
-  )(addEventListener, JSON.parse, Event, dispatchEvent),
-  ((_postMessage, _JSON_stringify, _Event, _dispatchEvent) =>
+  )(addEventListener, JSON.parse, ErrorEvent, dispatchEvent),
+  ((_postMessage, _JSON_stringify, _ErrorEvent, _dispatchEvent) =>
     (message) => {
       try {
         _postMessage(_JSON_stringify(message));
       } catch (e) {
-        const event = new _Event("error");
-        event.reason = "string" === typeof e.message ? e.message : "unknown error";
-        _dispatchEvent(event);
+        _dispatchEvent(
+          new _ErrorEvent('error', {
+            message:
+              'object' === typeof e && null !== e && 'message' in e && 'string' === typeof e.message
+                ? e.message
+                : 'unknown error',
+          }),
+        );
       }
     }
-  )(postMessage, JSON.stringify, Event, dispatchEvent),
-  ((_setTimeout, _Event, _dispatchEvent) =>
-    (callback) => {
-      _setTimeout(() => {
-        try {
-          callback();
-        } catch (e) {
-          const event = new _Event("error");
-          event.reason = "string" === typeof e.message ? e.message : "unknown error";
-          _dispatchEvent(event);
-        }
-      }, 0);
-    }
-  )(setTimeout, Event, dispatchEvent),
+  )(postMessage, JSON.stringify, ErrorEvent, dispatchEvent),
 );`,
       );
     });
@@ -117,11 +114,14 @@ addEventListener("rejectionhandled", (event) => {
           new VMWorkerImplementation('', 0, 'root', 'THE NAME GOES HERE', (): Worker => {
             return theWorkers[
               theWorkers.push(
-                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
-                  credentials: 'omit',
-                  name: 'THE NAME GOES HERE',
-                  type: 'classic',
-                }),
+                new WebWorker(
+                  stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root').replaceAll('ErrorEvent', 'Event')),
+                  {
+                    credentials: 'omit',
+                    name: 'THE NAME GOES HERE',
+                    type: 'classic',
+                  },
+                ),
               ) - 1
             ] as Worker;
           }),
@@ -159,11 +159,14 @@ addEventListener("rejectionhandled", (event) => {
           (): Worker => {
             return theWorkers[
               theWorkers.push(
-                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
-                  credentials: 'omit',
-                  name: 'THE NAME GOES HERE',
-                  type: 'classic',
-                }),
+                new WebWorker(
+                  stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root').replaceAll('ErrorEvent', 'Event')),
+                  {
+                    credentials: 'omit',
+                    name: 'THE NAME GOES HERE',
+                    type: 'classic',
+                  },
+                ),
               ) - 1
             ] as Worker;
           },
@@ -188,11 +191,14 @@ addEventListener("rejectionhandled", (event) => {
           (): Worker => {
             return theWorkers[
               theWorkers.push(
-                new WebWorker(stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root')), {
-                  credentials: 'omit',
-                  name: 'THE NAME GOES HERE',
-                  type: 'classic',
-                }),
+                new WebWorker(
+                  stringToDataUri(_wrapCode((() => {}).toString(), 0, 'root').replaceAll('ErrorEvent', 'Event')),
+                  {
+                    credentials: 'omit',
+                    name: 'THE NAME GOES HERE',
+                    type: 'classic',
+                  },
+                ),
               ) - 1
             ] as Worker;
           },
@@ -241,7 +247,7 @@ addEventListener("rejectionhandled", (event) => {
                         }).toString(),
                         0,
                         'root',
-                      ),
+                      ).replaceAll('ErrorEvent', 'Event'),
                     ),
                     {
                       credentials: 'omit',
@@ -274,7 +280,7 @@ addEventListener("rejectionhandled", (event) => {
       }
     });
 
-    test('should shout, listen, and schedule', async (): Promise<void> => {
+    test('should shout and listen', async (): Promise<void> => {
       const theWorkers: Worker[] = [];
       try {
         const received: Record<string, unknown>[] = [];
@@ -297,17 +303,14 @@ addEventListener("rejectionhandled", (event) => {
                           _defaultEnclosure: string,
                           addListener: (handler: (data: object) => void) => void,
                           shout: (data: object) => void,
-                          schedule: (callback: () => void) => void,
                         ) => {
                           addListener((data: object): void => {
-                            schedule(() => {
-                              shout(data);
-                            });
+                            shout(data);
                           });
                         }).toString(),
                         0,
                         'root',
-                      ),
+                      ).replaceAll('ErrorEvent', 'Event'),
                     ),
                     {
                       credentials: 'omit',

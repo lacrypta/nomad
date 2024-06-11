@@ -113,43 +113,40 @@ addEventListener("rejectionhandled", (event) => {
   this,
   ${tunnel.toString()},
   "${defaultEnclosure}",
-  ((_addEventListener, _JSON_parse, _Event, _dispatchEvent) =>
+  ((_addEventListener, _JSON_parse, _ErrorEvent, _dispatchEvent) =>
     (listener) => {
       _addEventListener('message', ({ data }) => {
         try {
           listener(_JSON_parse(data));
         } catch (e) {
-          const event = new _Event("error");
-          event.reason = "string" === typeof e.message ? e.message : "unknown error";
-          _dispatchEvent(event);
+          _dispatchEvent(
+            new _ErrorEvent('error', {
+              message:
+                'object' === typeof e && null !== e && 'message' in e && 'string' === typeof e.message
+                  ? e.message
+                  : 'unknown error',
+            }),
+          );
         }
       })
     }
-  )(addEventListener, JSON.parse, Event, dispatchEvent),
-  ((_postMessage, _JSON_stringify, _Event, _dispatchEvent) =>
+  )(addEventListener, JSON.parse, ErrorEvent, dispatchEvent),
+  ((_postMessage, _JSON_stringify, _ErrorEvent, _dispatchEvent) =>
     (message) => {
       try {
         _postMessage(_JSON_stringify(message));
       } catch (e) {
-        const event = new _Event("error");
-        event.reason = "string" === typeof e.message ? e.message : "unknown error";
-        _dispatchEvent(event);
+        _dispatchEvent(
+          new _ErrorEvent('error', {
+            message:
+              'object' === typeof e && null !== e && 'message' in e && 'string' === typeof e.message
+                ? e.message
+                : 'unknown error',
+          }),
+        );
       }
     }
-  )(postMessage, JSON.stringify, Event, dispatchEvent),
-  ((_setTimeout, _Event, _dispatchEvent) =>
-    (callback) => {
-      _setTimeout(() => {
-        try {
-          callback();
-        } catch (e) {
-          const event = new _Event("error");
-          event.reason = "string" === typeof e.message ? e.message : "unknown error";
-          _dispatchEvent(event);
-        }
-      }, 0);
-    }
-  )(setTimeout, Event, dispatchEvent),
+  )(postMessage, JSON.stringify, ErrorEvent, dispatchEvent),
 );`;
 
 /**

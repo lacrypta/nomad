@@ -224,20 +224,6 @@
  */
 
 /**
- * Callback used for {@link Scheduler}s, simply scheduled for execution within this event loop iteration.
- *
- * @callback SchedulerCallback
- * @returns {void}
- */
-
-/**
- * The type of a scheduler, that will schedule the given callback for execution within this event loop iteration.
- *
- * @callback Scheduler
- * @param {SchedulerCallback} callback - The callback to schedule for execution.
- */
-
-/**
  * @typedef TunnelDescriptor
  * @type {object}
  * @property {Function} resolve - Resolution callback
@@ -332,10 +318,9 @@
  * @param {string} _defaultEnclosureName - The name of the default enclosure created.
  * @param {Listener} _listen - The `listener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
- * @param {Scheduler} _schedule - The `schedule` value to use (injected by the caller).
  * @returns {void}
  */
-const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout, _schedule) => {
+const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   'use strict';
 
   /**
@@ -390,10 +375,13 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
 
   const _eval = eval;
   const _Date_now = Date.now;
+  const _setTimeout = setTimeout;
+  const _dispatchEvent = dispatchEvent;
 
   const _Array = Array;
   const _Date = Date;
   const _Error = Error;
+  const _ErrorEvent = ErrorEvent;
   const _Function = Function;
   const _Map = Map;
   const _Object = Object;
@@ -1969,7 +1957,22 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
       }
     });
 
-    _Array.from(callbacks).forEach((callback) => _schedule(callback.call(undefined, event, ...args)));
+    _Array.from(callbacks).forEach((callback) => {
+      _setTimeout(() => {
+        try {
+          callback.call(undefined, event, ...args);
+        } catch (e) {
+          _dispatchEvent(
+            new _ErrorEvent('error', {
+              message:
+                'object' === typeof e && null !== e && 'message' in e && 'string' === typeof e.message
+                  ? e.message
+                  : 'unknown error',
+            }),
+          );
+        }
+      }, 0);
+    });
   };
 
   /**
