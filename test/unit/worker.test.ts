@@ -236,7 +236,7 @@ addEventListener("rejectionhandled", (event) => {
                       _wrapCode(
                         ((
                           _tunnel: number,
-                          _defaultEnclosure: string,
+                          _defaultEnclosureName: string,
                           addListener: (handler: (data: object) => void) => void,
                         ) => {
                           addListener((): void => {
@@ -297,7 +297,7 @@ addEventListener("rejectionhandled", (event) => {
                       _wrapCode(
                         ((
                           _tunnel: number,
-                          _defaultEnclosure: string,
+                          _defaultEnclosureName: string,
                           addListener: (handler: (data: object) => void) => void,
                           shout: (data: object) => void,
                         ) => {

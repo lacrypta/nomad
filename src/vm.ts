@@ -252,9 +252,10 @@ export interface VM extends EventCaster {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
+   * @param rootEnclosure - Name of the root {@link Enclosure} to create.
    * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper for the default enclosure if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors occur.
    */
-  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<Enclosure>;
+  start(workerCtor?: WorkerConstructor, timeout?: number, rootEnclosure?: string): Promise<Enclosure>;
 
   /**
    * Start (or re-start) the pinger interval.
@@ -546,7 +547,7 @@ export const _namesPrefix: Readonly<string> = 'nomadvm';
  * Default enclosure name to use for new VMs.
  *
  */
-export const _defaultEnclosure: string = 'root';
+export const _defaultEnclosureName: string = 'root';
 
 /**
  * Global mapping of VM names to VM {@link !WeakRef}s.
@@ -2105,12 +2106,14 @@ export class VMImplementation implements VM {
    *
    * @param workerCtor - The {@link Worker} constructor to use in order to build the worker instance (will default to the {@link !Worker} one if not given).
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
+   * @param rootEnclosure - Name of the root {@link Enclosure} to create.
    * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper for the default enclosure if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors occur.
    */
-  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<EnclosureImplementation> {
+  start(workerCtor?: WorkerConstructor, timeout?: number, rootEnclosure?: string): Promise<EnclosureImplementation> {
     return new Promise<EnclosureImplementation>(
       (resolve: Resolution<EnclosureImplementation>, reject: Rejection): void => {
         const theTimeout: number = validateTimeDelta(timeout ?? _defaultBootTimeout);
+        const theRootEnclosure: string = validateEnclosure(rootEnclosure ?? _defaultEnclosureName);
 
         try {
           this.#castEvent('start');
@@ -2123,9 +2126,9 @@ export class VMImplementation implements VM {
             clearTimeout(this.#bootTimeout);
             this.#bootTimeout = undefined;
             this.#state = 'running';
-            this.#castEvent('start:ok', _defaultEnclosure, internalBootTime, Date.now() - externalBootTime);
+            this.#castEvent('start:ok', theRootEnclosure, internalBootTime, Date.now() - externalBootTime);
 
-            resolve(new EnclosureImplementation(this, _defaultEnclosure));
+            resolve(new EnclosureImplementation(this, theRootEnclosure));
           };
           const bootReject: Rejection = (error: Error): void => {
             this.#castEvent('start:error', error);
@@ -2146,11 +2149,10 @@ export class VMImplementation implements VM {
               this.#rejectTunnel(bootTunnel, new Error('boot timed out'));
             }, theTimeout);
 
-            // TODO: TAKE _defaultEnclosure AS PARAMETER
             this.#worker = new VMWorkerImplementation(
               workerCode.toString(),
               bootTunnel,
-              _defaultEnclosure,
+              theRootEnclosure,
               this.name,
               workerCtor,
             ).listen(

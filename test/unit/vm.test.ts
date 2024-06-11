@@ -179,6 +179,12 @@ describe('vm', (): void => {
         );
       });
 
+      test('should reject for invalid root enclosure name', async (): Promise<void> => {
+        await expect(create().start(undefined, undefined, '_something')).rejects.toStrictEqual(
+          new Error("identifier must adhere to '/^[a-z]\\w*$/i'"),
+        );
+      });
+
       test('should reject if worker constructor fails', async (): Promise<void> => {
         await expect(create().start(errorWorkerCtor)).rejects.toStrictEqual(new Error('something'));
       });
