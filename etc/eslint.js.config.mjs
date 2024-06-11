@@ -36,7 +36,7 @@ export default [
     languageOptions: {
       sourceType: 'module',
       globals: {
-        ...globals.worker,
+        ...globals.browser,
         ...globals.commonjs,
       },
     },
