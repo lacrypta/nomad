@@ -313,14 +313,13 @@
 /**
  * The code the {@link !Worker} will end up executing.
  *
- * @param {Record<string, any>} _this - The `this` value to use (injected by the caller).
  * @param {number} _bootTunnel - The tunnel index to use to signal when boot-up is complete.
  * @param {string} _defaultEnclosureName - The name of the default enclosure created.
  * @param {Listener} _listen - The `listener` value to use (injected by the caller).
  * @param {Shouter} _shout - The `shout` value to use (injected by the caller).
  * @returns {void}
  */
-const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout) => {
+const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   'use strict';
 
   /**
@@ -354,22 +353,6 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
   const EVENT_CASTER_NAME = '__events__';
 
   // ----------------------------------------------------------------------------------------------
-  // -- Expose Standard Classes -------------------------------------------------------------------
-  // ----------------------------------------------------------------------------------------------
-
-  _this.AsyncFunction = async function () {}.constructor;
-  _this.GeneratorFunction = function* () {}.constructor;
-  _this.AsyncGeneratorFunction = async function* () {}.constructor;
-
-  // _this.ArrayIteratorPrototype = Object.getPrototypeOf(new Array()[Symbol.iterator]());
-  // _this.StringIteratorPrototype = Object.getPrototypeOf(new String()[Symbol.iterator]());
-  // _this.MapIteratorPrototype = Object.getPrototypeOf(new Map()[Symbol.iterator]());
-  // _this.SetIteratorPrototype = Object.getPrototypeOf(new Set()[Symbol.iterator]());
-  // _this.RegExpIteratorPrototype = Object.getPrototypeOf(new RegExp()[Symbol.matchAll]());
-  // _this.GeneratorIteratorPrototype = Object.getPrototypeOf(_this.GeneratorFunction()());
-  // _this.AsyncGeneratorIteratorPrototype = Object.getPrototypeOf(_this.AsyncGeneratorFunction()());
-
-  // ----------------------------------------------------------------------------------------------
   // -- Back-Up global entities -------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
@@ -396,6 +379,22 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
   const _Math = Math;
 
   // ----------------------------------------------------------------------------------------------
+  // -- Expose Standard Classes -------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------
+
+  _Object.defineProperty(globalThis, 'AsyncFunction', { value: async function () {}.constructor });
+  _Object.defineProperty(globalThis, 'GeneratorFunction', { value: function* () {}.constructor });
+  _Object.defineProperty(globalThis, 'AsyncGeneratorFunction', { value: async function* () {}.constructor });
+
+  // _Object.defineProperty(globalThis, 'ArrayIteratorPrototype', { value: _Object.getPrototypeOf(new Array()[Symbol.iterator]()) });
+  // _Object.defineProperty(globalThis, 'StringIteratorPrototype', { value: _Object.getPrototypeOf(new String()[Symbol.iterator]()) });
+  // _Object.defineProperty(globalThis, 'MapIteratorPrototype', { value: _Object.getPrototypeOf(new Map()[Symbol.iterator]()) });
+  // _Object.defineProperty(globalThis, 'SetIteratorPrototype', { value: _Object.getPrototypeOf(new Set()[Symbol.iterator]()) });
+  // _Object.defineProperty(globalThis, 'RegExpIteratorPrototype', { value: _Object.getPrototypeOf(new RegExp()[Symbol.matchAll]()) });
+  // _Object.defineProperty(globalThis, 'GeneratorIteratorPrototype', { value: _Object.getPrototypeOf(globalThis.GeneratorFunction()()) });
+  // _Object.defineProperty(globalThis, 'AsyncGeneratorIteratorPrototype', { value: _Object.getPrototypeOf(globalThis.AsyncGeneratorFunction()()) });
+
+  // ----------------------------------------------------------------------------------------------
   // -- Shimming ----------------------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
@@ -408,88 +407,91 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @see {@link https://github.com/es-shims/array-from-async/blob/main/index.mjs}
    */
   const shimArrayFromAsync = () => {
-    if (undefined === _this.Array.fromAsync) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {AsyncIterable<T>} items - Items to use.
-       * @returns {Promise<T[]>} The resulting array.
-       */
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @template U
-       * @param {AsyncIterable<T>} items - Items to use.
-       * @param {Array_fromAsync_mapFn<T, U>} mapfn - Map function to apply.
-       * @param {any} thisArg - The `this` value to pass to the map function.
-       * @returns {Promise<U[]>} The resulting array.
-       */
-      _this.Array.fromAsync = async function (items, mapfn, thisArg) {
-        /**
-         * @description PLACEHOLDER.
-         * @param {any} obj - Function to query.
-         * @returns {boolean} Whether the given function is a constructor.
-         */
-        const isConstructor = (obj) => {
+    if (!_Object.hasOwn(Array, 'fromAsync')) {
+      _Object.defineProperty(Array, 'fromAsync', {
+        value:
           /**
-           * @type {any}
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {AsyncIterable<T>} items - Items to use.
+           * @returns {Promise<T[]>} The resulting array.
            */
-          const prox = new Proxy(obj, {
-            construct() {
-              return prox;
-            },
-          });
-          try {
-            new prox();
-            return true;
-          } catch {
-            return false;
-          }
-        };
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @template U
+           * @param {AsyncIterable<T>} items - Items to use.
+           * @param {Array_fromAsync_mapFn<T, U>} mapfn - Map function to apply.
+           * @param {any} thisArg - The `this` value to pass to the map function.
+           * @returns {Promise<U[]>} The resulting array.
+           */
+          async function (items, mapfn, thisArg) {
+            /**
+             * @description PLACEHOLDER.
+             * @param {any} obj - Function to query.
+             * @returns {boolean} Whether the given function is a constructor.
+             */
+            const isConstructor = (obj) => {
+              /**
+               * @type {any}
+               */
+              const prox = new Proxy(obj, {
+                construct() {
+                  return prox;
+                },
+              });
+              try {
+                new prox();
+                return true;
+              } catch {
+                return false;
+              }
+            };
 
-        if (Symbol.asyncIterator in items || Symbol.iterator in items) {
-          const result = null !== this && isConstructor(this) ? new this() : Array(0);
+            if (Symbol.asyncIterator in items || Symbol.iterator in items) {
+              const result = null !== this && isConstructor(this) ? new this() : Array(0);
 
-          let i = 0;
-          for await (const v of items) {
-            if (Number.MAX_SAFE_INTEGER < i) {
-              throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
-            }
+              let i = 0;
+              for await (const v of items) {
+                if (Number.MAX_SAFE_INTEGER < i) {
+                  throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
+                }
 
-            if (mapfn) {
-              result[i] = await mapfn.call(thisArg, v, i);
+                if (mapfn) {
+                  result[i] = await mapfn.call(thisArg, v, i);
+                } else {
+                  result[i] = v;
+                }
+                i++;
+              }
+
+              result.length = i;
+              return result;
             } else {
-              result[i] = v;
+              const { length } = items;
+              const result = null !== this && isConstructor(this) ? new this(length) : Array(length);
+
+              let i = 0;
+
+              while (i < length) {
+                if (Number.MAX_SAFE_INTEGER < i) {
+                  throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
+                }
+
+                const v = items[i];
+                if (mapfn) {
+                  result[i] = await mapfn.call(thisArg, v, i);
+                } else {
+                  result[i] = v;
+                }
+                i++;
+              }
+
+              result.length = i;
+              return result;
             }
-            i++;
-          }
-
-          result.length = i;
-          return result;
-        } else {
-          const { length } = items;
-          const result = null !== this && isConstructor(this) ? new this(length) : Array(length);
-
-          let i = 0;
-
-          while (i < length) {
-            if (Number.MAX_SAFE_INTEGER < i) {
-              throw new TypeError('Input is too long and exceeded Number.MAX_SAFE_INTEGER times.');
-            }
-
-            const v = items[i];
-            if (mapfn) {
-              result[i] = await mapfn.call(thisArg, v, i);
-            } else {
-              result[i] = v;
-            }
-            i++;
-          }
-
-          result.length = i;
-          return result;
-        }
-      };
+          },
+      });
     }
   };
 
@@ -677,28 +679,31 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimMapGroupBy = () => {
-    if (undefined === _this.Map.groupBy) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @template K
-       * @param {Iterable<T>} items - Items to use
-       * @param {Map_groupBy_callbackFn<T, K>} callbackFn - The grouping function to use.
-       * @returns {Map<K, T[]>} The resulting grouped Map.
-       */
-      _this.Map.groupBy = function (items, callbackFn) {
-        const result = new Map();
-        let i = 0;
-        for (const item of items) {
-          const key = callbackFn(item, i++);
-          if (result.has(key)) {
-            result.get(key).push(item);
-          } else {
-            result.set(key, [item]);
-          }
-        }
-        return result;
-      };
+    if (!_Object.hasOwn(Map, 'groupBy')) {
+      _Object.defineProperty(Map, 'groupBy', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @template K
+           * @param {Iterable<T>} items - Items to use
+           * @param {Map_groupBy_callbackFn<T, K>} callbackFn - The grouping function to use.
+           * @returns {Map<K, T[]>} The resulting grouped Map.
+           */
+          function (items, callbackFn) {
+            const result = new Map();
+            let i = 0;
+            for (const item of items) {
+              const key = callbackFn(item, i++);
+              if (result.has(key)) {
+                result.get(key).push(item);
+              } else {
+                result.set(key, [item]);
+              }
+            }
+            return result;
+          },
+      });
     }
   };
 
@@ -710,34 +715,37 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimPromiseWithResolvers = () => {
-    if (undefined === _this.Promise.withResolvers) {
+    if (!_Object.hasOwn(Promise, 'withResolvers')) {
       // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers#description
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @returns {PromiseWithResolvers<T>} The created Promise along with its resolvers.
-       */
-      _this.Promise.withResolvers = function () {
-        /**
-         * @type {Promise_withResolvers_resolve<T>}
-         */
-        let resolve;
-        /**
-         * @type {Promise_withResolvers_reject}
-         */
-        let reject;
+      _Object.defineProperty(Promise, 'withResolvers', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @returns {PromiseWithResolvers<T>} The created Promise along with its resolvers.
+           */
+          function () {
+            /**
+             * @type {Promise_withResolvers_resolve<T>}
+             */
+            let resolve;
+            /**
+             * @type {Promise_withResolvers_reject}
+             */
+            let reject;
 
-        return {
-          promise: new Promise((res, rej) => {
-            resolve = res;
-            reject = rej;
-          }),
-          // @ts-expect-error: Variable 'reject' is used before being assigned.
-          reject,
-          // @ts-expect-error: Variable 'resolve' is used before being assigned.
-          resolve,
-        };
-      };
+            return {
+              promise: new Promise((res, rej) => {
+                resolve = res;
+                reject = rej;
+              }),
+              // @ts-expect-error: Variable 'reject' is used before being assigned.
+              reject,
+              // @ts-expect-error: Variable 'resolve' is used before being assigned.
+              resolve,
+            };
+          },
+      });
     }
   };
 
@@ -749,22 +757,25 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeDifference = () => {
-    if (undefined === _this.Set.prototype.difference) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {Set<T>} Resulting Set.
-       */
-      _this.Set.prototype.difference = function (other) {
-        const result = new Set();
-        for (const element of this) {
-          if (!other.has(element)) {
-            result.add(element);
-          }
-        }
-        return result;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'difference')) {
+      _Object.defineProperty(Set.prototype, 'difference', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {Set<T>} Resulting Set.
+           */
+          function (other) {
+            const result = new Set();
+            for (const element of this) {
+              if (!other.has(element)) {
+                result.add(element);
+              }
+            }
+            return result;
+          },
+      });
     }
   };
 
@@ -776,22 +787,25 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeIntersection = () => {
-    if (undefined === _this.Set.prototype.intersection) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {Set<T>} Resulting Set.
-       */
-      _this.Set.prototype.intersection = function (other) {
-        const result = new Set();
-        for (const element of this) {
-          if (other.has(element)) {
-            result.add(element);
-          }
-        }
-        return result;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'intersection')) {
+      _Object.defineProperty(Set.prototype, 'intersection', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {Set<T>} Resulting Set.
+           */
+          function (other) {
+            const result = new Set();
+            for (const element of this) {
+              if (other.has(element)) {
+                result.add(element);
+              }
+            }
+            return result;
+          },
+      });
     }
   };
 
@@ -803,21 +817,24 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeIsDisjointFrom = () => {
-    if (undefined === _this.Set.prototype.isDisjointFrom) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {boolean} Result.
-       */
-      _this.Set.prototype.isDisjointFrom = function (other) {
-        for (const element of this) {
-          if (other.has(element)) {
-            return false;
-          }
-        }
-        return true;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'isDisjointFrom')) {
+      _Object.defineProperty(Set.prototype, 'isDisjointFrom', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {boolean} Result.
+           */
+          function (other) {
+            for (const element of this) {
+              if (other.has(element)) {
+                return false;
+              }
+            }
+            return true;
+          },
+      });
     }
   };
 
@@ -829,21 +846,24 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeIsSubsetOf = () => {
-    if (undefined === _this.Set.prototype.isSubsetOf) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {boolean} Result.
-       */
-      _this.Set.prototype.isSubsetOf = function (other) {
-        for (const element of this) {
-          if (!other.has(element)) {
-            return false;
-          }
-        }
-        return true;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'isSubsetOf')) {
+      _Object.defineProperty(Set.prototype, 'isSubsetOf', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {boolean} Result.
+           */
+          function (other) {
+            for (const element of this) {
+              if (!other.has(element)) {
+                return false;
+              }
+            }
+            return true;
+          },
+      });
     }
   };
 
@@ -855,21 +875,24 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeIsSupersetOf = () => {
-    if (undefined === _this.Set.prototype.isSupersetOf) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {boolean} Result.
-       */
-      _this.Set.prototype.isSupersetOf = function (other) {
-        for (const element of other.keys()) {
-          if (!this.has(element)) {
-            return false;
-          }
-        }
-        return true;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'isSupersetOf')) {
+      _Object.defineProperty(Set.prototype, 'isSupersetOf', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {boolean} Result.
+           */
+          function (other) {
+            for (const element of other.keys()) {
+              if (!this.has(element)) {
+                return false;
+              }
+            }
+            return true;
+          },
+      });
     }
   };
 
@@ -881,27 +904,30 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeSymmetricDifference = () => {
-    if (undefined === _this.Set.prototype.symmetricDifference) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {Set<T>} Resulting Set.
-       */
-      _this.Set.prototype.symmetricDifference = function (other) {
-        const result = new Set();
-        for (const element of this) {
-          if (!other.has(element)) {
-            result.add(element);
-          }
-        }
-        for (const element of other.keys()) {
-          if (!this.has(element)) {
-            result.add(element);
-          }
-        }
-        return result;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'symmetricDifference')) {
+      _Object.defineProperty(Set.prototype, 'symmetricDifference', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {Set<T>} Resulting Set.
+           */
+          function (other) {
+            const result = new Set();
+            for (const element of this) {
+              if (!other.has(element)) {
+                result.add(element);
+              }
+            }
+            for (const element of other.keys()) {
+              if (!this.has(element)) {
+                result.add(element);
+              }
+            }
+            return result;
+          },
+      });
     }
   };
 
@@ -913,23 +939,26 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const shimSetPrototypeUnion = () => {
-    if (undefined === _this.Set.prototype.union) {
-      /**
-       * @description PLACEHOLDER.
-       * @template T
-       * @param {SetLike<T>} other - Operand.
-       * @returns {Set<T>} Resulting Set.
-       */
-      _this.Set.prototype.union = function (other) {
-        const result = new Set();
-        for (const element of this) {
-          result.add(element);
-        }
-        for (const element of other.keys()) {
-          result.add(element);
-        }
-        return result;
-      };
+    if (!_Object.hasOwn(Set.prototype, 'union')) {
+      _Object.defineProperty(Set.prototype, 'union', {
+        value:
+          /**
+           * @description PLACEHOLDER.
+           * @template T
+           * @param {SetLike<T>} other - Operand.
+           * @returns {Set<T>} Resulting Set.
+           */
+          function (other) {
+            const result = new Set();
+            for (const element of this) {
+              result.add(element);
+            }
+            for (const element of other.keys()) {
+              result.add(element);
+            }
+            return result;
+          },
+      });
     }
   };
 
@@ -978,13 +1007,16 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchEval = () => {
-    /**
-     * Evaluates JavaScript code and executes it.
-     *
-     * @param {string} script - A String value that contains valid JavaScript code.
-     * @returns {unknown} The execution result.
-     */
-    _this.eval = (script) => _eval(`"use strict"; ${script.toString()}`);
+    _Object.defineProperty(globalThis, 'eval', {
+      value:
+        /**
+         * Evaluates JavaScript code and executes it.
+         *
+         * @param {string} script - A String value that contains valid JavaScript code.
+         * @returns {unknown} The execution result.
+         */
+        (script) => _eval(`"use strict"; ${script.toString()}`),
+    });
   };
 
   /**
@@ -995,7 +1027,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchObject = () => {
-    _this.Object.prototype.toLocaleString = _this.Object.prototype.toString;
+    _Object.defineProperty(Object.prototype, 'toLocaleString', { value: Object.prototype.toString });
   };
 
   /**
@@ -1006,7 +1038,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchNumber = () => {
-    _this.Number.prototype.toLocaleString = _this.Number.prototype.toString;
+    _Object.defineProperty(Number.prototype, 'toLocaleString', { value: Number.prototype.toString });
   };
 
   /**
@@ -1017,7 +1049,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchBigInt = () => {
-    _this.BigInt.prototype.toLocaleString = _this.BigInt.prototype.toString;
+    _Object.defineProperty(BigInt.prototype, 'toLocaleString', { value: BigInt.prototype.toString });
   };
 
   /**
@@ -1028,7 +1060,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchMath = () => {
-    _this.Math.random = () => NaN;
+    _Object.defineProperty(Math, 'random', { value: () => NaN });
   };
 
   /**
@@ -1064,204 +1096,228 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchDate = () => {
-    /**
-     * @description PLACEHOLDER.
-     * @param {number | string | Date | undefined} valueDateStringDateObjectYear - Number of milliseconds, or ISO string, or Date object, or none.
-     * @param {number | undefined} monthIndex - Month number.
-     * @param {number | undefined} day - Day number.
-     * @param {number | undefined} hours - Hour number.
-     * @param {number | undefined} minutes - Number of minutes.
-     * @param {number | undefined} seconds - Number of seconds.
-     * @param {number | undefined} milliseconds - Number of milliseconds.
-     * @returns {string | Date} The ISO string of the given date, or the newly constructed Date instance.
-     * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
-     */
-    _this.Date = function Date(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds) {
-      if (!new.target || undefined === valueDateStringDateObjectYear) {
-        return new _Date(NaN).toISOString();
-      }
+    _Object.defineProperty(globalThis, 'Date', {
+      value:
+        /**
+         * @description PLACEHOLDER.
+         * @param {number | string | Date | undefined} valueDateStringDateObjectYear - Number of milliseconds, or ISO string, or Date object, or none.
+         * @param {number | undefined} monthIndex - Month number.
+         * @param {number | undefined} day - Day number.
+         * @param {number | undefined} hours - Hour number.
+         * @param {number | undefined} minutes - Number of minutes.
+         * @param {number | undefined} seconds - Number of seconds.
+         * @param {number | undefined} milliseconds - Number of milliseconds.
+         * @returns {string | Date} The ISO string of the given date, or the newly constructed Date instance.
+         * @see {@link https://stackoverflow.com/a/70860699} for the original code adapted to fit our needs.
+         */
+        function Date(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds) {
+          if (!new.target || undefined === valueDateStringDateObjectYear) {
+            return new _Date(NaN).toISOString();
+          }
 
-      /**
-       * @description PLACEHOLDER.
-       * @param {number} left - Left endpoint.
-       * @param {number} mid - Value to check.
-       * @param {number} right - Right endpoint.
-       * @returns {boolean} Whether the value is between the given endpoints (inclusive).
-       */
-      const between = (left, mid, right) => left <= mid && mid <= right;
-      /**
-       * @description PLACEHOLDER.
-       * @param {number} ts - Timestamp to check.
-       * @returns {boolean} Whether the given timestamp is valid.
-       */
-      const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
+          /**
+           * @description PLACEHOLDER.
+           * @param {number} left - Left endpoint.
+           * @param {number} mid - Value to check.
+           * @param {number} right - Right endpoint.
+           * @returns {boolean} Whether the value is between the given endpoints (inclusive).
+           */
+          const between = (left, mid, right) => left <= mid && mid <= right;
+          /**
+           * @description PLACEHOLDER.
+           * @param {number} ts - Timestamp to check.
+           * @returns {boolean} Whether the given timestamp is valid.
+           */
+          const validTs = (ts) => between(-8640000000000000, ts, 8640000000000000);
 
-      let ts = NaN;
-      if (undefined === monthIndex) {
-        switch (typeof valueDateStringDateObjectYear) {
-          case 'number':
-            if (validTs(valueDateStringDateObjectYear)) {
-              ts = valueDateStringDateObjectYear;
-            }
-            break;
-          case 'string':
-            {
-              /**
-               * @description PLACEHOLDER.
-               * @param {string | undefined} str - String to parse.
-               * @param {number} def - Default value to use.
-               * @returns {number} The parsed number.
-               */
-              const parse = (str, def) => {
-                const num = Number.parseInt(str ?? '', 10);
-                return Number.isNaN(num) ? def : num;
-              };
-              /**
-               * @description PLACEHOLDER.
-               * @param {number} num - The number to show as padded decimal.
-               * @param {number} padding - The number fo padding `0`s.
-               * @param {boolean} withSign - Whether to include the sign.
-               * @returns {string} The resulting string.
-               */
-              const toPaddedDecimal = (num, padding, withSign = false) =>
-                (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
+          let ts = NaN;
+          if (undefined === monthIndex) {
+            switch (typeof valueDateStringDateObjectYear) {
+              case 'number':
+                if (validTs(valueDateStringDateObjectYear)) {
+                  ts = valueDateStringDateObjectYear;
+                }
+                break;
+              case 'string':
+                {
+                  /**
+                   * @description PLACEHOLDER.
+                   * @param {string | undefined} str - String to parse.
+                   * @param {number} def - Default value to use.
+                   * @returns {number} The parsed number.
+                   */
+                  const parse = (str, def) => {
+                    const num = Number.parseInt(str ?? '', 10);
+                    return Number.isNaN(num) ? def : num;
+                  };
+                  /**
+                   * @description PLACEHOLDER.
+                   * @param {number} num - The number to show as padded decimal.
+                   * @param {number} padding - The number fo padding `0`s.
+                   * @param {boolean} withSign - Whether to include the sign.
+                   * @returns {string} The resulting string.
+                   */
+                  const toPaddedDecimal = (num, padding, withSign = false) =>
+                    (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
 
-              const match = valueDateStringDateObjectYear.match(
-                /^(?<year>\d{4}|[+-]\d{6})(?:-(?<month>\d\d)(?:-(?<day>\d\d))?)?(?:T(?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d)(?:\.(?<milliseconds>\d{1,3}))?)?)?(?:Z|(?<tzHours>[+-]\d\d):(?<tzMinutes>\d\d))?$/,
-              );
-              if (null !== match && '-000000' !== match.groups?.year) {
-                const year = parse(match.groups?.year, NaN);
-                const month = parse(match.groups?.month, 1);
-                const day = parse(match.groups?.day, 1);
-                const hours = parse(match.groups?.hours, 0);
-                const minutes = parse(match.groups?.minutes, 0);
-                const seconds = parse(match.groups?.seconds, 0);
-                const milliseconds = parse(match.groups?.milliseconds, 0);
-                const tzHours = parse(match.groups?.tzHours, 0);
-                const tzMinutes = parse(match.groups?.tzMinutes, 0);
-                const daysInMonth = [
-                  31,
-                  28 + (0 === year % 400 || (0 !== year % 100 && 0 === year % 4) ? 1 : 0),
-                  31,
-                  30,
-                  31,
-                  30,
-                  31,
-                  31,
-                  30,
-                  31,
-                  30,
-                  31,
-                ];
-                if (
-                  !Number.isNaN(year) &&
-                  between(1, month, 12) &&
-                  between(1, day, daysInMonth[month - 1] ?? 0) &&
-                  between(0, hours, 24) &&
-                  between(0, minutes, 59) &&
-                  between(0, seconds, 59) &&
-                  between(0, milliseconds, 999) &&
-                  between(-23, tzHours, 23) &&
-                  between(0, tzMinutes, 59)
-                ) {
-                  const sYear = between(0, year, 9999) ? toPaddedDecimal(year, 4) : toPaddedDecimal(year, 6, true);
-                  const sMonth = toPaddedDecimal(month, 2);
-                  const sDay = toPaddedDecimal(day, 2);
-                  const sHours = toPaddedDecimal(hours, 2);
-                  const sMinutes = toPaddedDecimal(minutes, 2);
-                  const sSeconds = toPaddedDecimal(seconds, 2);
-                  const sMilliseconds = toPaddedDecimal(milliseconds, 3);
-                  const sTzHours = toPaddedDecimal(tzHours, 2, true);
-                  const sTzMinutes = toPaddedDecimal(tzMinutes, 2);
-                  const sTz = 0 === tzHours && 0 === tzMinutes ? 'Z' : `${sTzHours}:${sTzMinutes}`;
-                  const parsed = _Date.parse(
-                    `${sYear}-${sMonth}-${sDay}T${sHours}:${sMinutes}:${sSeconds}.${sMilliseconds}${sTz}`,
+                  const match = valueDateStringDateObjectYear.match(
+                    /^(?<year>\d{4}|[+-]\d{6})(?:-(?<month>\d\d)(?:-(?<day>\d\d))?)?(?:T(?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d)(?:\.(?<milliseconds>\d{1,3}))?)?)?(?:Z|(?<tzHours>[+-]\d\d):(?<tzMinutes>\d\d))?$/,
                   );
-                  if (validTs(parsed)) {
-                    ts = parsed;
+                  if (null !== match && '-000000' !== match.groups?.year) {
+                    const year = parse(match.groups?.year, NaN);
+                    const month = parse(match.groups?.month, 1);
+                    const day = parse(match.groups?.day, 1);
+                    const hours = parse(match.groups?.hours, 0);
+                    const minutes = parse(match.groups?.minutes, 0);
+                    const seconds = parse(match.groups?.seconds, 0);
+                    const milliseconds = parse(match.groups?.milliseconds, 0);
+                    const tzHours = parse(match.groups?.tzHours, 0);
+                    const tzMinutes = parse(match.groups?.tzMinutes, 0);
+                    const daysInMonth = [
+                      31,
+                      28 + (0 === year % 400 || (0 !== year % 100 && 0 === year % 4) ? 1 : 0),
+                      31,
+                      30,
+                      31,
+                      30,
+                      31,
+                      31,
+                      30,
+                      31,
+                      30,
+                      31,
+                    ];
+                    if (
+                      !Number.isNaN(year) &&
+                      between(1, month, 12) &&
+                      between(1, day, daysInMonth[month - 1] ?? 0) &&
+                      between(0, hours, 24) &&
+                      between(0, minutes, 59) &&
+                      between(0, seconds, 59) &&
+                      between(0, milliseconds, 999) &&
+                      between(-23, tzHours, 23) &&
+                      between(0, tzMinutes, 59)
+                    ) {
+                      const sYear = between(0, year, 9999) ? toPaddedDecimal(year, 4) : toPaddedDecimal(year, 6, true);
+                      const sMonth = toPaddedDecimal(month, 2);
+                      const sDay = toPaddedDecimal(day, 2);
+                      const sHours = toPaddedDecimal(hours, 2);
+                      const sMinutes = toPaddedDecimal(minutes, 2);
+                      const sSeconds = toPaddedDecimal(seconds, 2);
+                      const sMilliseconds = toPaddedDecimal(milliseconds, 3);
+                      const sTzHours = toPaddedDecimal(tzHours, 2, true);
+                      const sTzMinutes = toPaddedDecimal(tzMinutes, 2);
+                      const sTz = 0 === tzHours && 0 === tzMinutes ? 'Z' : `${sTzHours}:${sTzMinutes}`;
+                      const parsed = _Date.parse(
+                        `${sYear}-${sMonth}-${sDay}T${sHours}:${sMinutes}:${sSeconds}.${sMilliseconds}${sTz}`,
+                      );
+                      if (validTs(parsed)) {
+                        ts = parsed;
+                      }
+                    }
                   }
                 }
+                break;
+              case 'object':
+                if (valueDateStringDateObjectYear instanceof Date) {
+                  const time = valueDateStringDateObjectYear.getTime();
+                  if (validTs(time)) {
+                    ts = time;
+                  }
+                }
+                break;
+            }
+          } else {
+            if ('number' === typeof valueDateStringDateObjectYear) {
+              const utc = _Date.UTC(
+                valueDateStringDateObjectYear,
+                monthIndex,
+                day,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+              );
+              if (validTs(utc)) {
+                ts = utc;
               }
             }
-            break;
-          case 'object':
-            if (valueDateStringDateObjectYear instanceof Date) {
-              const time = valueDateStringDateObjectYear.getTime();
-              if (validTs(time)) {
-                ts = time;
-              }
-            }
-            break;
-        }
-      } else {
-        if ('number' === typeof valueDateStringDateObjectYear) {
-          const utc = _Date.UTC(valueDateStringDateObjectYear, monthIndex, day, hours, minutes, seconds, milliseconds);
-          if (validTs(utc)) {
-            ts = utc;
           }
-        }
-      }
-      return _Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
-    };
-    _Object.defineProperty(_this.Date, 'length', {
+          return _Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
+        },
+    });
+
+    _Object.defineProperty(Date, 'length', {
       configurable: true,
       value: _Date.length,
     });
-    _Date.prototype.constructor = _this.Date;
-    _this.Date.prototype = _Date.prototype;
-    /**
-     * @description PLACEHOLDER.
-     * @param {string} str - String to parse
-     * @returns {number} The number of milliseconds of he parsed string.
-     */
-    _this.Date.parse = (str) => _Date.parse(str);
-    /**
-     * @description PLACEHOLDER.
-     * @param {number} year - Year number.
-     * @param {number | undefined} monthIndex - Month number.
-     * @param {number | undefined} date - Date number.
-     * @param {number | undefined} hours - Hour number.
-     * @param {number | undefined} minutes - Number of minutes.
-     * @param {number | undefined} seconds - Number of seconds.
-     * @param {number | undefined} ms - Number of milliseconds.
-     * @returns {number} The number of milliseconds for the given data, in UTC.
-     */
-    _this.Date.UTC = (
-      year,
-      monthIndex = undefined,
-      date = undefined,
-      hours = undefined,
-      minutes = undefined,
-      seconds = undefined,
-      ms = undefined,
-    ) => _Date.UTC(year, monthIndex, date, hours, minutes, seconds, ms);
-    _this.Date.now = () => NaN;
-    _this.Date.prototype.getDate = _this.Date.prototype.getUTCDate;
-    _this.Date.prototype.getDay = _this.Date.prototype.getUTCDay;
-    _this.Date.prototype.getFullYear = _this.Date.prototype.getUTCFullYear;
-    _this.Date.prototype.getHours = _this.Date.prototype.getUTCHours;
-    _this.Date.prototype.getMilliseconds = _this.Date.prototype.getUTCMilliseconds;
-    _this.Date.prototype.getMinutes = _this.Date.prototype.getUTCMinutes;
-    _this.Date.prototype.getMonth = _this.Date.prototype.getUTCMonth;
-    _this.Date.prototype.getSeconds = _this.Date.prototype.getUTCSeconds;
-    _this.Date.prototype.getTimezoneOffset = () => 0;
-    _this.Date.prototype.setDate = _this.Date.prototype.setUTCDate;
-    _this.Date.prototype.setFullYear = _this.Date.prototype.setUTCFullYear;
-    _this.Date.prototype.setHours = _this.Date.prototype.setUTCHours;
-    _this.Date.prototype.setMilliseconds = _this.Date.prototype.setUTCMilliseconds;
-    _this.Date.prototype.setMinutes = _this.Date.prototype.setUTCMinutes;
-    _this.Date.prototype.setMonth = _this.Date.prototype.setUTCMonth;
-    _this.Date.prototype.setSeconds = _this.Date.prototype.setUTCSeconds;
-    _this.Date.prototype.toString = _this.Date.prototype.toISOString;
-    _this.Date.prototype.toDateString = function () {
-      return this.toISOString().split('T')[0];
-    };
-    _this.Date.prototype.toTimeString = function () {
-      return this.toISOString().split('T')[1];
-    };
-    _this.Date.prototype.toLocaleDateString = _this.Date.prototype.toDateString;
-    _this.Date.prototype.toLocaleString = _this.Date.prototype.toString;
-    _this.Date.prototype.toLocaleTimeString = _this.Date.prototype.toTimeString;
+    _Date.prototype.constructor = Date;
+    _Object.defineProperty(Date, 'prototype', { value: _Date.prototype });
+
+    _Object.defineProperty(Date, 'parse', {
+      value:
+        /**
+         * @description PLACEHOLDER.
+         * @param {string} str - String to parse
+         * @returns {number} The number of milliseconds of he parsed string.
+         */
+        (str) => _Date.parse(str),
+    });
+    _Object.defineProperty(Date, 'UTC', {
+      value:
+        /**
+         * @description PLACEHOLDER.
+         * @param {number} year - Year number.
+         * @param {number | undefined} monthIndex - Month number.
+         * @param {number | undefined} date - Date number.
+         * @param {number | undefined} hours - Hour number.
+         * @param {number | undefined} minutes - Number of minutes.
+         * @param {number | undefined} seconds - Number of seconds.
+         * @param {number | undefined} ms - Number of milliseconds.
+         * @returns {number} The number of milliseconds for the given data, in UTC.
+         */
+        (
+          year,
+          monthIndex = undefined,
+          date = undefined,
+          hours = undefined,
+          minutes = undefined,
+          seconds = undefined,
+          ms = undefined,
+        ) => _Date.UTC(year, monthIndex, date, hours, minutes, seconds, ms),
+    });
+
+    _Object.defineProperty(Date, 'now', { value: () => NaN });
+    _Object.defineProperty(Date.prototype, 'getDate', { value: Date.prototype.getUTCDate });
+    _Object.defineProperty(Date.prototype, 'getDay', { value: Date.prototype.getUTCDay });
+    _Object.defineProperty(Date.prototype, 'getFullYear', { value: Date.prototype.getUTCFullYear });
+    _Object.defineProperty(Date.prototype, 'getHours', { value: Date.prototype.getUTCHours });
+    _Object.defineProperty(Date.prototype, 'getMilliseconds', { value: Date.prototype.getUTCMilliseconds });
+    _Object.defineProperty(Date.prototype, 'getMinutes', { value: Date.prototype.getUTCMinutes });
+    _Object.defineProperty(Date.prototype, 'getMonth', { value: Date.prototype.getUTCMonth });
+    _Object.defineProperty(Date.prototype, 'getSeconds', { value: Date.prototype.getUTCSeconds });
+    _Object.defineProperty(Date.prototype, 'getTimezoneOffset', { value: () => 0 });
+    _Object.defineProperty(Date.prototype, 'setDate', { value: Date.prototype.setUTCDate });
+    _Object.defineProperty(Date.prototype, 'setFullYear', { value: Date.prototype.setUTCFullYear });
+    _Object.defineProperty(Date.prototype, 'setHours', { value: Date.prototype.setUTCHours });
+    _Object.defineProperty(Date.prototype, 'setMilliseconds', { value: Date.prototype.setUTCMilliseconds });
+    _Object.defineProperty(Date.prototype, 'setMinutes', { value: Date.prototype.setUTCMinutes });
+    _Object.defineProperty(Date.prototype, 'setMonth', { value: Date.prototype.setUTCMonth });
+    _Object.defineProperty(Date.prototype, 'setSeconds', { value: Date.prototype.setUTCSeconds });
+    _Object.defineProperty(Date.prototype, 'toString', { value: Date.prototype.toISOString });
+    _Object.defineProperty(Date.prototype, 'toDateString', {
+      value: function () {
+        return this.toISOString().split('T')[0];
+      },
+    });
+    _Object.defineProperty(Date.prototype, 'toTimeString', {
+      value: function () {
+        return this.toISOString().split('T')[1];
+      },
+    });
+    _Object.defineProperty(Date.prototype, 'toLocaleDateString', { value: Date.prototype.toDateString });
+    _Object.defineProperty(Date.prototype, 'toLocaleString', { value: Date.prototype.toString });
+    _Object.defineProperty(Date.prototype, 'toLocaleTimeString', { value: Date.prototype.toTimeString });
   };
 
   /**
@@ -1276,16 +1332,20 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchString = () => {
-    /**
-     * @description PLACEHOLDER.
-     * @param {string} compareString - String to compare against.
-     * @returns {number} -1, 0, or 1, if smaller than, equal to, or greater than the given string respectively.
-     */
-    _this.String.prototype.localeCompare = function (compareString) {
-      return this < compareString ? -1 : compareString < this ? 1 : 0;
-    };
-    _this.String.prototype.toLocaleLowerCase = _this.String.prototype.toLowerCase;
-    _this.String.prototype.toLocaleUpperCase = _this.String.prototype.toUpperCase;
+    _Object.defineProperty(String.prototype, 'localeCompare', {
+      value:
+        /**
+         * @description PLACEHOLDER.
+         * @param {string} compareString - String to compare against.
+         * @returns {number} -1, 0, or 1, if smaller than, equal to, or greater than the given string respectively.
+         */
+        function (compareString) {
+          return this < compareString ? -1 : compareString < this ? 1 : 0;
+        },
+    });
+
+    _Object.defineProperty(String.prototype, 'toLocaleLowerCase', { value: String.prototype.toLowerCase });
+    _Object.defineProperty(String.prototype, 'toLocaleUpperCase', { value: String.prototype.toUpperCase });
   };
 
   /**
@@ -1296,7 +1356,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchArray = () => {
-    _this.Array.prototype.toLocaleString = _this.Array.prototype.toString;
+    _Object.defineProperty(Array.prototype, 'toLocaleString', { value: Array.prototype.toString });
   };
 
   /**
@@ -1319,17 +1379,19 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchTypedArray = () => {
-    _this.Int8Array.prototype.toLocaleString = _this.Int8Array.prototype.toString;
-    _this.Uint8Array.prototype.toLocaleString = _this.Uint8Array.prototype.toString;
-    _this.Uint8ClampedArray.prototype.toLocaleString = _this.Uint8ClampedArray.prototype.toString;
-    _this.Int16Array.prototype.toLocaleString = _this.Int16Array.prototype.toString;
-    _this.Uint16Array.prototype.toLocaleString = _this.Uint16Array.prototype.toString;
-    _this.Int32Array.prototype.toLocaleString = _this.Int32Array.prototype.toString;
-    _this.Uint32Array.prototype.toLocaleString = _this.Uint32Array.prototype.toString;
-    _this.BigInt64Array.prototype.toLocaleString = _this.BigInt64Array.prototype.toString;
-    _this.BigUint64Array.prototype.toLocaleString = _this.BigUint64Array.prototype.toString;
-    _this.Float32Array.prototype.toLocaleString = _this.Float32Array.prototype.toString;
-    _this.Float64Array.prototype.toLocaleString = _this.Float64Array.prototype.toString;
+    _Object.defineProperty(Int8Array.prototype, 'toLocaleString', { value: Int8Array.prototype.toString });
+    _Object.defineProperty(Uint8Array.prototype, 'toLocaleString', { value: Uint8Array.prototype.toString });
+    _Object.defineProperty(Uint8ClampedArray.prototype, 'toLocaleString', {
+      value: Uint8ClampedArray.prototype.toString,
+    });
+    _Object.defineProperty(Int16Array.prototype, 'toLocaleString', { value: Int16Array.prototype.toString });
+    _Object.defineProperty(Uint16Array.prototype, 'toLocaleString', { value: Uint16Array.prototype.toString });
+    _Object.defineProperty(Int32Array.prototype, 'toLocaleString', { value: Int32Array.prototype.toString });
+    _Object.defineProperty(Uint32Array.prototype, 'toLocaleString', { value: Uint32Array.prototype.toString });
+    _Object.defineProperty(BigInt64Array.prototype, 'toLocaleString', { value: BigInt64Array.prototype.toString });
+    _Object.defineProperty(BigUint64Array.prototype, 'toLocaleString', { value: BigUint64Array.prototype.toString });
+    _Object.defineProperty(Float32Array.prototype, 'toLocaleString', { value: Float32Array.prototype.toString });
+    _Object.defineProperty(Float64Array.prototype, 'toLocaleString', { value: Float64Array.prototype.toString });
   };
 
   /**
@@ -1347,24 +1409,27 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
    * @returns {void}
    */
   const patchRegExp = () => {
-    /**
-     * @description PLACEHOLDER.
-     * @param {RegExp | string} pattern - Pattern to use.
-     * @param {string | undefined} flags - Flags to use.
-     * @returns {RegExp} The created RegExp instance.
-     */
-    _this.RegExp = function RegExp(pattern, flags) {
-      return new.target
-        ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, [pattern, flags])
-        : _RegExp(pattern, flags);
-    };
-    _Object.defineProperty(_this.RegExp, 'length', {
+    _Object.defineProperty(globalThis, 'RegExp', {
+      value:
+        /**
+         * @description PLACEHOLDER.
+         * @param {RegExp | string} pattern - Pattern to use.
+         * @param {string | undefined} flags - Flags to use.
+         * @returns {RegExp} The created RegExp instance.
+         */
+        function RegExp(pattern, flags) {
+          return new.target
+            ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, [pattern, flags])
+            : _RegExp(pattern, flags);
+        },
+    });
+    _Object.defineProperty(RegExp, 'length', {
       configurable: true,
       value: _RegExp.length,
     });
-    _RegExp.prototype.constructor = _this.RegExp;
-    _this.RegExp.prototype = _RegExp.prototype;
-    _this.RegExp[_Symbol.species] = _RegExp[_Symbol.species];
+    _RegExp.prototype.constructor = RegExp;
+    _Object.defineProperty(RegExp, 'prototype', { value: _RegExp.prototype });
+    _Object.defineProperty(RegExp, _Symbol.species, { value: _RegExp[_Symbol.species] });
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1418,7 +1483,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
       } while (null !== current);
     };
 
-    deepFreeze(_this);
+    deepFreeze(globalThis);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -2256,7 +2321,7 @@ const workerRunner = (_this, _bootTunnel, _defaultEnclosureName, _listen, _shout
           `missing dependencies: [${_Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
         );
       }
-      const aliased = importedNames.filter((name) => name in _this);
+      const aliased = importedNames.filter((name) => name in globalThis);
       if (0 !== aliased.length) {
         throw new _Error(`aliased dependencies: [${_Array.from(new _Set(aliased)).join(', ')}]`);
       }
@@ -3047,7 +3112,7 @@ return null;`,
        *
        * NOTE: errors on deletion are ignored.
        *
-       * @param {{[key: (string | symbol)]: unknown}} start - Object to start the pruning from.
+       * @param {object} start - Object to start the pruning from.
        * @param {string} name - Name to use for failure reporting.
        * @param {string} toKeep - Label of properties to keep.
        * @returns {void}
@@ -3058,6 +3123,7 @@ return null;`,
           [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)].forEach((key) => {
             if (!keep[toKeep]?.includes(key)) {
               try {
+                // @ts-expect-error Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type '{}'.
                 delete current[key];
               } catch {
                 if ('symbol' === typeof key) {
@@ -3073,112 +3139,127 @@ return null;`,
         } while (null !== current);
       };
 
-      prune(_this, 'this', 'this');
-      prune(_this.Object, 'this.Object', 'Object');
-      prune(_this.Object.prototype, 'this.Object.prototype', 'Object.prototype');
-      prune(_this.Function.prototype, 'this.Function.prototype', 'Function.prototype');
-      prune(_this.Boolean.prototype, 'this.Boolean.prototype', 'Boolean.prototype');
-      prune(_this.Symbol, 'this.Symbol', 'Symbol');
-      prune(_this.Symbol.prototype, 'this.Symbol.prototype', 'Symbol.prototype');
-      prune(_this.Error, 'this.Error', 'Error');
-      prune(_this.Error.prototype, 'this.Error.prototype', 'Error.prototype');
-      prune(_this.AggregateError, 'this.AggregateError', 'AggregateError');
-      prune(_this.AggregateError.prototype, 'this.AggregateError.prototype', 'AggregateError.prototype');
-      prune(_this.EvalError, 'this.EvalError', 'EvalError');
-      prune(_this.EvalError.prototype, 'this.EvalError.prototype', 'EvalError.prototype');
-      prune(_this.RangeError, 'this.RangeError', 'RangeError');
-      prune(_this.RangeError.prototype, 'this.RangeError.prototype', 'RangeError.prototype');
-      prune(_this.ReferenceError, 'this.ReferenceError', 'ReferenceError');
-      prune(_this.ReferenceError.prototype, 'this.ReferenceError.prototype', 'ReferenceError.prototype');
-      prune(_this.SyntaxError, 'this.SyntaxError', 'SyntaxError');
-      prune(_this.SyntaxError.prototype, 'this.SyntaxError.prototype', 'SyntaxError.prototype');
-      prune(_this.TypeError, 'this.TypeError', 'TypeError');
-      prune(_this.TypeError.prototype, 'this.TypeError.prototype', 'TypeError.prototype');
-      prune(_this.URIError, 'this.URIError', 'URIError');
-      prune(_this.URIError.prototype, 'this.URIError.prototype', 'URIError.prototype');
-      prune(_this.Number, 'this.Number', 'Number');
-      prune(_this.Number.prototype, 'this.Number.prototype', 'Number.prototype');
-      prune(_this.BigInt, 'this.BigInt', 'BigInt');
-      prune(_this.BigInt.prototype, 'this.BigInt.prototype', 'BigInt.prototype');
-      prune(_this.Math, 'this.Math', 'Math');
-      prune(_this.Date, 'this.Date', 'Date');
-      prune(_this.Date.prototype, 'this.Date.prototype', 'Date.prototype');
-      prune(_this.String, 'this.String', 'String');
-      prune(_this.String.prototype, 'this.String.prototype', 'String.prototype');
-      prune(_this.RegExp, 'this.RegExp', 'RegExp');
-      prune(_this.RegExp.prototype, 'this.RegExp.prototype', 'RegExp.prototype');
-      prune(_this.Array, 'this.Array', 'Array');
-      prune(_this.Array.prototype, 'this.Array.prototype', 'Array.prototype');
-      prune(_this.Int8Array, 'this.Int8Array', 'TypedArray');
-      prune(_this.Int8Array.prototype, 'this.Int8Array.prototype', 'TypedArray.prototype');
-      prune(_this.Uint8Array, 'this.Uint8Array', 'TypedArray');
-      prune(_this.Uint8Array.prototype, 'this.Uint8Array.prototype', 'TypedArray.prototype');
-      prune(_this.Uint8ClampedArray, 'this.Uint8ClampedArray', 'TypedArray');
-      prune(_this.Uint8ClampedArray.prototype, 'this.Uint8ClampedArray.prototype', 'TypedArray.prototype');
-      prune(_this.Int16Array, 'this.Int16Array', 'TypedArray');
-      prune(_this.Int16Array.prototype, 'this.Int16Array.prototype', 'TypedArray.prototype');
-      prune(_this.Uint16Array, 'this.Uint16Array', 'TypedArray');
-      prune(_this.Uint16Array.prototype, 'this.Uint16Array.prototype', 'TypedArray.prototype');
-      prune(_this.Int32Array, 'this.Int32Array', 'TypedArray');
-      prune(_this.Int32Array.prototype, 'this.Int32Array.prototype', 'TypedArray.prototype');
-      prune(_this.Uint32Array, 'this.Uint32Array', 'TypedArray');
-      prune(_this.Uint32Array.prototype, 'this.Uint32Array.prototype', 'TypedArray.prototype');
-      prune(_this.BigInt64Array, 'this.BigInt64Array', 'TypedArray');
-      prune(_this.BigInt64Array.prototype, 'this.BigInt64Array.prototype', 'TypedArray.prototype');
-      prune(_this.BigUint64Array, 'this.BigUint64Array', 'TypedArray');
-      prune(_this.BigUint64Array.prototype, 'this.BigUint64Array.prototype', 'TypedArray.prototype');
-      prune(_this.Float32Array, 'this.Float32Array', 'TypedArray');
-      prune(_this.Float32Array.prototype, 'this.Float32Array.prototype', 'TypedArray.prototype');
-      prune(_this.Float64Array, 'this.Float64Array', 'TypedArray');
-      prune(_this.Float64Array.prototype, 'this.Float64Array.prototype', 'TypedArray.prototype');
-      prune(_this.Map, 'this.Map', 'Map');
-      prune(_this.Map.prototype, 'this.Map.prototype', 'Map.prototype');
-      prune(_this.Set, 'this.Set', 'Set');
-      prune(_this.Set.prototype, 'this.Set.prototype', 'Set.prototype');
-      prune(_this.WeakMap, 'this.WeakMap', 'WeakMap');
-      prune(_this.WeakMap.prototype, 'this.WeakMap.prototype', 'WeakMap.prototype');
-      prune(_this.WeakSet, 'this.WeakSet', 'WeakSet');
-      prune(_this.WeakSet.prototype, 'this.WeakSet.prototype', 'WeakSet.prototype');
-      prune(_this.ArrayBuffer, 'this.ArrayBuffer', 'ArrayBuffer');
-      prune(_this.ArrayBuffer.prototype, 'this.ArrayBuffer.prototype', 'ArrayBuffer.prototype');
-      prune(_this.DataView, 'this.DataView', 'DataView');
-      prune(_this.DataView.prototype, 'this.DataView.prototype', 'DataView.prototype');
-      prune(_this.Atomics, 'this.Atomics', 'Atomics');
-      prune(_this.JSON, 'this.JSON', 'JSON');
-      prune(_this.WeakRef, 'this.WeakRef', 'WeakRef');
-      prune(_this.WeakRef.prototype, 'this.WeakRef.prototype', 'WeakRef.prototype');
-      prune(_this.FinalizationRegistry, 'this.FinalizationRegistry', 'FinalizationRegistry');
+      prune(globalThis, 'this', 'this');
+      prune(globalThis.Object, 'this.Object', 'Object');
+      prune(globalThis.Object.prototype, 'this.Object.prototype', 'Object.prototype');
+      prune(globalThis.Function.prototype, 'this.Function.prototype', 'Function.prototype');
+      prune(globalThis.Boolean.prototype, 'this.Boolean.prototype', 'Boolean.prototype');
+      prune(globalThis.Symbol, 'this.Symbol', 'Symbol');
+      prune(globalThis.Symbol.prototype, 'this.Symbol.prototype', 'Symbol.prototype');
+      prune(globalThis.Error, 'this.Error', 'Error');
+      prune(globalThis.Error.prototype, 'this.Error.prototype', 'Error.prototype');
+      prune(globalThis.AggregateError, 'this.AggregateError', 'AggregateError');
+      prune(globalThis.AggregateError.prototype, 'this.AggregateError.prototype', 'AggregateError.prototype');
+      prune(globalThis.EvalError, 'this.EvalError', 'EvalError');
+      prune(globalThis.EvalError.prototype, 'this.EvalError.prototype', 'EvalError.prototype');
+      prune(globalThis.RangeError, 'this.RangeError', 'RangeError');
+      prune(globalThis.RangeError.prototype, 'this.RangeError.prototype', 'RangeError.prototype');
+      prune(globalThis.ReferenceError, 'this.ReferenceError', 'ReferenceError');
+      prune(globalThis.ReferenceError.prototype, 'this.ReferenceError.prototype', 'ReferenceError.prototype');
+      prune(globalThis.SyntaxError, 'this.SyntaxError', 'SyntaxError');
+      prune(globalThis.SyntaxError.prototype, 'this.SyntaxError.prototype', 'SyntaxError.prototype');
+      prune(globalThis.TypeError, 'this.TypeError', 'TypeError');
+      prune(globalThis.TypeError.prototype, 'this.TypeError.prototype', 'TypeError.prototype');
+      prune(globalThis.URIError, 'this.URIError', 'URIError');
+      prune(globalThis.URIError.prototype, 'this.URIError.prototype', 'URIError.prototype');
+      prune(globalThis.Number, 'this.Number', 'Number');
+      prune(globalThis.Number.prototype, 'this.Number.prototype', 'Number.prototype');
+      prune(globalThis.BigInt, 'this.BigInt', 'BigInt');
+      prune(globalThis.BigInt.prototype, 'this.BigInt.prototype', 'BigInt.prototype');
+      prune(globalThis.Math, 'this.Math', 'Math');
+      prune(globalThis.Date, 'this.Date', 'Date');
+      prune(globalThis.Date.prototype, 'this.Date.prototype', 'Date.prototype');
+      prune(globalThis.String, 'this.String', 'String');
+      prune(globalThis.String.prototype, 'this.String.prototype', 'String.prototype');
+      prune(globalThis.RegExp, 'this.RegExp', 'RegExp');
+      prune(globalThis.RegExp.prototype, 'this.RegExp.prototype', 'RegExp.prototype');
+      prune(globalThis.Array, 'this.Array', 'Array');
+      prune(globalThis.Array.prototype, 'this.Array.prototype', 'Array.prototype');
+      prune(globalThis.Int8Array, 'this.Int8Array', 'TypedArray');
+      prune(globalThis.Int8Array.prototype, 'this.Int8Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Uint8Array, 'this.Uint8Array', 'TypedArray');
+      prune(globalThis.Uint8Array.prototype, 'this.Uint8Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Uint8ClampedArray, 'this.Uint8ClampedArray', 'TypedArray');
+      prune(globalThis.Uint8ClampedArray.prototype, 'this.Uint8ClampedArray.prototype', 'TypedArray.prototype');
+      prune(globalThis.Int16Array, 'this.Int16Array', 'TypedArray');
+      prune(globalThis.Int16Array.prototype, 'this.Int16Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Uint16Array, 'this.Uint16Array', 'TypedArray');
+      prune(globalThis.Uint16Array.prototype, 'this.Uint16Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Int32Array, 'this.Int32Array', 'TypedArray');
+      prune(globalThis.Int32Array.prototype, 'this.Int32Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Uint32Array, 'this.Uint32Array', 'TypedArray');
+      prune(globalThis.Uint32Array.prototype, 'this.Uint32Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.BigInt64Array, 'this.BigInt64Array', 'TypedArray');
+      prune(globalThis.BigInt64Array.prototype, 'this.BigInt64Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.BigUint64Array, 'this.BigUint64Array', 'TypedArray');
+      prune(globalThis.BigUint64Array.prototype, 'this.BigUint64Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Float32Array, 'this.Float32Array', 'TypedArray');
+      prune(globalThis.Float32Array.prototype, 'this.Float32Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Float64Array, 'this.Float64Array', 'TypedArray');
+      prune(globalThis.Float64Array.prototype, 'this.Float64Array.prototype', 'TypedArray.prototype');
+      prune(globalThis.Map, 'this.Map', 'Map');
+      prune(globalThis.Map.prototype, 'this.Map.prototype', 'Map.prototype');
+      prune(globalThis.Set, 'this.Set', 'Set');
+      prune(globalThis.Set.prototype, 'this.Set.prototype', 'Set.prototype');
+      prune(globalThis.WeakMap, 'this.WeakMap', 'WeakMap');
+      prune(globalThis.WeakMap.prototype, 'this.WeakMap.prototype', 'WeakMap.prototype');
+      prune(globalThis.WeakSet, 'this.WeakSet', 'WeakSet');
+      prune(globalThis.WeakSet.prototype, 'this.WeakSet.prototype', 'WeakSet.prototype');
+      prune(globalThis.ArrayBuffer, 'this.ArrayBuffer', 'ArrayBuffer');
+      prune(globalThis.ArrayBuffer.prototype, 'this.ArrayBuffer.prototype', 'ArrayBuffer.prototype');
+      prune(globalThis.DataView, 'this.DataView', 'DataView');
+      prune(globalThis.DataView.prototype, 'this.DataView.prototype', 'DataView.prototype');
+      prune(globalThis.Atomics, 'this.Atomics', 'Atomics');
+      prune(globalThis.JSON, 'this.JSON', 'JSON');
+      prune(globalThis.WeakRef, 'this.WeakRef', 'WeakRef');
+      prune(globalThis.WeakRef.prototype, 'this.WeakRef.prototype', 'WeakRef.prototype');
+      prune(globalThis.FinalizationRegistry, 'this.FinalizationRegistry', 'FinalizationRegistry');
       prune(
-        _this.FinalizationRegistry.prototype,
+        globalThis.FinalizationRegistry.prototype,
         'this.FinalizationRegistry.prototype',
         'FinalizationRegistry.prototype',
       );
-      prune(_this.Promise, 'this.Promise', 'Promise');
-      prune(_this.Promise.prototype, 'this.Promise.prototype', 'Promise.prototype');
-      prune(_this.GeneratorFunction.constructor, 'this.GeneratorFunction.constructor', 'GeneratorFunction');
+      prune(globalThis.Promise, 'this.Promise', 'Promise');
+      prune(globalThis.Promise.prototype, 'this.Promise.prototype', 'Promise.prototype');
       prune(
-        _this.GeneratorFunction.constructor.prototype,
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.GeneratorFunction.constructor,
+        'this.GeneratorFunction.constructor',
+        'GeneratorFunction',
+      );
+
+      prune(
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.GeneratorFunction.constructor.prototype,
         'this.GeneratorFunction.constructor.prototype',
         'GeneratorFunction.prototype',
       );
       prune(
-        _this.AsyncGeneratorFunction.constructor,
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.AsyncGeneratorFunction.constructor,
         'this.AsyncGeneratorFunction.constructor',
         'AsyncGeneratorFunction',
       );
       prune(
-        _this.AsyncGeneratorFunction.constructor.prototype,
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.AsyncGeneratorFunction.constructor.prototype,
         'this.AsyncGeneratorFunction.constructor.prototype',
         'AsyncGeneratorFunction.prototype',
       );
-      prune(_this.AsyncFunction.constructor, 'this.AsyncFunction.constructor', 'AsyncFunction');
       prune(
-        _this.AsyncFunction.constructor.prototype,
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.AsyncFunction.constructor,
+        'this.AsyncFunction.constructor',
+        'AsyncFunction',
+      );
+      prune(
+        // @ts-expect-error Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.
+        globalThis.AsyncFunction.constructor.prototype,
         'this.AsyncFunction.constructor.prototype',
         'AsyncFunction.prototype',
       );
-      prune(_this.Proxy, 'this.Proxy', 'Proxy');
-      prune(_this.Reflect, 'this.Reflect', 'Reflect');
+      prune(globalThis.Proxy, 'this.Proxy', 'Proxy');
+      prune(globalThis.Reflect, 'this.Reflect', 'Reflect');
 
       if (0 < failed.length) {
         postEmitMessage(`worker:warning`, [`failed to prune [${failed.join(', ')}]`]);

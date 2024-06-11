@@ -110,7 +110,6 @@ addEventListener("rejectionhandled", (event) => {
   throw event.reason;
 });
 (${code})(
-  this,
   ${tunnel.toString()},
   "${defaultEnclosure}",
   ((_addEventListener, _JSON_parse, _ErrorEvent, _dispatchEvent) =>

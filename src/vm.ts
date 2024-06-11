@@ -49,8 +49,8 @@ import {
   nonNegativeInteger as validateNonNegativeInteger,
   timeDelta as validateTimeDelta,
 } from './validation';
-import { VMWorkerImplementation } from './worker';
 import workerCode from './workerCode.cjs';
+import { VMWorkerImplementation } from './worker';
 
 /**
  * A safe execution environment for NOMAD code execution.

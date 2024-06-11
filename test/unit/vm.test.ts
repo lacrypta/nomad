@@ -130,7 +130,6 @@ describe('vm', (): void => {
 
     const dummyWorkerCtor: WorkerConstructor = makeWorkerCtor(
       (
-        _this: object,
         _bootTunnel: number,
         _defaultEnclosureName: string,
         _listen: (data: object) => void,
@@ -346,7 +345,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -388,7 +386,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -434,7 +431,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -487,7 +483,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -533,7 +528,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -610,7 +604,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -713,7 +706,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -747,7 +739,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -785,7 +776,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -823,7 +813,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -865,7 +854,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -907,7 +895,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -951,7 +938,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -995,7 +981,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1042,7 +1027,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1143,7 +1127,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1288,7 +1271,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1490,7 +1472,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1566,7 +1547,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1617,7 +1597,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1693,7 +1672,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1742,7 +1720,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1820,7 +1797,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1870,7 +1846,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1945,7 +1920,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -1980,7 +1954,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2056,7 +2029,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2104,7 +2076,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2153,7 +2124,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2188,7 +2158,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2277,7 +2246,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2323,7 +2291,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2372,7 +2339,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2406,7 +2372,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2455,7 +2420,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2489,7 +2453,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2538,7 +2501,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2572,7 +2534,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2608,7 +2569,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2643,7 +2603,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2717,7 +2676,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2764,7 +2722,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2838,7 +2795,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2885,7 +2841,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -2974,7 +2929,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3021,7 +2975,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3095,7 +3048,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3142,7 +3094,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3247,7 +3198,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3292,7 +3242,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3347,7 +3296,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3404,7 +3352,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,
@@ -3499,7 +3446,6 @@ describe('vm', (): void => {
         await vm.start(
           makeWorkerCtor(
             (
-              _this: object,
               _bootTunnel: number,
               _defaultEnclosureName: string,
               _listen: (data: object) => void,

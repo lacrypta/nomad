@@ -47,7 +47,6 @@ addEventListener("rejectionhandled", (event) => {
   throw event.reason;
 });
 (THE CODE GOES HERE)(
-  this,
   123456,
   "root",
   ((_addEventListener, _JSON_parse, _ErrorEvent, _dispatchEvent) =>
@@ -236,7 +235,6 @@ addEventListener("rejectionhandled", (event) => {
                     stringToDataUri(
                       _wrapCode(
                         ((
-                          _this: unknown,
                           _tunnel: number,
                           _defaultEnclosure: string,
                           addListener: (handler: (data: object) => void) => void,
@@ -298,7 +296,6 @@ addEventListener("rejectionhandled", (event) => {
                     stringToDataUri(
                       _wrapCode(
                         ((
-                          _this: unknown,
                           _tunnel: number,
                           _defaultEnclosure: string,
                           addListener: (handler: (data: object) => void) => void,
