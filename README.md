@@ -100,7 +100,7 @@ The [demo](./test/demo/index.html) has a minimal example, but this simply consis
     <title>...</title>
     <script referrerpolicy="no-referrer" src="https://unpkg.com/@lacrypta/nomadvm"></script>
     <!-- or, alternatively:
-    <script referrerpolicy="no-referrer" src="https://cdn.jsdelivr.net/npm/@lacrypta/typescript-opentimestamps"></script>
+    <script referrerpolicy="no-referrer" src="https://cdn.jsdelivr.net/npm/@lacrypta/nomadvm"></script>
     -->
     <script type="module" referrerpolicy="no-referrer">
       'use strict';
