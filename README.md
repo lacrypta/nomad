@@ -87,3 +87,58 @@ pnpm all
 ```
 
 and this will reset the project and update all dependencies, and run the formatting, building, testing, and documentation steps described above.
+
+## Usage
+
+The [demo](./test/demo/index.html) has a minimal example, but this simply consists of (a variation on):
+
+```html
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <title>...</title>
+    <script referrerpolicy="no-referrer" src="https://unpkg.com/@lacrypta/nomadvm"></script>
+    <!-- or, alternatively:
+    <script referrerpolicy="no-referrer" src="https://cdn.jsdelivr.net/npm/@lacrypta/typescript-opentimestamps"></script>
+    -->
+    <script type="module" referrerpolicy="no-referrer">
+      'use strict';
+
+      // take a hold of the relevant entry points
+      const { vmCreate, dependencyFrom } = nomadvm;
+
+      // build a new VM
+      const vm = vmCreate();
+
+      // listen on every event cast on it
+      vm.on('**', (...args) => console.log(args));
+
+      // define some functions
+      // (note how the first closure establishes the dependencies and the returned function uses those same dependencies)
+      const duplicate = () =>
+        (x) => 2 * x;
+      const quadruple = (dupA = duplicate, dupB = duplicate) =>
+        (x) => dupA(dupB(x));
+
+      const root = await vm.start();
+
+      console.log('BOOTED');
+
+      await root.install(dependencyFrom(duplicate));
+      await root.install(dependencyFrom(quadruple));
+
+      const result = await root.execute(dependencyFrom(
+        function x(quad = quadruple) {
+          return quad(42);
+        }),
+      );
+
+      console.log(`RESULT = ${result}`);
+
+      await vm.shutdown();
+    </script>
+  </head>
+  <body></body>
+</html>
+```
