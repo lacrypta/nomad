@@ -120,6 +120,12 @@ export interface VM extends EventCaster {
   get isStopped(): boolean;
 
   /**
+   * Getter used to determine if the VM is in the "stopping" state.
+   *
+   */
+  get isStopping(): boolean;
+
+  /**
    * Getter used to retrieve the VM's name.
    *
    */
@@ -471,6 +477,7 @@ let __cast: EventCasterImplementation_Cast;
  * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
  * - `nomadvm:{NAME}:start:ok(vm, enclosure, inTime, outTime)`: when the VM `vm` has been successfully started, having created the default enclosure `enclosure`, and having spent `inTime` and `outTime` milliseconds to boot as measured from within and without the {@link VMWorker}.
  * - `nomadvm:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
+ * - `nomadvm:{NAME}:shutdown(vm)`: when the VM `vm` is being shut down.
  * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
  * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
  * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
@@ -783,7 +790,7 @@ export class VMImplementation implements VM {
    * - `running --> stopped`: upon calling {@link VMImplementation.stop} after successful boot-up sequence termination in the {@link VMWorker}.
    *
    */
-  #state: 'booting' | 'created' | 'running' | 'stopped';
+  #state: 'booting' | 'created' | 'running' | 'stopped' | 'stopping';
 
   /**
    * A list of inter-process tunnels being used.
@@ -855,6 +862,17 @@ export class VMImplementation implements VM {
   #assertRunning(): void {
     if (!this.isRunning) {
       throw new Error("expected state to be 'running'");
+    }
+  }
+
+  /**
+   * Assert that the VM is currently in the "running" or "stopping" states.
+   *
+   * @throws {Error} if the VM is in any state other than "running" or "stopping".
+   */
+  #assertRunningOrStopping(): void {
+    if (!this.isRunning && !this.isStopping) {
+      throw new Error("expected state to be 'running' or 'stopping'");
     }
   }
 
@@ -1610,7 +1628,7 @@ export class VMImplementation implements VM {
       validateEnclosure(enclosure);
       try {
         this.#castEvent(`${enclosure}:delete`);
-        this.#assertRunning();
+        this.#assertRunningOrStopping();
 
         this.#postDeleteMessage(
           this.#addTunnel(
@@ -1641,7 +1659,7 @@ export class VMImplementation implements VM {
    * @returns `this`, for chaining.
    */
   emit(enclosure: string, event: string, ...args: AnyArgs): this {
-    this.#assertRunning();
+    this.#assertRunningOrStopping();
     this.#postEmitMessage(validateEnclosure(enclosure), validateEvent(event), args);
     return this;
   }
@@ -1902,7 +1920,7 @@ export class VMImplementation implements VM {
   listRootEnclosures(): Promise<string[]> {
     return new Promise<string[]>((resolve: Resolution<string[]>, reject: Rejection): void => {
       try {
-        this.#assertRunning();
+        this.#assertRunningOrStopping();
 
         this.#postListRootEnclosuresMessage(this.#addTunnel(resolve, reject));
       } catch (e) {
@@ -2079,16 +2097,28 @@ export class VMImplementation implements VM {
     return new Promise<void>((resolve: Resolution<void>, reject: Rejection): void => {
       const theTimeout: number = validateTimeDelta(timeout ?? _defaultShutdownTimeout);
 
+      if (this.#state !== 'stopped') {
+        this.#castEvent('shutdown');
+        this.#state = 'stopping';
+      }
+
       this.listRootEnclosures().then((rootEnclosures: string[]) => {
         rootEnclosures.forEach((rootEnclosure: string): void => {
           this.emit(rootEnclosure, 'shutdown');
         });
 
         setTimeout((): void => {
-          Promise.all(
-            rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
-          ).then((): void => {
-            this.stop().then(resolve, reject);
+          // TODO: race these
+
+          Promise.race([
+            new Promise((r) => {
+              setTimeout(r, theTimeout / 10);
+            }),
+            Promise.allSettled(
+              rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
+            ),
+          ]).then((): void => {
+            this.#doStop(resolve, reject);
           }, reject);
         }, theTimeout);
       }, reject);
@@ -2331,6 +2361,14 @@ export class VMImplementation implements VM {
    */
   get isStopped(): boolean {
     return 'stopped' === this.#state;
+  }
+
+  /**
+   * Getter used to determine if the VM is in the "stopping" state.
+   *
+   */
+  get isStopping(): boolean {
+    return 'stopping' === this.#state;
   }
 
   /**

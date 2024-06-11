@@ -135,6 +135,69 @@ describe('vm', (): void => {
         _listen: (data: object) => void,
         _shout: (message: object) => void,
       ) => {
+        _listen((data: Record<string, unknown>) => {
+          const name: string = data.name as string;
+          switch (name) {
+            case 'ping':
+              _shout({ name: 'pong' });
+            case 'resolve':
+            case 'reject':
+            case 'emit':
+              // NOP
+              break;
+            case 'install':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'execute':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'predefine':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'create':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'delete':
+              _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
+              break;
+            case 'merge':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'link':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'unlink':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'mute':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'unmute':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'listRootEnclosures':
+              _shout({ name: 'resolve', payload: ['root'], tunnel: data.tunnel });
+              break;
+            case 'listInstalled':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            case 'listLinksTo':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            case 'listLinkedFrom':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            case 'isMuted':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'getSubEnclosures':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            default: {
+              _shout({ error: `unknown event name ${name}`, name: 'reject', tunnel: data.tunnel });
+            }
+          }
+        });
         setTimeout(() => {
           _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
         }, 10);
@@ -318,26 +381,75 @@ describe('vm', (): void => {
       });
 
       test('should transit states', async (): Promise<void> => {
-        const castEvents: [string, ...AnyArgs][] = [];
         const vm = create();
-        vm.on('**', (name: string, ...rest: AnyArgs): void => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          castEvents.push([name, ...rest]);
-        });
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopping, vm.isStopped]).toStrictEqual([
+          true,
+          false,
+          false,
+          false,
+          false,
+        ]);
 
-        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([true, false, false, false]);
-
-        const start = vm.start(dummyWorkerCtor);
-        await delay(5);
-        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, true, false, false]);
+        const start = vm.start(
+          makeWorkerCtor(
+            (
+              _bootTunnel: number,
+              _defaultEnclosureName: string,
+              _listen: (data: object) => void,
+              _shout: (message: object) => void,
+            ) => {
+              _listen((data: Record<string, unknown>) => {
+                const name: string = data.name as string;
+                if ('emit' === name) {
+                  // NOP
+                } else if ('delete' === name) {
+                  _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
+                } else if ('listRootEnclosures' === name) {
+                  _shout({ name: 'resolve', payload: ['root'], tunnel: data.tunnel });
+                } else {
+                  _shout({ error: `not supported ${name}`, name: 'reject', tunnel: data.tunnel });
+                }
+              });
+              setTimeout(() => {
+                _shout({ name: 'resolve', payload: 123456, tunnel: _bootTunnel });
+              }, 10);
+            },
+          ),
+        );
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopping, vm.isStopped]).toStrictEqual([
+          false,
+          true,
+          false,
+          false,
+          false,
+        ]);
 
         await start;
-        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, true, false]);
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopping, vm.isStopped]).toStrictEqual([
+          false,
+          false,
+          true,
+          false,
+          false,
+        ]);
 
-        await vm.stop();
-        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopped]).toStrictEqual([false, false, false, true]);
+        const shutdown = vm.shutdown();
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopping, vm.isStopped]).toStrictEqual([
+          false,
+          false,
+          false,
+          true,
+          false,
+        ]);
 
-        expect(castEvents).toStrictEqual([[`${_eventPrefix}:${vm.name}:start`, vm]]);
+        await shutdown;
+        expect([vm.isCreated, vm.isBooting, vm.isRunning, vm.isStopping, vm.isStopped]).toStrictEqual([
+          false,
+          false,
+          false,
+          false,
+          true,
+        ]);
       });
 
       test('should handle worker emit', async (): Promise<void> => {
@@ -619,8 +731,6 @@ describe('vm', (): void => {
                 const name: string = data.name as string;
                 if ('emit' === name) {
                   _shout({ args: [data], event: 'host-emit', name: 'emit' });
-                } else if ('ping' === name) {
-                  _shout({ name: 'pong' });
                 } else if ('delete' === name) {
                   _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
                 } else if ('listRootEnclosures' === name) {
@@ -640,9 +750,9 @@ describe('vm', (): void => {
 
         await vm.shutdown();
 
-        await delay(10);
+        await delay(20);
 
-        expect(castEvents).toHaveLength(13);
+        expect(castEvents).toHaveLength(14);
         expect(castEvents[0]).toStrictEqual([`${_eventPrefix}:${vm.name}:start`, vm]);
         expect([castEvents[1]?.[0], castEvents[1]?.[1], castEvents[1]?.[2], castEvents[1]?.[3]]).toStrictEqual([
           `${_eventPrefix}:${vm.name}:start:ok`,
@@ -663,6 +773,7 @@ describe('vm', (): void => {
           castEvents[11],
           castEvents[12],
         ]).toStrictEqual([
+          [`${_eventPrefix}:${vm.name}:shutdown`, vm],
           [
             `${_eventPrefix}:${vm.name}:user:host-emit`,
             vm,
@@ -685,10 +796,7 @@ describe('vm', (): void => {
           [`${_eventPrefix}:${vm.name}:enclosure2:delete:ok`, vm, ['enclosure2']],
           [`${_eventPrefix}:${vm.name}:enclosure3:delete:ok`, vm, ['enclosure3']],
           [`${_eventPrefix}:${vm.name}:stop`, vm],
-          [`${_eventPrefix}:${vm.name}:stop:ok`, vm],
         ]);
-
-        await vm.stop();
       });
     });
 
@@ -1331,7 +1439,11 @@ describe('vm', (): void => {
         await start;
         expect(vm.isCreated).toStrictEqual(false);
 
-        await vm.stop();
+        const shutdown = vm.shutdown(10);
+        await delay(5);
+        expect(vm.isCreated).toStrictEqual(false);
+
+        await shutdown;
         expect(vm.isCreated).toStrictEqual(false);
       });
     });
@@ -1348,7 +1460,11 @@ describe('vm', (): void => {
         await start;
         expect(vm.isBooting).toStrictEqual(false);
 
-        await vm.stop();
+        const shutdown = vm.shutdown(10);
+        await delay(5);
+        expect(vm.isBooting).toStrictEqual(false);
+
+        await shutdown;
         expect(vm.isBooting).toStrictEqual(false);
       });
     });
@@ -1365,8 +1481,33 @@ describe('vm', (): void => {
         await start;
         expect(vm.isRunning).toStrictEqual(true);
 
-        await vm.stop();
+        const shutdown = vm.shutdown(10);
+        await delay(5);
         expect(vm.isRunning).toStrictEqual(false);
+
+        await shutdown;
+        expect(vm.isRunning).toStrictEqual(false);
+      });
+    });
+
+    describe('[get isStopping]', (): void => {
+      test('should retrieve correctly', async (): Promise<void> => {
+        const vm = create();
+        expect(vm.isStopping).toStrictEqual(false);
+
+        const start = vm.start(dummyWorkerCtor);
+        await delay(5);
+        expect(vm.isStopping).toStrictEqual(false);
+
+        await start;
+        expect(vm.isStopping).toStrictEqual(false);
+
+        const shutdown = vm.shutdown(10);
+        await delay(5);
+        expect(vm.isStopping).toStrictEqual(true);
+
+        await shutdown;
+        expect(vm.isStopping).toStrictEqual(false);
       });
     });
 
@@ -1382,7 +1523,11 @@ describe('vm', (): void => {
         await start;
         expect(vm.isStopped).toStrictEqual(false);
 
-        await vm.stop();
+        const shutdown = vm.shutdown(10);
+        await delay(5);
+        expect(vm.isStopped).toStrictEqual(false);
+
+        await shutdown;
         expect(vm.isStopped).toStrictEqual(true);
       });
     });
@@ -1659,14 +1804,18 @@ describe('vm', (): void => {
         });
 
         await expect(vm.deleteEnclosure('something')).rejects.toStrictEqual(
-          new Error("expected state to be 'running'"),
+          new Error("expected state to be 'running' or 'stopping'"),
         );
 
         await delay(10);
 
         expect(castEvents).toStrictEqual([
           [`${_eventPrefix}:${vm.name}:something:delete`, vm],
-          [`${_eventPrefix}:${vm.name}:something:delete:error`, vm, new Error("expected state to be 'running'")],
+          [
+            `${_eventPrefix}:${vm.name}:something:delete:error`,
+            vm,
+            new Error("expected state to be 'running' or 'stopping'"),
+          ],
         ]);
 
         await vm.stop();
@@ -2565,7 +2714,9 @@ describe('vm', (): void => {
       test('should reject if not running', async (): Promise<void> => {
         const vm = create();
 
-        await expect(vm.listRootEnclosures()).rejects.toStrictEqual(new Error("expected state to be 'running'"));
+        await expect(vm.listRootEnclosures()).rejects.toStrictEqual(
+          new Error("expected state to be 'running' or 'stopping'"),
+        );
 
         await vm.stop();
       });
@@ -3442,7 +3593,7 @@ describe('vm', (): void => {
 
         expect((): void => {
           vm.emit('root', 'something');
-        }).toThrow(new Error("expected state to be 'running'"));
+        }).toThrow(new Error("expected state to be 'running' or 'stopping'"));
 
         await vm.stop();
       });
