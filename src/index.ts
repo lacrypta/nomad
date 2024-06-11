@@ -31,7 +31,7 @@
 import type { AnyArgs, AnyFunction, Dependency, DependencyObject } from './dependency';
 import type { EventCallback, EventCaster } from './eventCaster';
 import type { ArgumentsMap } from './validation';
-import type { Enclosure, VM, WorkerTimings } from './vm';
+import type { Enclosure, VM } from './vm';
 import type { ErrorCallback, MessageCallback, VMWorker, WorkerConstructor } from './worker';
 
 import { create as _dependencyCreate, from as _dependencyFrom } from './dependency';
@@ -47,7 +47,7 @@ const vmEvents = _vmEvents;
 export type { AnyArgs, AnyFunction, Dependency, DependencyObject };
 export type { EventCallback, EventCaster };
 export type { ArgumentsMap };
-export type { Enclosure, VM, WorkerTimings };
+export type { Enclosure, VM };
 export type { ErrorCallback, MessageCallback, VMWorker, WorkerConstructor };
 
 export { dependencyCreate, dependencyFrom };

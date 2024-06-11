@@ -53,24 +53,6 @@ import { VMWorkerImplementation } from './worker';
 import workerCode from './workerCode.cjs';
 
 /**
- * The type of a {@link VMWorker} timing structure (used in {@link VM.start}).
- *
- */
-export type WorkerTimings = {
-  /**
-   * Timing as measured from within the {@link VMWorker}.
-   *
-   */
-  inside: number;
-
-  /**
-   * Timing as measured from outside of the {@link VMWorker}.
-   *
-   */
-  outside: number;
-};
-
-/**
  * A safe execution environment for NOMAD code execution.
  *
  */
@@ -272,7 +254,7 @@ export interface VM extends EventCaster {
    * @param timeout - Milliseconds to wait for the {@link VMWorker} to complete its boot-up sequence.
    * @returns A {@link !Promise} that resolves with a {@link Enclosure} wrapper for the default enclosure if the {@link VMWorker} was successfully booted up, and rejects with an {@link !Error} in case errors occur.
    */
-  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<EnclosureImplementation>;
+  start(workerCtor?: WorkerConstructor, timeout?: number): Promise<Enclosure>;
 
   /**
    * Start (or re-start) the pinger interval.
