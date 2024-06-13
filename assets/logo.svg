@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="204.611mm" height="84.6667mm"
- viewBox="0 0 580 240"
+<svg width="141.111mm" height="84.6667mm"
+ viewBox="0 0 400 240"
  xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"  version="1.2" baseProfile="tiny">
 <title>Qt SVG Document</title>
 <desc>Generated with Qt</desc>
@@ -11,68 +11,51 @@
 <g fill="#ffffff" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
 font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
 >
-<rect x="0" y="0" width="580" height="240"/>
+<rect x="0" y="0" width="400" height="240"/>
 </g>
 
 <g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
 font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
 >
-<path vector-effect="none" fill-rule="evenodd" d="M392,235 L338,146 L338,235 L392,235"/>
+<path vector-effect="none" fill-rule="evenodd" d="M46,197 L46,235 L44,235 L42,235 L40,235 L38,234 L36,234 L35,233 L33,232 L31,232 L29,231 L27,230 L26,229 L24,228 L22,227 L21,225 L19,224 L18,222 L17,221 L15,219 L14,218 L13,216 L12,214 L11,212 L11,211 L10,209 L9,207 L9,205 L9,203 L8,201 L8,199 L8,197 L46,197"/>
 </g>
 
 <g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
 font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
 >
-<path vector-effect="none" fill-rule="evenodd" d="M73,5 L127,94 L127,5 L73,5"/>
+<path vector-effect="none" fill-rule="evenodd" d="M254,235 L200,146 L200,235 L254,235"/>
 </g>
 
 <g fill="#000000" fill-opacity="1" stroke="none" transform="matrix(1,0,0,1,0,0)"
 font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
 >
-<path vector-effect="none" fill-rule="evenodd" d="M12,5 L50,5 L146,162 L146,5 L184,5 L280,162 L280,5 L319,5 L414,162 L414,5 L491,5 L493,5 L495,5 L497,5 L499,5 L501,6 L503,6 L505,6 L507,7 L509,7 L511,8 L513,8 L515,9 L517,9 L519,10 L520,11 L522,12 L524,12 L526,13 L528,14 L529,15 L531,16 L533,17 L534,18 L536,20 L538,21 L539,22 L541,23 L542,25 L544,26 L545,27 L547,29 L548,30 L549,32 L551,33 L552,35 L553,36 L554,38 L555,40 L556,41 L557,43 L558,45 L559,47 L560,48 L561,50 L562,52 L563,54 L563,56 L564,58 L565,60 L565,61 L566,63 L566,65 L566,67 L567,69 L567,71 L567,73 L568,75 L568,77 L568,79 L568,81 L568,82 L568,158 L568,160 L568,162 L568,164 L567,166 L567,168 L567,170 L567,172 L566,174 L566,176 L565,178 L565,180 L564,182 L563,184 L563,186 L562,188 L561,189 L560,191 L560,193 L559,195 L558,197 L557,198 L556,200 L554,202 L553,203 L552,205 L551,206 L550,208 L548,209 L547,211 L546,212 L544,214 L543,215 L541,216 L540,218 L538,219 L536,220 L535,221 L533,222 L531,224 L530,225 L528,226 L526,227 L524,227 L523,228 L521,229 L519,230 L517,230 L515,231 L513,232 L511,232 L509,233 L507,233 L506,234 L504,234 L502,234 L500,235 L498,235 L496,235 L494,235 L492,235 L491,235 L472,235 L472,197 L491,197 L493,197 L495,196 L497,196 L499,196 L501,195 L503,195 L505,194 L507,193 L509,193 L510,192 L512,191 L514,189 L515,188 L517,187 L518,186 L520,184 L521,183 L522,181 L523,179 L524,178 L525,176 L526,174 L527,172 L528,170 L528,168 L529,166 L529,165 L529,163 L529,161 L529,159 L530,158 L530,82 L529,80 L529,78 L529,76 L529,74 L528,72 L528,70 L527,68 L526,66 L525,64 L524,63 L523,61 L522,59 L521,58 L520,56 L518,55 L517,53 L515,52 L514,51 L512,50 L510,49 L509,48 L507,47 L505,46 L503,45 L501,45 L499,44 L497,44 L495,44 L493,43 L491,43 L453,43 L453,235 L414,235 L319,78 L319,235 L280,235 L184,78 L184,235 L146,235 L50,78 L50,235 L12,235 L12,5"/>
+<path vector-effect="none" fill-rule="evenodd" d="M180,5 L296,194 L298,194 L300,193 L302,192 L304,192 L306,191 L308,190 L309,189 L311,188 L313,187 L315,186 L316,185 L318,184 L320,183 L321,182 L323,181 L325,180 L326,178 L328,177 L329,176 L330,174 L332,173 L333,171 L335,170 L336,168 L337,167 L338,165 L339,164 L341,162 L342,160 L343,158 L344,157 L345,155 L345,153 L346,151 L347,150 L348,148 L349,146 L349,144 L350,142 L350,140 L351,138 L351,136 L352,134 L352,132 L352,130 L353,128 L353,126 L353,124 L353,122 L353,120 L353,118 L353,116 L353,114 L353,112 L352,110 L352,108 L352,106 L351,104 L351,102 L350,101 L350,99 L349,97 L349,95 L348,93 L347,91 L347,89 L346,87 L345,86 L344,84 L343,82 L342,80 L341,79 L340,77 L339,75 L337,74 L336,72 L335,71 L334,69 L332,68 L331,66 L329,65 L328,63 L327,62 L325,61 L323,60 L322,58 L320,57 L319,56 L317,55 L315,54 L313,53 L312,52 L310,51 L308,50 L306,49 L304,49 L303,48 L301,47 L299,47 L297,46 L295,46 L293,45 L291,45 L289,44 L287,44 L285,44 L283,44 L281,43 L279,43 L277,43 L275,43 L273,43 L271,44 L269,44 L267,44 L265,44 L263,44 L261,45 L259,45 L257,46 L255,46 L253,47 L252,47 L250,48 L248,49 L246,50 L244,50 L242,51 L241,52 L239,53 L237,54 L235,55 L234,56 L214,23 L216,22 L218,21 L219,20 L221,19 L223,18 L225,17 L226,16 L228,16 L230,15 L232,14 L234,13 L236,12 L237,12 L239,11 L241,10 L243,10 L245,9 L247,9 L249,8 L251,8 L253,7 L255,7 L257,7 L259,6 L261,6 L263,6 L265,6 L267,5 L269,5 L271,5 L273,5 L275,5 L277,5 L279,5 L281,5 L283,5 L285,5 L287,5 L289,6 L291,6 L293,6 L295,6 L297,7 L298,7 L300,8 L302,8 L304,8 L306,9 L308,10 L310,10 L312,11 L314,11 L316,12 L318,13 L320,13 L321,14 L323,15 L325,16 L327,17 L329,18 L330,19 L332,19 L334,20 L336,21 L337,23 L339,24 L341,25 L342,26 L344,27 L346,28 L347,29 L349,31 L350,32 L352,33 L353,35 L355,36 L356,37 L358,39 L359,40 L360,42 L362,43 L363,45 L364,46 L366,48 L367,49 L368,51 L369,52 L370,54 L372,56 L373,57 L374,59 L375,61 L376,62 L377,64 L378,66 L379,68 L380,69 L380,71 L381,73 L382,75 L383,77 L384,79 L384,80 L385,82 L386,84 L386,86 L387,88 L387,90 L388,92 L388,94 L389,96 L389,98 L390,100 L390,102 L390,104 L390,106 L391,108 L391,110 L391,112 L391,114 L391,116 L391,118 L391,120 L391,122 L391,124 L391,126 L391,128 L391,130 L391,132 L391,134 L390,136 L390,138 L390,140 L389,142 L389,143 L388,145 L388,147 L388,149 L387,151 L386,153 L386,155 L385,157 L385,159 L384,161 L383,163 L382,164 L382,166 L381,168 L380,170 L379,172 L378,174 L377,175 L376,177 L375,179 L374,180 L373,182 L372,184 L371,185 L370,187 L369,189 L367,190 L366,192 L365,193 L364,195 L362,196 L361,198 L360,199 L358,201 L357,202 L355,204 L354,205 L352,206 L351,208 L349,209 L348,210 L346,211 L345,213 L343,214 L341,215 L340,216 L338,217 L336,218 L334,219 L333,220 L331,221 L329,222 L327,223 L326,224 L324,225 L322,226 L320,226 L318,227 L316,228 L315,228 L313,229 L311,230 L309,230 L307,231 L305,231 L303,232 L301,232 L299,233 L297,233 L295,233 L293,234 L291,234 L289,234 L287,234 L285,235 L283,235 L281,235 L279,235 L277,235 L276,235 L180,78 L180,235 L142,235 L46,78 L46,178 L8,178 L8,5 L46,5 L142,162 L142,5 L180,5"/>
 </g>
 
 <g fill="none" stroke="#000000" stroke-opacity="1" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" transform="matrix(1,0,0,1,0,0)"
 font-family="Ubuntu" font-size="11" font-weight="400" font-style="normal" 
 >
-<polyline fill="none" vector-effect="non-scaling-stroke" points="12,235 12,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="12,5 50,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="50,235 12,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="146,5 184,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="184,235 146,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="50,78 146,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="146,162 50,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="50,78 50,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="146,162 146,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="280,5 319,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="319,235 280,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="184,78 280,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="280,162 184,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="184,78 184,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="280,162 280,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="453,235 414,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="319,78 414,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="414,162 319,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="319,78 319,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="414,162 414,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="472,197 472,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="453,235 453,43 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="127,5 73,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="127,94 127,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="338,235 392,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="338,146 338,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="338,146 392,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="127,94 73,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="530,82 530,158 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="568,82 568,158 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="530,82 529,80 529,78 529,76 529,74 528,72 528,70 527,68 526,66 525,64 524,63 523,61 522,59 521,58 520,56 518,55 517,53 515,52 514,51 512,50 510,49 509,48 507,47 505,46 503,45 501,45 499,44 497,44 495,44 493,43 491,43 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="568,82 568,80 568,78 568,76 567,74 567,72 567,70 567,68 566,66 566,64 565,62 565,60 564,58 563,56 563,54 562,52 561,51 560,49 560,47 559,45 558,43 557,42 556,40 554,38 553,37 552,35 551,34 550,32 548,31 547,29 546,28 544,26 543,25 541,24 540,22 538,21 536,20 535,19 533,18 531,16 530,15 528,14 526,13 524,13 523,12 521,11 519,10 517,10 515,9 513,8 511,8 509,7 507,7 506,6 504,6 502,6 500,5 498,5 496,5 494,5 492,5 491,5 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="491,197 493,197 495,196 497,196 499,196 501,195 503,195 505,194 507,193 509,193 510,192 512,191 514,189 515,188 517,187 518,186 520,184 521,183 522,181 523,179 524,178 525,176 526,174 527,172 528,170 528,168 529,166 529,165 529,163 529,161 529,159 530,158 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="491,235 493,235 495,235 497,235 499,235 501,234 503,234 505,234 507,233 509,233 511,232 513,232 515,231 517,231 519,230 520,229 522,228 524,228 526,227 528,226 529,225 531,224 533,223 534,222 536,220 538,219 539,218 541,217 542,215 544,214 545,213 547,211 548,210 549,208 551,207 552,205 553,204 554,202 555,200 556,199 557,197 558,195 559,193 560,192 561,190 562,188 563,186 563,184 564,182 565,180 565,179 566,177 566,175 566,173 567,171 567,169 567,167 568,165 568,163 568,161 568,159 568,158 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="472,235 491,235 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="472,197 491,197 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="453,43 491,43 " />
-<polyline fill="none" vector-effect="non-scaling-stroke" points="414,5 491,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="142,5 180,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="180,235 142,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="46,78 142,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="142,162 46,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="142,162 142,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="180,78 180,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="200,235 254,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="200,146 200,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="200,146 254,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="8,5 46,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="8,197 46,197 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="8,178 46,178 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="8,178 8,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="46,197 46,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="46,78 46,178 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="8,197 8,199 8,201 8,203 9,205 9,207 10,208 11,210 11,212 12,214 13,216 14,217 15,219 16,221 18,222 19,224 21,225 22,226 24,228 25,229 27,230 29,231 31,232 32,232 34,233 36,234 38,234 40,234 42,235 44,235 46,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="180,78 276,235 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="296,194 180,5 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="296,194 298,194 300,193 302,192 304,192 306,191 308,190 309,189 311,188 313,187 315,186 316,185 318,184 320,183 321,182 323,181 325,180 326,178 328,177 329,176 330,174 332,173 333,171 335,170 336,168 337,167 338,165 339,164 341,162 342,160 343,158 344,157 345,155 345,153 346,151 347,150 348,148 349,146 349,144 350,142 350,140 351,138 351,136 352,134 352,132 352,130 353,128 353,126 353,124 353,122 353,120 353,118 353,116 353,114 353,112 352,110 352,108 352,106 351,104 351,102 350,101 350,99 349,97 349,95 348,93 347,91 347,89 346,87 345,86 344,84 343,82 342,80 341,79 340,77 339,75 337,74 336,72 335,71 334,69 332,68 331,66 329,65 328,63 327,62 325,61 323,60 322,58 320,57 319,56 317,55 315,54 313,53 312,52 310,51 308,50 306,49 304,49 303,48 301,47 299,47 297,46 295,46 293,45 291,45 289,44 287,44 285,44 283,44 281,43 279,43 277,43 275,43 273,43 271,44 269,44 267,44 265,44 263,44 261,45 259,45 257,46 255,46 253,47 252,47 250,48 248,49 246,50 244,50 242,51 241,52 239,53 237,54 235,55 234,56 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="276,235 278,235 280,235 282,235 284,235 286,235 288,234 290,234 292,234 294,234 296,233 298,233 300,233 302,232 304,232 306,231 308,231 310,230 312,229 314,229 316,228 317,227 319,227 321,226 323,225 325,224 327,223 328,223 330,222 332,221 334,220 335,219 337,218 339,217 340,215 342,214 344,213 345,212 347,211 348,210 350,208 352,207 353,206 355,204 356,203 357,202 359,200 360,199 362,197 363,196 364,194 365,193 367,191 368,190 369,188 370,186 371,185 373,183 374,181 375,180 376,178 377,176 378,174 379,173 379,171 380,169 381,167 382,165 383,164 384,162 384,160 385,158 386,156 386,154 387,152 387,150 388,148 388,146 389,144 389,142 389,141 390,139 390,137 390,135 391,133 391,131 391,129 391,127 391,125 391,123 391,121 391,119 391,117 391,115 391,113 391,111 391,109 391,107 390,105 390,103 390,101 389,99 389,97 389,95 388,93 388,91 387,89 387,87 386,85 385,83 385,81 384,80 383,78 383,76 382,74 381,72 380,70 379,69 378,67 377,65 376,63 375,62 374,60 373,58 372,56 371,55 370,53 369,52 368,50 366,48 365,47 364,45 362,44 361,42 360,41 358,39 357,38 355,37 354,35 353,34 351,33 349,31 348,30 346,29 345,28 343,26 342,25 340,24 338,23 336,22 335,21 333,20 331,19 330,18 328,17 326,16 324,15 322,15 320,14 319,13 317,12 315,12 313,11 311,10 309,10 307,9 305,9 303,8 301,8 299,7 297,7 296,7 294,6 292,6 290,6 288,6 286,5 284,5 282,5 280,5 278,5 276,5 274,5 272,5 270,5 268,5 266,5 264,6 262,6 260,6 258,7 256,7 254,7 252,8 250,8 248,9 246,9 244,10 242,10 240,11 238,11 236,12 235,13 233,14 231,14 229,15 227,16 225,17 224,18 222,19 220,20 218,21 217,22 215,23 214,23 " />
+<polyline fill="none" vector-effect="non-scaling-stroke" points="234,56 214,23 " />
 </g>
 </g>
 </svg>
