@@ -1624,13 +1624,58 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   };
 
   // ----------------------------------------------------------------------------------------------
+  // -- Monotonic Map helpers ---------------------------------------------------------------------
+  // ----------------------------------------------------------------------------------------------
+
+  /**
+   * Determine whether a monotonic map actually has a key.
+   *
+   * @template T
+   * @template U
+   * @param {Map<T, U | undefined>} map - Monotonic {@link !Map} to query.
+   * @param {T} key - The key to query about.
+   * @returns {boolean} `true` if the given key belongs to the given monotonic map, `false` otherwise.
+   */
+  const mapHas = (map, key) => undefined !== map.get(key);
+
+  /**
+   * Retrieve an array of actually set keys in the given monotonic map.
+   *
+   * @template T
+   * @template U
+   * @param {Map<T, U | undefined>} map - Monotonic {@link !Map} to extract keys from.
+   * @returns {T[]} The list of set keys.
+   */
+  const mapKeys = (map) =>
+    _Array
+      .from(map.entries())
+      /* eslint-disable-next-line no-unused-vars */
+      .filter(([_, v]) => undefined !== v)
+      .map(([k]) => k);
+
+  /**
+   * Mark the given key as deleted on the given monotonic map.
+   *
+   * @template T
+   * @template U
+   * @param {Map<T, U | undefined>} map - Monotonic {@link !Map} to unset keys from.
+   * @param {T} key - The key to unset.
+   * @returns {boolean} `true` if the key previously existed, `false` otherwise.
+   */
+  const mapDelete = (map, key) => {
+    const result = mapHas(map, key);
+    map.set(key, undefined);
+    return result;
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // -- Enclosure Framework -----------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
   /**
    * Mapping from enclosure name to {@link EnclosureObject}.
    *
-   * @type {Map<string, EnclosureObject>}
+   * @type {Map<string, EnclosureObject | undefined>}
    */
   const enclosures = new _Map();
 
@@ -1690,7 +1735,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
 
     if (enclosures.has(enclosure)) {
       throw new _Error(`duplicate enclosure name ${enclosure}`);
-    } else if (parent !== null && !enclosures.has(parent)) {
+    } else if (null !== parent && mapHas(enclosures, parent)) {
       throw new _Error(`parent enclosure ${parent} does not exist`);
     }
 
@@ -1729,9 +1774,9 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    */
   const enclosureSubEnclosures = (enclosure, depth = 0) => {
     const limit = 0 < depth ? depth + enclosure.split('.').length : Infinity;
-    return _Array
-      .from(enclosures.keys())
-      .filter((candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit);
+    return mapKeys(enclosures).filter(
+      (candidate) => candidate.startsWith(`${enclosure}.`) && candidate.split('.').length <= limit,
+    );
   };
 
   /**
@@ -1755,7 +1800,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       const { port, tunnels } = getEnclosure(toRemove);
       toReject = [...toReject, ...tunnels];
       delete enclosurePorts[port];
-      enclosures.delete(toRemove);
+      mapDelete(enclosures, toRemove);
     });
 
     const error = new _Error('deleting enclosure');
@@ -1836,10 +1881,10 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       }
       enclosurePorts[subEnclosureEnclosure.port] = newSubEnclosure;
       enclosures.set(newSubEnclosure, subEnclosureEnclosure);
-      enclosures.delete(subEnclosure);
+      mapDelete(enclosures, subEnclosure);
     });
 
-    enclosures.delete(enclosure);
+    mapDelete(enclosures, enclosure);
   };
 
   /**
@@ -1915,8 +1960,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {Array<string>} A list of root enclosures.
    */
   const listRootEnclosures = () => {
-    return _Array
-      .from(enclosures.keys())
+    return mapKeys(enclosures)
       .filter((enclosure) => -1 === enclosure.indexOf('.'))
       .sort();
   };
@@ -2274,10 +2318,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    */
   const listLinkedFrom = (enclosure) => {
     getEnclosure(enclosure);
-    return _Array
-      .from(enclosures.entries())
-      .filter(([, { linked }]) => linked.has(enclosure))
-      .map(([name]) => name);
+    return mapKeys(enclosures).filter((otherEnclosure) => getEnclosure(otherEnclosure).linked.has(enclosure));
   };
 
   /**
