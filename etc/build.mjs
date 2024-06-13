@@ -39,6 +39,18 @@ const results = await Promise.all([
   }),
   build({
     ...buildOptions,
+    format: 'cjs',
+    outfile: './dist/cjs/index.js',
+  }),
+  build({
+    ...buildOptions,
+    format: 'cjs',
+    minify: true,
+    keepNames: false,
+    outfile: './dist/cjs/index.min.js',
+  }),
+  build({
+    ...buildOptions,
     format: 'umd',
     outfile: './dist/umd/index.js',
     plugins: [umdWrapper(umdWrapperOptions)],

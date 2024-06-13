@@ -23,6 +23,7 @@
   "files": [
     "dist/types",
     "dist/esm",
+    "dist/cjs",
     "dist/umd"
   ],
   "types": "./dist/types/index.d.ts",
@@ -39,13 +40,12 @@
   "exports": {
     "types": "./dist/types/index.d.ts",
     "default": "./dist/esm/index.js",
-    "require": "./dist/cjs/index.cjs",
+    "require": "./dist/cjs/index.js",
     "umd": "./dist/umd/index.js"
   },
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "postinstall": "mkdir -p ./dist/cjs && ln -sf ../umd/index.min.js ./dist/cjs/index.min.cjs && ln -sf ../umd/index.js ./dist/cjs/index.cjs",
     "mdlint": "markdownlint . .github -i node_modules -c ./etc/.markdownlint.jsonc",
     "mdlint:fix": "pnpm run mdlint --fix",
     "lint:ts": "eslint 'src/**/*.{m,c,}ts' 'test/**/*.{m,c,}ts' --config ./etc/eslint.ts.config.mjs --no-error-on-unmatched-pattern",
@@ -56,7 +56,7 @@
     "prettier:fix": "pnpm run prettier --write",
     "format": "pnpm run prettier:fix && pnpm run lint:fix && pnpm run mdlint:fix",
     "build": "pnpm run build:code && pnpm run build:types",
-    "build:code": "node ./etc/build.mjs && pnpm run postinstall",
+    "build:code": "node ./etc/build.mjs",
     "build:types": "tsc --build --verbose ./etc/tsconfig.build.json",
     "analyze": "node ./etc/analyze.mjs",
     "doc": "pnpm doc:api && pnpm run doc:internal",
