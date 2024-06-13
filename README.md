@@ -1,5 +1,8 @@
-<!-- markdownlint-disable-next-line MD041 -->
-![Nomad Logo](./assets/logo.png)
+<!-- markdownlint-disable-next-line MD033 MD041 -->
+<div style="text-align:center">
+  <!-- markdownlint-disable-next-line MD033 -->
+  <img src="./assets/logo.png" alt="Nomad logo"/>
+</div>
 
 # NomadVM
 
