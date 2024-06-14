@@ -548,7 +548,7 @@ export const _eventPrefix: Readonly<string> = 'nomad';
  * Prefix to use for all names generated.
  *
  */
-export const _namesPrefix: Readonly<string> = 'nomadvm';
+export const _namesPrefix: Readonly<string> = 'vm';
 
 /**
  * Default enclosure name to use for new VMs.
