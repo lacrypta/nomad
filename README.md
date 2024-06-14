@@ -1,7 +1,7 @@
 <!-- markdownlint-disable-next-line MD033 MD041 -->
 <img width="100%" src="./assets/logo.png" alt="Nomad logo" />
 
-# NomadVM
+# Nomad
 
 The Nomad Virtual Machine reference implementation
 
@@ -10,7 +10,7 @@ The Nomad Virtual Machine reference implementation
 Simply install via `pnpm`:
 
 ```sh
-pnpm i --save-dev @lacrypta/nomadvm
+pnpm i --save-dev @lacrypta/nomad
 ```
 
 ## Development
@@ -18,7 +18,7 @@ pnpm i --save-dev @lacrypta/nomadvm
 Clone the repository as usual:
 
 ```sh
-git clone https://github.com/lacrypta/nomadvm.git
+git clone https://github.com/lacrypta/nomad.git
 ```
 
 now simply install all dependencies:
@@ -98,15 +98,15 @@ The [demo](./test/demo/index.html) has a minimal example, but this simply consis
   <head>
     <meta charset="UTF-8" />
     <title>...</title>
-    <script referrerpolicy="no-referrer" src="https://unpkg.com/@lacrypta/nomadvm"></script>
+    <script referrerpolicy="no-referrer" src="https://unpkg.com/@lacrypta/nomad"></script>
     <!-- or, alternatively:
-    <script referrerpolicy="no-referrer" src="https://cdn.jsdelivr.net/npm/@lacrypta/nomadvm"></script>
+    <script referrerpolicy="no-referrer" src="https://cdn.jsdelivr.net/npm/@lacrypta/nomad"></script>
     -->
     <script type="module" referrerpolicy="no-referrer">
       'use strict';
 
       // take a hold of the relevant entry points
-      const { vmCreate, dependencyFrom } = nomadvm;
+      const { vmCreate, dependencyFrom } = nomad;
 
       // build a new VM
       const vm = vmCreate();

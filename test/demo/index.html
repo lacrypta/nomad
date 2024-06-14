@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="data:," />
-    <title>NomadVM</title>
+    <title>Nomad</title>
     <script referrerpolicy="no-referrer" src="../../dist/umd/index.js"></script>
     <script type="module" referrerpolicy="no-referrer">
       'use strict';
-      const { vmCreate, dependencyFrom } = nomadvm;
+      const { vmCreate, dependencyFrom } = nomad;
       const vm = vmCreate();
       vm.on('**', (...args) => console.log(args));
       const dbl = dependencyFrom(() => (x) => 2 * x, 'dbl');

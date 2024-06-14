@@ -3,7 +3,7 @@ import { writeFileSync } from 'fs';
 import { build } from 'esbuild';
 import { umdWrapper } from 'esbuild-plugin-umd-wrapper';
 
-const name = 'nomadvm';
+const name = 'nomad';
 
 const umdWrapperOptions = {
   libraryName: name,

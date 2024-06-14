@@ -1,4 +1,4 @@
-// nomadvm: The Nomad Virtual Machine reference implementation
+// nomad: The Nomad Virtual Machine reference implementation
 //
 // MIT License
 //
@@ -470,58 +470,58 @@ let __cast: EventCasterImplementation_Cast;
  * All events cast bear a first argument consisting of the VM the event originated from.
  * The events cast on the static {@link EventCasterImplementation} are:
  *
- * - `nomadvm:{NAME}:new(vm)`: cast on the static {@link EventCasterImplementation}, upon VM `vm` creation.
+ * - `nomad:{NAME}:new(vm)`: cast on the static {@link EventCasterImplementation}, upon VM `vm` creation.
  *
  * The events cast on both {@link EventCasterImplementation}s are:
  *
- * - `nomadvm:{NAME}:start(vm)`: when the VM `vm` is being started.
- * - `nomadvm:{NAME}:start:ok(vm, enclosure, inTime, outTime)`: when the VM `vm` has been successfully started, having created the default enclosure `enclosure`, and having spent `inTime` and `outTime` milliseconds to boot as measured from within and without the {@link VMWorker}.
- * - `nomadvm:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
- * - `nomadvm:{NAME}:shutdown(vm)`: when the VM `vm` is being shut down.
- * - `nomadvm:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
- * - `nomadvm:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
- * - `nomadvm:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
- * - `nomadvm:{NAME}:worker:warning(vm, error)`: when the {@link VMWorker} encounters a non-fatal, yet reportable, error `error`.
- * - `nomadvm:{NAME}:worker:error(vm, error)`: when the {@link VMWorker} encounters a fatal error `error`.
- * - `nomadvm:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMWorker} fails to respond to ping / pong messages for `delta` milliseconds.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
- * - `nomadvm:{NAME}:{ENCLOSURE}:create(vm)`: when a new enclosure is being created on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:create:ok(vm)`: when a new enclosure has been successfully created on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when an enclosure has failed to be deleted from VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:merge(vm, enclosure)`: when an enclosure `enclosure` is being merged to its parent from VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:merge:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully merged to its parent on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:merge:error(vm, enclosure, error)`: when an enclosure `enclosure` has failed to be merged to its parent in VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:link(vm, target)`: when an enclosure is being linked to the `target` one on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when an enclosure has been successfully linked to the `target` one on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when an enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when an enclosure is being unlinked to the `target` one on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when an enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when an enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:mute(vm)`: when an enclosure is being muted on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when an enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
- * - `nomadvm:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when an enclosure has failed to be muted on VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unmute(vm)`: when an enclosure is being unmuted on VM `vm`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when an enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when an enclosure has failed to be unmuted on VM `vm` with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
- * - `nomadvm:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
- * - `nomadvm:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link VMWorker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
+ * - `nomad:{NAME}:start(vm)`: when the VM `vm` is being started.
+ * - `nomad:{NAME}:start:ok(vm, enclosure, inTime, outTime)`: when the VM `vm` has been successfully started, having created the default enclosure `enclosure`, and having spent `inTime` and `outTime` milliseconds to boot as measured from within and without the {@link VMWorker}.
+ * - `nomad:{NAME}:start:error(vm, error)`: when the VM `vm` has failed to be started with error `error`.
+ * - `nomad:{NAME}:shutdown(vm)`: when the VM `vm` is being shut down.
+ * - `nomad:{NAME}:stop(vm)`: when the VM `vm` is being stopped.
+ * - `nomad:{NAME}:stop:ok(vm)`: when the VM `vm` has been successfully stopped.
+ * - `nomad:{NAME}:stop:error(vm, error)`: when the VM `vm` has failed to be stopped with error `error`.
+ * - `nomad:{NAME}:worker:warning(vm, error)`: when the {@link VMWorker} encounters a non-fatal, yet reportable, error `error`.
+ * - `nomad:{NAME}:worker:error(vm, error)`: when the {@link VMWorker} encounters a fatal error `error`.
+ * - `nomad:{NAME}:worker:unresponsive(vm, delta)`: when the {@link VMWorker} fails to respond to ping / pong messages for `delta` milliseconds.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:call(vm, idx, args)`: when a predefined function with index `idx` is being called with arguments `args` on the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:call:ok(vm, idx, args)`: when a predefined function with index `idx` has been successfully called with arguments `args` on the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:call:error(vm, idx, args, error)`: when a predefined function with index `idx` has failed to be called with arguments `args` on the `vm` VM with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:add(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` is being added to the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:add:ok(vm, name, callback, idx)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has been successfully added to the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:predefined:add:error(vm, name, callback, idx, error)`: when a predefined function with name `name`, index `idx`, and implementation `callback` has failed to be added to the `vm` VM with error `error`
+ * - `nomad:{NAME}:{ENCLOSURE}:create(vm)`: when a new enclosure is being created on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:create:ok(vm)`: when a new enclosure has been successfully created on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:create:error(vm, error)`: when a new enclosure has failed to be created on VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:delete(vm)`: when an enclosure is being deleted from VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:delete:ok(vm, deleted)`: when enclosures `deleted` have been successfully deleted from VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:delete:error(vm, error)`: when an enclosure has failed to be deleted from VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:merge(vm, enclosure)`: when an enclosure `enclosure` is being merged to its parent from VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:merge:ok(vm, enclosure)`: when enclosure `enclosure` has been successfully merged to its parent on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:merge:error(vm, enclosure, error)`: when an enclosure `enclosure` has failed to be merged to its parent in VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:link(vm, target)`: when an enclosure is being linked to the `target` one on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:link:ok(vm, target)`: when an enclosure has been successfully linked to the `target` one on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:link:error(vm, target, error)`: when an enclosure has failed to be linked to the `target` one on VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:unlink(vm, target)`: when an enclosure is being unlinked to the `target` one on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:unlink:ok(vm, target, unlinked)`: when an enclosure has been successfully unlinked to the `target` one on VM `vm`, `unlinked` will be `true` if the target enclosure was previously linked.
+ * - `nomad:{NAME}:{ENCLOSURE}:unlink:error(vm, target, error)`: when an enclosure has failed to be unlinked to the `target` one on VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:mute(vm)`: when an enclosure is being muted on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:mute:ok(vm, previous)`: when an enclosure has been successfully muted on VM `vm`, where the previous muting status was `previous`..
+ * - `nomad:{NAME}:{ENCLOSURE}:mute:error(vm, error)`: when an enclosure has failed to be muted on VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:unmute(vm)`: when an enclosure is being unmuted on VM `vm`.
+ * - `nomad:{NAME}:{ENCLOSURE}:unmute:ok(vm, previous)`: when an enclosure has been successfully unmuted on VM `vm`, where the previous muting status was `previous`.
+ * - `nomad:{NAME}:{ENCLOSURE}:unmute:error(vm, error)`: when an enclosure has failed to be unmuted on VM `vm` with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:install(vm, dependency)`: when dependency `dependency` is being installed on the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:install:ok(vm, dependency)`: when dependency `dependency` has been successfully installed on the `vm` VM.
+ * - `nomad:{NAME}:{ENCLOSURE}:install:error(vm, dependency, error)`: when dependency `dependency` has failed to be installed on the `vm` VM with error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:execute(vm, dependency, args)`: when dependency `dependency` is being executed on the `vm` VM with arguments `args`.
+ * - `nomad:{NAME}:{ENCLOSURE}:execute:ok(vm, dependency, args, result)`: when dependency `dependency` has been successfully executed on the `vm` VM with arguments `args`.
+ * - `nomad:{NAME}:{ENCLOSURE}:execute:error(vm, dependency, args, error)`: when dependency `dependency` has failed to be executed on the `vm` VM with arguments `args` and error `error`.
+ * - `nomad:{NAME}:{ENCLOSURE}:user:{eventname}(vm, ...args)`: when the {@link VMWorker} on the `vm` VM emits an event with name `EVENT` and arguments `args`.
  *
  * Internally, the {@link VMWorker} will cast the following events when instructed to by the VM:
  *
- * - `nomadvm:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link VMWorker} with name `EVENT` and arguments `args`.
+ * - `nomad:{NAME}:{ENCLOSURE}:host:{eventname}(vm, ...args)`: when the VM `vm` emits an event into the {@link VMWorker} with name `EVENT` and arguments `args`.
  *
  */
 export const events: Readonly<EventCaster> = Object.freeze(
@@ -542,7 +542,7 @@ export const _cast: EventCasterImplementation_Cast =
  * Prefix to use for all events emitted.
  *
  */
-export const _eventPrefix: Readonly<string> = 'nomadvm';
+export const _eventPrefix: Readonly<string> = 'nomad';
 
 /**
  * Prefix to use for all names generated.

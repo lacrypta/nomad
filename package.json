@@ -1,5 +1,5 @@
 {
-  "name": "@lacrypta/nomadvm",
+  "name": "@lacrypta/nomad",
   "version": "0.0.0",
   "description": "The Nomad Virtual Machine reference implementation",
   "keywords": [
@@ -10,10 +10,10 @@
   "license": "MIT",
   "homepage": "https://lacrypta.ar",
   "bugs": {
-    "url": "https://github.com/lacrypta/nomadvm/issues",
+    "url": "https://github.com/lacrypta/nomad/issues",
     "email": "bugs@lacrypta.ar"
   },
-  "repository": "github:lacrypta/nomadvm",
+  "repository": "github:lacrypta/nomad",
   "author": {
     "name": "La Crypta",
     "url": "https://lacrypta.ar",
@@ -71,7 +71,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.4.0",
-    "@lacrypta/nomadvm": "link:",
+    "@lacrypta/nomad": "link:",
     "@types/eslint-config-prettier": "^6.11.3",
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.12",

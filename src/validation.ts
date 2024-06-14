@@ -1,4 +1,4 @@
-// nomadvm: The Nomad Virtual Machine reference implementation
+// nomad: The Nomad Virtual Machine reference implementation
 //
 // MIT License
 //
