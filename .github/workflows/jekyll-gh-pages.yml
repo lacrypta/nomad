@@ -32,7 +32,7 @@ jobs:
       - name: Install dev-dependencies
         run: pnpm update --latest
       - name: Generate Documentation
-        run: pnpm doc
+        run: pnpm doc:api
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
