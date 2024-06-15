@@ -86,6 +86,9 @@ importers:
       typedoc-plugin-keywords:
         specifier: ^1.6.0
         version: 1.6.0(typedoc@0.25.13(typescript@5.4.5))
+      typedoc-plugin-markdown:
+        specifier: ^4.0.3
+        version: 4.0.3(typedoc@0.25.13(typescript@5.4.5))
       typedoc-plugin-mdn-links:
         specifier: ^3.1.29
         version: 3.1.29(typedoc@0.25.13(typescript@5.4.5))
@@ -2325,6 +2328,11 @@ packages:
     resolution: {integrity: sha512-URyCIHw6+Lwil0ywy6lVb2TckfDVGjAWnRnTAiiSZaRaglI6vaaP1EhhwEipOIlHaJSnHZfdwpWe1t4mffTIpA==, tarball: https://registry.npmjs.org/typedoc-plugin-keywords/-/typedoc-plugin-keywords-1.6.0.tgz}
     peerDependencies:
       typedoc: ^0.25.4
+
+  typedoc-plugin-markdown@4.0.3:
+    resolution: {integrity: sha512-0tZbeVGGCd4+lpoIX+yHWgUfyaLZCQCgJOpuVdTtOtD3+jKaedJ4sl/tkNaYBPeWVKiyDkSHfGuHkq53jlzIFg==, tarball: https://registry.npmjs.org/typedoc-plugin-markdown/-/typedoc-plugin-markdown-4.0.3.tgz}
+    peerDependencies:
+      typedoc: 0.25.x
 
   typedoc-plugin-mdn-links@3.1.29:
     resolution: {integrity: sha512-dFKri2eYa+Owq+/3h3z/GvRQF5yM5kzbPqQWLo0LTIv5s78tFGq+yl8vNGf6CkJGakPBfdnHdfeo4bSsVZH0WQ==, tarball: https://registry.npmjs.org/typedoc-plugin-mdn-links/-/typedoc-plugin-mdn-links-3.1.29.tgz}
@@ -5084,6 +5092,10 @@ snapshots:
     dependencies:
       typedoc: 0.25.13(typescript@5.4.5)
       typescript: 5.4.5
+
+  typedoc-plugin-markdown@4.0.3(typedoc@0.25.13(typescript@5.4.5)):
+    dependencies:
+      typedoc: 0.25.13(typescript@5.4.5)
 
   typedoc-plugin-mdn-links@3.1.29(typedoc@0.25.13(typescript@5.4.5)):
     dependencies:

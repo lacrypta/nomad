@@ -6,8 +6,14 @@
     "typedoc-plugin-mdn-links",
     "typedoc-plugin-mermaid",
     "typedoc-plugin-remove-references",
-    "@yookue/typedoc-plugin-raw-content"
+    "@yookue/typedoc-plugin-raw-content",
+    "typedoc-plugin-markdown"
   ],
+  "hidePageHeader": true,
+  "useCodeBlocks": true,
+  "expandObjects": true,
+  "expandParameters": true,
+  "sanitizeComments": true,
   "keywords": ["NOSTR", "library", "Nomad"],
   "markedOptions": {
     "gfm": true
@@ -32,6 +38,7 @@
     "invalidLink": true,
     "notDocumented": true
   },
+  "readme": "none",
   "treatWarningsAsErrors": false,
   "treatValidationWarningsAsErrors": false,
   "logLevel": "Verbose",
