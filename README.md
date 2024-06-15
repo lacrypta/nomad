@@ -1,5 +1,5 @@
 <!-- markdownlint-disable-next-line MD033 MD041 -->
-<img width="100%" src="./assets/logo.png" alt="Nomad logo" />
+<img width="100%" src="./assets/images/logo.png" alt="Nomad logo" />
 
 # Nomad
 
