@@ -27,10 +27,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          run_install: |
-            - args: [--dev, --frozen-lockfile]
+      - name: Install Pnpm
+        uses: pnpm/action-setup@v4
+      - name: Install dev-dependencies
+        run: pnpm install --dev --frozen-lockfile
       - name: Generate Documentation
         run: pnpm doc
       - name: Setup Pages
