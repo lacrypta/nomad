@@ -30,7 +30,7 @@ jobs:
       - name: Install Pnpm
         uses: pnpm/action-setup@v4
       - name: Install dev-dependencies
-        run: pnpm update --dev --no-frozen-lockfile --latest
+        run: pnpm update --latest
       - name: Generate Documentation
         run: pnpm doc
       - name: Setup Pages
