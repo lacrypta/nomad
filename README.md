@@ -11,6 +11,7 @@ The Nomad Virtual Machine reference implementation
 ## Install
 
 </summary>
+
 Simply install via `pnpm`:
 
 ```sh
