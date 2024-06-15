@@ -5,15 +5,26 @@
 
 The Nomad Virtual Machine reference implementation
 
+<!-- markdownlint-disable-next-line MD033 -->
+<details><summary>
+
 ## Install
 
+</summary>
 Simply install via `pnpm`:
 
 ```sh
 pnpm i --save-dev @lacrypta/nomad
 ```
 
+</details>
+
+<!-- markdownlint-disable-next-line MD033 -->
+<details><summary>
+
 ## Development
+
+</summary>
 
 Clone the repository as usual:
 
@@ -88,7 +99,14 @@ pnpm all
 
 and this will reset the project and update all dependencies, and run the formatting, building, testing, and documentation steps described above.
 
+</details>
+
+<!-- markdownlint-disable-next-line MD033 -->
+<details><summary>
+
 ## Usage
+
+</summary>
 
 The [demo](./test/demo/index.html) has a minimal example, but this simply consists of (a variation on):
 
@@ -142,3 +160,5 @@ The [demo](./test/demo/index.html) has a minimal example, but this simply consis
   <body></body>
 </html>
 ```
+
+</details>
