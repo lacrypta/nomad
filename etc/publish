@@ -1,0 +1,73 @@
+#! /usr/bin/env -S bash
+# -*- coding: ascii -*-
+
+LC_ALL=C
+POSIXLY_CORRECT=1
+unset -f builtin
+unset -v POSIXLY_CORRECT
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+get_command_or_fail() {
+    RESULT="$(/usr/bin/env which "${1}")"
+    builtin echo "${RESULT:?\'"${1}"\' command not found}"
+}
+
+THE_MKTEMP="$(get_command_or_fail mktemp)"
+THE_NPM="$(get_command_or_fail npm)"
+THE_TAR="$(get_command_or_fail tar)"
+THE_NODE="$(get_command_or_fail node)"
+THE_GZIP="$(get_command_or_fail gzip)"
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+TMP_DIR="$("${THE_MKTEMP}" -d 2> /dev/null || "${THE_MKTEMP}" -d -t 'tmp')"
+
+if [[ ! "${TMP_DIR}" || ! -d "${TMP_DIR}" ]]; then
+  builtin echo "Could not create temporary directory"
+  builtin exit 1
+fi
+
+builtin trap 'rm -rf "${TMP_DIR}"' EXIT
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+THE_DIR="$(builtin pwd)"
+
+THE_TGZ="$("${THE_NPM}" pack --pack-destination "${TMP_DIR}" --json | "${THE_NODE}" -e "process.stdout.write(JSON.parse(require('fs').readFileSync(0))[0].filename);")"
+
+builtin pushd "${TMP_DIR}" > /dev/null || exit 1
+
+"${THE_TAR}" xzf "${THE_TGZ}"
+
+"${THE_NODE}" -e "
+const fs = require('fs');
+
+const package = JSON.parse(fs.readFileSync('package/package.json'));
+
+delete package.devDependencies;
+delete package.files;
+
+if ('scripts' in package) {
+  package.scripts = [
+    'preinstall',
+    'install',
+    'postinstall',
+    'prepublish',
+    'preprepare',
+    'prepare',
+    'postprepare',
+  ].reduce(
+    (obj, key) => key in package.scripts ? ({ ...obj, [key]: package.scripts[key] }) : obj,
+    {},
+  );
+}
+
+fs.writeFileSync('package/package.json', JSON.stringify(package, null, 2) + '\n');
+"
+
+"${THE_TAR}" c package | "${THE_GZIP}" -9 > "${THE_DIR}/${THE_TGZ}"
+
+builtin popd > /dev/null || exit 1
+
+builtin echo "${THE_TGZ}"

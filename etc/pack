@@ -1,0 +1,27 @@
+#! /usr/bin/env -S bash
+# -*- coding: ascii -*-
+
+LC_ALL=C
+POSIXLY_CORRECT=1
+unset -f builtin
+unset -v POSIXLY_CORRECT
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+get_command_or_fail() {
+    RESULT="$(/usr/bin/env which "${1}")"
+    builtin echo "${RESULT:?\'"${1}"\' command not found}"
+}
+
+THE_NPM="$(get_command_or_fail npm)"
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+"${THE_NPM}" run prepublishOnly --ignore-scripts --if-present
+
+THE_TGZ="$("${THE_NPM}" run pack:clean)"
+
+"${THE_NPM}" publish --ignore-scripts "${THE_TGZ}"
+
+"${THE_NPM}" run publish --ignore-scripts --if-present
+"${THE_NPM}" run postpublish --ignore-scripts --if-present

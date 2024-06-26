@@ -67,7 +67,9 @@
     "test:meta": "jest --runInBand --config=./etc/jest.meta.config.cjs",
     "test:regression": "jest --runInBand --config=./etc/jest.regression.config.cjs",
     "reset": "pnpm clean && rm -rf node_modules && rm -f pnpm-lock.yaml",
-    "all": "pnpm reset; pnpm up --latest; pnpm format; pnpm lint; pnpm build; pnpm test; pnpm test:meta; pnpm test:regression; pnpm doc"
+    "all": "pnpm reset; pnpm up --latest; pnpm format; pnpm lint; pnpm build; pnpm test; pnpm test:meta; pnpm test:regression; pnpm doc",
+    "pack:clean": "./etc/pack",
+    "publish:clean": "./etc/publish"
   },
   "packageManager": "pnpm@9.2.0",
   "devDependencies": {
