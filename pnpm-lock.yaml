@@ -87,8 +87,8 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0(typedoc@0.26.3(typescript@5.5.2))
       typedoc-plugin-markdown:
-        specifier: ^4.1.0
-        version: 4.1.0(typedoc@0.26.3(typescript@5.5.2))
+        specifier: ^4.1.1
+        version: 4.1.1(typedoc@0.26.3(typescript@5.5.2))
       typedoc-plugin-mdn-links:
         specifier: ^3.2.1
         version: 3.2.1(typedoc@0.26.3(typescript@5.5.2))
@@ -2350,8 +2350,8 @@ packages:
     peerDependencies:
       typedoc: ^0.25.4
 
-  typedoc-plugin-markdown@4.1.0:
-    resolution: {integrity: sha512-sUiEJVaa6+MOFShRy14j1OP/VXC5OLyHNecJ2nKeGuBy2M3YiMatSLoIiddFAqVptSuILJTZiJzCBIY6yzAVyg==, tarball: https://registry.npmjs.org/typedoc-plugin-markdown/-/typedoc-plugin-markdown-4.1.0.tgz}
+  typedoc-plugin-markdown@4.1.1:
+    resolution: {integrity: sha512-ZQv8FXn1TBZAvhWMgOL8hE472rwv1dzSr/KIIUGPmdNXybeS6jmK7d1OwKhorLuGbPDQGl6U97BwfkFTcydAkw==, tarball: https://registry.npmjs.org/typedoc-plugin-markdown/-/typedoc-plugin-markdown-4.1.1.tgz}
     engines: {node: '>= 18'}
     peerDependencies:
       typedoc: 0.26.x
@@ -5132,7 +5132,7 @@ snapshots:
       typedoc: 0.26.3(typescript@5.5.2)
       typescript: 5.5.2
 
-  typedoc-plugin-markdown@4.1.0(typedoc@0.26.3(typescript@5.5.2)):
+  typedoc-plugin-markdown@4.1.1(typedoc@0.26.3(typescript@5.5.2)):
     dependencies:
       typedoc: 0.26.3(typescript@5.5.2)
 
