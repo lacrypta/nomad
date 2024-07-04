@@ -1638,8 +1638,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {T[]} The list of set keys.
    */
   const mapKeys = (map) =>
-    Array
-      .from(map.entries())
+    Array.from(map.entries())
       /* eslint-disable-next-line no-unused-vars */
       .filter(([_, v]) => undefined !== v)
       .map(([k]) => k);
@@ -1830,9 +1829,9 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       ]),
     );
     {
-      const collisions = Array
-        .from(newSubEnclosures.values())
-        .filter((newSubEnclosure) => enclosures.has(newSubEnclosure));
+      const collisions = Array.from(newSubEnclosures.values()).filter((newSubEnclosure) =>
+        enclosures.has(newSubEnclosure),
+      );
       if (0 < collisions.length) {
         throw new Error(`collisions found on [${collisions.join(', ')}]`);
       }
@@ -2887,15 +2886,7 @@ return null;`,
         Symbol.split,
         Symbol.search,
       ];
-      keep['Array'] = [
-        ...keep['Function.instance'],
-        'prototype',
-        Symbol.species,
-        'from',
-        'fromAsync',
-        'isArray',
-        'of',
-      ];
+      keep['Array'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'from', 'fromAsync', 'isArray', 'of'];
       keep['Array.prototype'] = [
         ...keep['Object.prototype'],
         Symbol.unscopables,
