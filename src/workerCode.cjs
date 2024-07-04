@@ -2336,11 +2336,11 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
    * @param {Map<string, unknown>} args - Arguments map to use.
-   * @returns {unknown} The result of executing the given dependency.
+   * @returns {Promise<unknown>} The result of executing the given dependency.
    * @throws {Error} if there are any missing dependencies.
    * @throws {Error} if any argument would shadow an imported dependency.
    */
-  const executeDependency = (enclosure, dependency, args) => {
+  const executeDependency = async (enclosure, dependency, args) => {
     const { dependencies } = getEnclosure(enclosure);
     const importedNames = Object.keys(dependency.dependencies);
     {
@@ -2370,7 +2370,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
     }
 
     // ref: https://stackoverflow.com/a/34523915
-    return new _Function(
+    return new AsyncFunction(
       EVENT_CASTER_NAME,
       ...importedNames,
       ...argumentNames,
@@ -2393,15 +2393,15 @@ return null;`,
    *
    * @param {string} enclosure - Enclosure to use.
    * @param {DependencyObject} dependency - Dependency to execute.
-   * @returns {void}
+   * @returns {Promise<void>}
    * @throws {Error} if there are any missing dependencies.
    */
-  const installDependency = (enclosure, dependency) => {
+  const installDependency = async (enclosure, dependency) => {
     const { dependencies } = getEnclosure(enclosure);
     if (dependency.name in dependencies) {
       throw new Error(`duplicate dependency ${dependency.name.toString()}`);
     }
-    const result = executeDependency(enclosure, dependency, new Map());
+    const result = await executeDependency(enclosure, dependency, new Map());
     dependencies[dependency.name] = 'object' === typeof result ? Object.freeze(result) : result;
   };
 
@@ -3354,22 +3354,19 @@ return null;`,
         case 'install':
           {
             const { dependency, enclosure, tunnel } = parsedData;
-            try {
-              installDependency(enclosure, dependency);
-              postResolveMessage(tunnel, undefined);
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
+            installDependency(enclosure, dependency).then(
+              () => postResolveMessage(tunnel, undefined),
+              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
+            );
           }
           break;
         case 'execute':
           {
             const { args, dependency, enclosure, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, executeDependency(enclosure, dependency, new _Map(_Object.entries(args))));
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
+            executeDependency(enclosure, dependency, new Map(Object.entries(args))).then(
+              (r) => postResolveMessage(tunnel, r),
+              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
+            );
           }
           break;
         case 'predefine':
