@@ -361,38 +361,29 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   const _setTimeout = setTimeout;
   const _dispatchEvent = dispatchEvent;
 
-  const _Array = Array;
   const _Date = Date;
-  const _Error = Error;
   const _ErrorEvent = ErrorEvent;
-  const _Function = Function;
-  const _Map = Map;
-  const _Object = Object;
-  const _Promise = Promise;
   const _RegExp = RegExp;
-  const _Set = Set;
-  const _Symbol = Symbol;
-  const _WeakSet = WeakSet;
-
-  const _Reflect = Reflect;
-
-  const _Math = Math;
 
   // ----------------------------------------------------------------------------------------------
   // -- Expose Standard Classes -------------------------------------------------------------------
   // ----------------------------------------------------------------------------------------------
 
-  _Object.defineProperty(globalThis, 'AsyncFunction', { value: async function () {}.constructor });
-  _Object.defineProperty(globalThis, 'GeneratorFunction', { value: function* () {}.constructor });
-  _Object.defineProperty(globalThis, 'AsyncGeneratorFunction', { value: async function* () {}.constructor });
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const GeneratorFunction = Object.getPrototypeOf(function* () {}).constructor;
+  const AsyncGeneratorFunction = Object.getPrototypeOf(async function* () {}).constructor;
 
-  // _Object.defineProperty(globalThis, 'ArrayIteratorPrototype', { value: _Object.getPrototypeOf(new Array()[Symbol.iterator]()) });
-  // _Object.defineProperty(globalThis, 'StringIteratorPrototype', { value: _Object.getPrototypeOf(new String()[Symbol.iterator]()) });
-  // _Object.defineProperty(globalThis, 'MapIteratorPrototype', { value: _Object.getPrototypeOf(new Map()[Symbol.iterator]()) });
-  // _Object.defineProperty(globalThis, 'SetIteratorPrototype', { value: _Object.getPrototypeOf(new Set()[Symbol.iterator]()) });
-  // _Object.defineProperty(globalThis, 'RegExpIteratorPrototype', { value: _Object.getPrototypeOf(new RegExp()[Symbol.matchAll]()) });
-  // _Object.defineProperty(globalThis, 'GeneratorIteratorPrototype', { value: _Object.getPrototypeOf(globalThis.GeneratorFunction()()) });
-  // _Object.defineProperty(globalThis, 'AsyncGeneratorIteratorPrototype', { value: _Object.getPrototypeOf(globalThis.AsyncGeneratorFunction()()) });
+  Object.defineProperty(globalThis, 'AsyncFunction', { value: AsyncFunction });
+  Object.defineProperty(globalThis, 'GeneratorFunction', { value: GeneratorFunction });
+  Object.defineProperty(globalThis, 'AsyncGeneratorFunction', { value: AsyncGeneratorFunction });
+
+  // Object.defineProperty(globalThis, 'ArrayIteratorPrototype', { value: Object.getPrototypeOf(new Array()[Symbol.iterator]()) });
+  // Object.defineProperty(globalThis, 'StringIteratorPrototype', { value: Object.getPrototypeOf(new String()[Symbol.iterator]()) });
+  // Object.defineProperty(globalThis, 'MapIteratorPrototype', { value: Object.getPrototypeOf(new Map()[Symbol.iterator]()) });
+  // Object.defineProperty(globalThis, 'SetIteratorPrototype', { value: Object.getPrototypeOf(new Set()[Symbol.iterator]()) });
+  // Object.defineProperty(globalThis, 'RegExpIteratorPrototype', { value: Object.getPrototypeOf(new RegExp()[Symbol.matchAll]()) });
+  // Object.defineProperty(globalThis, 'GeneratorIteratorPrototype', { value: Object.getPrototypeOf(globalThis.GeneratorFunction()()) });
+  // Object.defineProperty(globalThis, 'AsyncGeneratorIteratorPrototype', { value: Object.getPrototypeOf(globalThis.AsyncGeneratorFunction()()) });
 
   // ----------------------------------------------------------------------------------------------
   // -- Shimming ----------------------------------------------------------------------------------
@@ -407,8 +398,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @see {@link https://github.com/es-shims/array-from-async/blob/main/index.mjs}
    */
   const shimArrayFromAsync = () => {
-    if (!_Object.hasOwn(Array, 'fromAsync')) {
-      _Object.defineProperty(Array, 'fromAsync', {
+    if (!Object.hasOwn(Array, 'fromAsync')) {
+      Object.defineProperty(Array, 'fromAsync', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -679,8 +670,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimMapGroupBy = () => {
-    if (!_Object.hasOwn(Map, 'groupBy')) {
-      _Object.defineProperty(Map, 'groupBy', {
+    if (!Object.hasOwn(Map, 'groupBy')) {
+      Object.defineProperty(Map, 'groupBy', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -715,9 +706,9 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimPromiseWithResolvers = () => {
-    if (!_Object.hasOwn(Promise, 'withResolvers')) {
+    if (!Object.hasOwn(Promise, 'withResolvers')) {
       // ref: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers#description
-      _Object.defineProperty(Promise, 'withResolvers', {
+      Object.defineProperty(Promise, 'withResolvers', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -757,8 +748,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeDifference = () => {
-    if (!_Object.hasOwn(Set.prototype, 'difference')) {
-      _Object.defineProperty(Set.prototype, 'difference', {
+    if (!Object.hasOwn(Set.prototype, 'difference')) {
+      Object.defineProperty(Set.prototype, 'difference', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -787,8 +778,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeIntersection = () => {
-    if (!_Object.hasOwn(Set.prototype, 'intersection')) {
-      _Object.defineProperty(Set.prototype, 'intersection', {
+    if (!Object.hasOwn(Set.prototype, 'intersection')) {
+      Object.defineProperty(Set.prototype, 'intersection', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -817,8 +808,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeIsDisjointFrom = () => {
-    if (!_Object.hasOwn(Set.prototype, 'isDisjointFrom')) {
-      _Object.defineProperty(Set.prototype, 'isDisjointFrom', {
+    if (!Object.hasOwn(Set.prototype, 'isDisjointFrom')) {
+      Object.defineProperty(Set.prototype, 'isDisjointFrom', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -846,8 +837,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeIsSubsetOf = () => {
-    if (!_Object.hasOwn(Set.prototype, 'isSubsetOf')) {
-      _Object.defineProperty(Set.prototype, 'isSubsetOf', {
+    if (!Object.hasOwn(Set.prototype, 'isSubsetOf')) {
+      Object.defineProperty(Set.prototype, 'isSubsetOf', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -875,8 +866,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeIsSupersetOf = () => {
-    if (!_Object.hasOwn(Set.prototype, 'isSupersetOf')) {
-      _Object.defineProperty(Set.prototype, 'isSupersetOf', {
+    if (!Object.hasOwn(Set.prototype, 'isSupersetOf')) {
+      Object.defineProperty(Set.prototype, 'isSupersetOf', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -904,8 +895,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeSymmetricDifference = () => {
-    if (!_Object.hasOwn(Set.prototype, 'symmetricDifference')) {
-      _Object.defineProperty(Set.prototype, 'symmetricDifference', {
+    if (!Object.hasOwn(Set.prototype, 'symmetricDifference')) {
+      Object.defineProperty(Set.prototype, 'symmetricDifference', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -939,8 +930,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const shimSetPrototypeUnion = () => {
-    if (!_Object.hasOwn(Set.prototype, 'union')) {
-      _Object.defineProperty(Set.prototype, 'union', {
+    if (!Object.hasOwn(Set.prototype, 'union')) {
+      Object.defineProperty(Set.prototype, 'union', {
         value:
           /**
            * @description PLACEHOLDER.
@@ -1007,7 +998,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchEval = () => {
-    _Object.defineProperty(globalThis, 'eval', {
+    Object.defineProperty(globalThis, 'eval', {
       value:
         /**
          * Evaluates JavaScript code and executes it.
@@ -1027,7 +1018,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchObject = () => {
-    _Object.defineProperty(Object.prototype, 'toLocaleString', { value: Object.prototype.toString });
+    Object.defineProperty(Object.prototype, 'toLocaleString', { value: Object.prototype.toString });
   };
 
   /**
@@ -1038,7 +1029,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchNumber = () => {
-    _Object.defineProperty(Number.prototype, 'toLocaleString', { value: Number.prototype.toString });
+    Object.defineProperty(Number.prototype, 'toLocaleString', { value: Number.prototype.toString });
   };
 
   /**
@@ -1049,7 +1040,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchBigInt = () => {
-    _Object.defineProperty(BigInt.prototype, 'toLocaleString', { value: BigInt.prototype.toString });
+    Object.defineProperty(BigInt.prototype, 'toLocaleString', { value: BigInt.prototype.toString });
   };
 
   /**
@@ -1060,7 +1051,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchMath = () => {
-    _Object.defineProperty(Math, 'random', { value: () => NaN });
+    Object.defineProperty(Math, 'random', { value: () => NaN });
   };
 
   /**
@@ -1096,7 +1087,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchDate = () => {
-    _Object.defineProperty(globalThis, 'Date', {
+    Object.defineProperty(globalThis, 'Date', {
       value:
         /**
          * @description PLACEHOLDER.
@@ -1158,7 +1149,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
                    * @returns {string} The resulting string.
                    */
                   const toPaddedDecimal = (num, padding, withSign = false) =>
-                    (withSign ? (num < 0 ? '-' : '+') : '') + _Math.abs(num).toString().padStart(padding, '0');
+                    (withSign ? (num < 0 ? '-' : '+') : '') + Math.abs(num).toString().padStart(padding, '0');
 
                   const match = valueDateStringDateObjectYear.match(
                     /^(?<year>\d{4}|[+-]\d{6})(?:-(?<month>\d\d)(?:-(?<day>\d\d))?)?(?:T(?<hours>\d\d):(?<minutes>\d\d)(?::(?<seconds>\d\d)(?:\.(?<milliseconds>\d{1,3}))?)?)?(?:Z|(?<tzHours>[+-]\d\d):(?<tzMinutes>\d\d))?$/,
@@ -1243,18 +1234,18 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
               }
             }
           }
-          return _Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
+          return Reflect.construct(new.target === Date ? _Date : new.target, [ts]);
         },
     });
 
-    _Object.defineProperty(Date, 'length', {
+    Object.defineProperty(Date, 'length', {
       configurable: true,
       value: _Date.length,
     });
     _Date.prototype.constructor = Date;
-    _Object.defineProperty(Date, 'prototype', { value: _Date.prototype });
+    Object.defineProperty(Date, 'prototype', { value: _Date.prototype });
 
-    _Object.defineProperty(Date, 'parse', {
+    Object.defineProperty(Date, 'parse', {
       value:
         /**
          * @description PLACEHOLDER.
@@ -1263,7 +1254,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
          */
         (str) => _Date.parse(str),
     });
-    _Object.defineProperty(Date, 'UTC', {
+    Object.defineProperty(Date, 'UTC', {
       value:
         /**
          * @description PLACEHOLDER.
@@ -1287,37 +1278,37 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
         ) => _Date.UTC(year, monthIndex, date, hours, minutes, seconds, ms),
     });
 
-    _Object.defineProperty(Date, 'now', { value: () => NaN });
-    _Object.defineProperty(Date.prototype, 'getDate', { value: Date.prototype.getUTCDate });
-    _Object.defineProperty(Date.prototype, 'getDay', { value: Date.prototype.getUTCDay });
-    _Object.defineProperty(Date.prototype, 'getFullYear', { value: Date.prototype.getUTCFullYear });
-    _Object.defineProperty(Date.prototype, 'getHours', { value: Date.prototype.getUTCHours });
-    _Object.defineProperty(Date.prototype, 'getMilliseconds', { value: Date.prototype.getUTCMilliseconds });
-    _Object.defineProperty(Date.prototype, 'getMinutes', { value: Date.prototype.getUTCMinutes });
-    _Object.defineProperty(Date.prototype, 'getMonth', { value: Date.prototype.getUTCMonth });
-    _Object.defineProperty(Date.prototype, 'getSeconds', { value: Date.prototype.getUTCSeconds });
-    _Object.defineProperty(Date.prototype, 'getTimezoneOffset', { value: () => 0 });
-    _Object.defineProperty(Date.prototype, 'setDate', { value: Date.prototype.setUTCDate });
-    _Object.defineProperty(Date.prototype, 'setFullYear', { value: Date.prototype.setUTCFullYear });
-    _Object.defineProperty(Date.prototype, 'setHours', { value: Date.prototype.setUTCHours });
-    _Object.defineProperty(Date.prototype, 'setMilliseconds', { value: Date.prototype.setUTCMilliseconds });
-    _Object.defineProperty(Date.prototype, 'setMinutes', { value: Date.prototype.setUTCMinutes });
-    _Object.defineProperty(Date.prototype, 'setMonth', { value: Date.prototype.setUTCMonth });
-    _Object.defineProperty(Date.prototype, 'setSeconds', { value: Date.prototype.setUTCSeconds });
-    _Object.defineProperty(Date.prototype, 'toString', { value: Date.prototype.toISOString });
-    _Object.defineProperty(Date.prototype, 'toDateString', {
+    Object.defineProperty(Date, 'now', { value: () => NaN });
+    Object.defineProperty(Date.prototype, 'getDate', { value: Date.prototype.getUTCDate });
+    Object.defineProperty(Date.prototype, 'getDay', { value: Date.prototype.getUTCDay });
+    Object.defineProperty(Date.prototype, 'getFullYear', { value: Date.prototype.getUTCFullYear });
+    Object.defineProperty(Date.prototype, 'getHours', { value: Date.prototype.getUTCHours });
+    Object.defineProperty(Date.prototype, 'getMilliseconds', { value: Date.prototype.getUTCMilliseconds });
+    Object.defineProperty(Date.prototype, 'getMinutes', { value: Date.prototype.getUTCMinutes });
+    Object.defineProperty(Date.prototype, 'getMonth', { value: Date.prototype.getUTCMonth });
+    Object.defineProperty(Date.prototype, 'getSeconds', { value: Date.prototype.getUTCSeconds });
+    Object.defineProperty(Date.prototype, 'getTimezoneOffset', { value: () => 0 });
+    Object.defineProperty(Date.prototype, 'setDate', { value: Date.prototype.setUTCDate });
+    Object.defineProperty(Date.prototype, 'setFullYear', { value: Date.prototype.setUTCFullYear });
+    Object.defineProperty(Date.prototype, 'setHours', { value: Date.prototype.setUTCHours });
+    Object.defineProperty(Date.prototype, 'setMilliseconds', { value: Date.prototype.setUTCMilliseconds });
+    Object.defineProperty(Date.prototype, 'setMinutes', { value: Date.prototype.setUTCMinutes });
+    Object.defineProperty(Date.prototype, 'setMonth', { value: Date.prototype.setUTCMonth });
+    Object.defineProperty(Date.prototype, 'setSeconds', { value: Date.prototype.setUTCSeconds });
+    Object.defineProperty(Date.prototype, 'toString', { value: Date.prototype.toISOString });
+    Object.defineProperty(Date.prototype, 'toDateString', {
       value: function () {
         return this.toISOString().split('T')[0];
       },
     });
-    _Object.defineProperty(Date.prototype, 'toTimeString', {
+    Object.defineProperty(Date.prototype, 'toTimeString', {
       value: function () {
         return this.toISOString().split('T')[1];
       },
     });
-    _Object.defineProperty(Date.prototype, 'toLocaleDateString', { value: Date.prototype.toDateString });
-    _Object.defineProperty(Date.prototype, 'toLocaleString', { value: Date.prototype.toString });
-    _Object.defineProperty(Date.prototype, 'toLocaleTimeString', { value: Date.prototype.toTimeString });
+    Object.defineProperty(Date.prototype, 'toLocaleDateString', { value: Date.prototype.toDateString });
+    Object.defineProperty(Date.prototype, 'toLocaleString', { value: Date.prototype.toString });
+    Object.defineProperty(Date.prototype, 'toLocaleTimeString', { value: Date.prototype.toTimeString });
   };
 
   /**
@@ -1332,7 +1323,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchString = () => {
-    _Object.defineProperty(String.prototype, 'localeCompare', {
+    Object.defineProperty(String.prototype, 'localeCompare', {
       value:
         /**
          * @description PLACEHOLDER.
@@ -1344,8 +1335,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
         },
     });
 
-    _Object.defineProperty(String.prototype, 'toLocaleLowerCase', { value: String.prototype.toLowerCase });
-    _Object.defineProperty(String.prototype, 'toLocaleUpperCase', { value: String.prototype.toUpperCase });
+    Object.defineProperty(String.prototype, 'toLocaleLowerCase', { value: String.prototype.toLowerCase });
+    Object.defineProperty(String.prototype, 'toLocaleUpperCase', { value: String.prototype.toUpperCase });
   };
 
   /**
@@ -1356,7 +1347,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchArray = () => {
-    _Object.defineProperty(Array.prototype, 'toLocaleString', { value: Array.prototype.toString });
+    Object.defineProperty(Array.prototype, 'toLocaleString', { value: Array.prototype.toString });
   };
 
   /**
@@ -1379,19 +1370,19 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchTypedArray = () => {
-    _Object.defineProperty(Int8Array.prototype, 'toLocaleString', { value: Int8Array.prototype.toString });
-    _Object.defineProperty(Uint8Array.prototype, 'toLocaleString', { value: Uint8Array.prototype.toString });
-    _Object.defineProperty(Uint8ClampedArray.prototype, 'toLocaleString', {
+    Object.defineProperty(Int8Array.prototype, 'toLocaleString', { value: Int8Array.prototype.toString });
+    Object.defineProperty(Uint8Array.prototype, 'toLocaleString', { value: Uint8Array.prototype.toString });
+    Object.defineProperty(Uint8ClampedArray.prototype, 'toLocaleString', {
       value: Uint8ClampedArray.prototype.toString,
     });
-    _Object.defineProperty(Int16Array.prototype, 'toLocaleString', { value: Int16Array.prototype.toString });
-    _Object.defineProperty(Uint16Array.prototype, 'toLocaleString', { value: Uint16Array.prototype.toString });
-    _Object.defineProperty(Int32Array.prototype, 'toLocaleString', { value: Int32Array.prototype.toString });
-    _Object.defineProperty(Uint32Array.prototype, 'toLocaleString', { value: Uint32Array.prototype.toString });
-    _Object.defineProperty(BigInt64Array.prototype, 'toLocaleString', { value: BigInt64Array.prototype.toString });
-    _Object.defineProperty(BigUint64Array.prototype, 'toLocaleString', { value: BigUint64Array.prototype.toString });
-    _Object.defineProperty(Float32Array.prototype, 'toLocaleString', { value: Float32Array.prototype.toString });
-    _Object.defineProperty(Float64Array.prototype, 'toLocaleString', { value: Float64Array.prototype.toString });
+    Object.defineProperty(Int16Array.prototype, 'toLocaleString', { value: Int16Array.prototype.toString });
+    Object.defineProperty(Uint16Array.prototype, 'toLocaleString', { value: Uint16Array.prototype.toString });
+    Object.defineProperty(Int32Array.prototype, 'toLocaleString', { value: Int32Array.prototype.toString });
+    Object.defineProperty(Uint32Array.prototype, 'toLocaleString', { value: Uint32Array.prototype.toString });
+    Object.defineProperty(BigInt64Array.prototype, 'toLocaleString', { value: BigInt64Array.prototype.toString });
+    Object.defineProperty(BigUint64Array.prototype, 'toLocaleString', { value: BigUint64Array.prototype.toString });
+    Object.defineProperty(Float32Array.prototype, 'toLocaleString', { value: Float32Array.prototype.toString });
+    Object.defineProperty(Float64Array.prototype, 'toLocaleString', { value: Float64Array.prototype.toString });
   };
 
   /**
@@ -1409,7 +1400,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {void}
    */
   const patchRegExp = () => {
-    _Object.defineProperty(globalThis, 'RegExp', {
+    Object.defineProperty(globalThis, 'RegExp', {
       value:
         /**
          * @description PLACEHOLDER.
@@ -1419,17 +1410,17 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
          */
         function RegExp(pattern, flags) {
           return new.target
-            ? _Reflect.construct(new.target === RegExp ? _RegExp : new.target, [pattern, flags])
+            ? Reflect.construct(new.target === RegExp ? _RegExp : new.target, [pattern, flags])
             : _RegExp(pattern, flags);
         },
     });
-    _Object.defineProperty(RegExp, 'length', {
+    Object.defineProperty(RegExp, 'length', {
       configurable: true,
       value: _RegExp.length,
     });
     _RegExp.prototype.constructor = RegExp;
-    _Object.defineProperty(RegExp, 'prototype', { value: _RegExp.prototype });
-    _Object.defineProperty(RegExp, _Symbol.species, { value: _RegExp[_Symbol.species] });
+    Object.defineProperty(RegExp, 'prototype', { value: _RegExp.prototype });
+    Object.defineProperty(RegExp, Symbol.species, { value: _RegExp[Symbol.species] });
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -1452,7 +1443,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
      * @param {WeakSet<any>} processed - Set of objects already frozen so as to prevent infinite recursion and speed the process up.
      * @returns {void}
      */
-    const deepFreeze = (subject, processed = new _WeakSet()) => {
+    const deepFreeze = (subject, processed = new WeakSet()) => {
       if (null === subject || !['function', 'object'].includes(typeof subject)) {
         return;
       }
@@ -1462,24 +1453,24 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
           break;
         }
         processed.add(current);
-        _Object.freeze(current);
+        Object.freeze(current);
 
         /**
          * @type {Record<string | symbol, PropertyDescriptor>}
          */
-        const descriptors = _Object.getOwnPropertyDescriptors(current);
-        for (const key of [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)]) {
+        const descriptors = Object.getOwnPropertyDescriptors(current);
+        for (const key of [...Object.getOwnPropertyNames(current), ...Object.getOwnPropertySymbols(current)]) {
           if ('get' in (descriptors[key] ?? {})) {
-            _Object.freeze(descriptors[key]?.get);
+            Object.freeze(descriptors[key]?.get);
           }
           if ('set' in (descriptors[key] ?? {})) {
-            _Object.freeze(descriptors[key]?.set);
+            Object.freeze(descriptors[key]?.set);
           }
           if ('value' in (descriptors[key] ?? {})) {
             deepFreeze(descriptors[key]?.value, processed);
           }
         }
-        current = _Object.getPrototypeOf(current);
+        current = Object.getPrototypeOf(current);
       } while (null !== current);
     };
 
@@ -1647,7 +1638,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {T[]} The list of set keys.
    */
   const mapKeys = (map) =>
-    _Array
+    Array
       .from(map.entries())
       /* eslint-disable-next-line no-unused-vars */
       .filter(([_, v]) => undefined !== v)
@@ -1677,7 +1668,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    *
    * @type {Map<string, EnclosureObject | undefined>}
    */
-  const enclosures = new _Map();
+  const enclosures = new Map();
 
   /**
    * Back-references from "port number" to enclosure name.
@@ -1734,18 +1725,18 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
     const parent = getEnclosureBase(enclosure) || null;
 
     if (enclosures.has(enclosure)) {
-      throw new _Error(`duplicate enclosure name ${enclosure}`);
+      throw new Error(`duplicate enclosure name ${enclosure}`);
     } else if (null !== parent && mapHas(enclosures, parent)) {
-      throw new _Error(`parent enclosure ${parent} does not exist`);
+      throw new Error(`parent enclosure ${parent} does not exist`);
     }
 
     enclosures.set(enclosure, {
-      dependencies: _Object.create(null === parent ? null : getEnclosure(parent).dependencies),
-      linked: new _Set(),
-      listeners: new _Map(),
+      dependencies: Object.create(null === parent ? null : getEnclosure(parent).dependencies),
+      linked: new Set(),
+      listeners: new Map(),
       muted: false,
       port: enclosurePorts.push(enclosure) - 1,
-      tunnels: new _Set(),
+      tunnels: new Set(),
     });
   };
 
@@ -1759,7 +1750,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   const getEnclosure = (enclosure) => {
     const result = enclosures.get(enclosure);
     if (undefined === result) {
-      throw new _Error(`enclosure ${enclosure} does not exist`);
+      throw new Error(`enclosure ${enclosure} does not exist`);
     }
 
     return result;
@@ -1803,7 +1794,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       mapDelete(enclosures, toRemove);
     });
 
-    const error = new _Error('deleting enclosure');
+    const error = new Error('deleting enclosure');
     toReject.sort().forEach((tunnel) => {
       rejectTunnel(tunnel, error);
     });
@@ -1829,21 +1820,21 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
 
     const parent = getEnclosureBase(enclosure) || null;
     if (null === parent) {
-      throw new _Error(`enclosure ${enclosure} has no parent`);
+      throw new Error(`enclosure ${enclosure} has no parent`);
     }
 
-    const newSubEnclosures = new _Map(
+    const newSubEnclosures = new Map(
       enclosureSubEnclosures(enclosure).map((subEnclosure) => [
         subEnclosure,
         `${parent}.${subEnclosure.slice(enclosure.length + 1)}`,
       ]),
     );
     {
-      const collisions = _Array
+      const collisions = Array
         .from(newSubEnclosures.values())
         .filter((newSubEnclosure) => enclosures.has(newSubEnclosure));
       if (0 < collisions.length) {
-        throw new _Error(`collisions found on [${collisions.join(', ')}]`);
+        throw new Error(`collisions found on [${collisions.join(', ')}]`);
       }
     }
 
@@ -1853,23 +1844,23 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       tunnels: parentTunnels,
     } = getEnclosure(parent);
 
-    _Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
+    Array.from(tunnels).forEach((tunnel) => parentTunnels.add(tunnel));
 
-    _Array.from(listeners.entries()).forEach(([callback, filters]) => {
+    Array.from(listeners.entries()).forEach(([callback, filters]) => {
       if (!parentListeners.has(callback)) {
-        parentListeners.set(callback, new _Set());
+        parentListeners.set(callback, new Set());
       }
       const callbackFilters = parentListeners.get(callback);
-      _Array.from(filters).forEach((filter) => callbackFilters?.add(filter));
+      Array.from(filters).forEach((filter) => callbackFilters?.add(filter));
     });
 
-    _Object.entries(dependencies).forEach(([name, value]) => {
+    Object.entries(dependencies).forEach(([name, value]) => {
       parentDependencies[name] = value;
     });
 
     enclosurePorts[port] = parent;
 
-    _Array.from(newSubEnclosures.entries()).forEach(([subEnclosure, newSubEnclosure]) => {
+    Array.from(newSubEnclosures.entries()).forEach(([subEnclosure, newSubEnclosure]) => {
       listLinkedFrom(subEnclosure).forEach((linkSource) => {
         const { linked } = getEnclosure(linkSource);
         linked.delete(subEnclosure);
@@ -1877,7 +1868,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       });
       const subEnclosureEnclosure = getEnclosure(subEnclosure);
       if (-1 === newSubEnclosure.slice(parent.length + 1).indexOf('.')) {
-        _Object.setPrototypeOf(subEnclosureEnclosure.dependencies, parentDependencies);
+        Object.setPrototypeOf(subEnclosureEnclosure.dependencies, parentDependencies);
       }
       enclosurePorts[subEnclosureEnclosure.port] = newSubEnclosure;
       enclosures.set(newSubEnclosure, subEnclosureEnclosure);
@@ -1991,7 +1982,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   const removeTunnel = (tunnel) => {
     const theTunnel = tunnels[tunnel];
     if (undefined === theTunnel) {
-      throw new _Error(`tunnel ${tunnel.toString()} does not exist`);
+      throw new Error(`tunnel ${tunnel.toString()} does not exist`);
     }
 
     const { port, reject, resolve } = theTunnel;
@@ -2030,8 +2021,8 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @throws {Error} if the given callback is not a {@link !Function} instance.
    */
   const validateCallback = (callback) => {
-    if (!(callback instanceof _Function)) {
-      throw new _Error('expected callback to be a function');
+    if (!(callback instanceof Function)) {
+      throw new Error('expected callback to be a function');
     }
     return callback;
   };
@@ -2050,23 +2041,23 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
     const eventRegex = /^[.a-z0-9-]+(?::[.a-z0-9-]+)*$/i;
 
     if ('string' !== typeof event) {
-      throw new _Error('event name must be a string');
+      throw new Error('event name must be a string');
     } else if (!eventRegex.test(event)) {
-      throw new _Error(`event name must adhere to ${eventRegex.toString()}`);
+      throw new Error(`event name must adhere to ${eventRegex.toString()}`);
     }
 
     const { linked } = getEnclosure(enclosure);
 
-    const callbacks = new _Set();
+    const callbacks = new Set();
     [enclosure, ...enclosurePrefixes(enclosure), ...enclosureSubEnclosures(enclosure), ...linked].forEach((target) => {
       for (const [callback, filters] of getEnclosure(target).listeners.entries()) {
-        if (_Array.from(filters.values()).some((filter) => filter.test(event))) {
+        if (Array.from(filters.values()).some((filter) => filter.test(event))) {
           callbacks.add(callback);
         }
       }
     });
 
-    _Array.from(callbacks).forEach((callback) => {
+    Array.from(callbacks).forEach((callback) => {
       _setTimeout(() => {
         try {
           callback.call(undefined, event, ...args);
@@ -2141,17 +2132,17 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
 
     const _callback = validateCallback(callback);
     if ('string' !== typeof filter) {
-      throw new _Error('event name filter must be a string');
+      throw new Error('event name filter must be a string');
     } else if (!filterRegex.test(filter)) {
-      throw new _Error(`event name filter must adhere to ${filterRegex.toString()}`);
+      throw new Error(`event name filter must adhere to ${filterRegex.toString()}`);
     } else if (-1 != filter.indexOf('**:**')) {
-      throw new _Error('event name filter must not contain consecutive ** wildcards');
+      throw new Error('event name filter must not contain consecutive ** wildcards');
     }
 
     const listeners = getEnclosure(enclosure).listeners;
     let filters = listeners.get(_callback);
     if (undefined === filters) {
-      filters = new _Set();
+      filters = new Set();
       listeners.set(_callback, filters);
     }
     filters.add(
@@ -2207,7 +2198,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
   const eventCaster = (enclosure) => {
     const { port } = getEnclosure(enclosure);
 
-    const eventCaster = _Object.create(null);
+    const eventCaster = Object.create(null);
     /**
      * @description PLACEHOLDER.
      * @param {string} filter - Filter to use.
@@ -2247,7 +2238,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       castUser(enclosurePorts[port] ?? '', event, ...args);
       return eventCaster;
     };
-    eventCaster.on = _Object.freeze(
+    eventCaster.on = Object.freeze(
       /**
        * @description PLACEHOLDER.
        * @param {string} filter - Filter to use.
@@ -2256,7 +2247,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
        */
       (filter, callback) => __on(filter, callback),
     );
-    eventCaster.once = _Object.freeze(
+    eventCaster.once = Object.freeze(
       /**
        * @description PLACEHOLDER.
        * @param {string} filter - Filter to use.
@@ -2265,7 +2256,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
        */
       (filter, callback) => __once(filter, callback),
     );
-    eventCaster.off = _Object.freeze(
+    eventCaster.off = Object.freeze(
       /**
        * @description PLACEHOLDER.
        * @param {EventCallback} callback - Event callback to use.
@@ -2273,7 +2264,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
        */
       (callback) => __off(callback),
     );
-    eventCaster.cast = _Object.freeze(
+    eventCaster.cast = Object.freeze(
       /**
        * @description PLACEHOLDER.
        * @param {string} event - Event name to cast.
@@ -2283,7 +2274,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
       (event, ...args) => __cast(event, ...args),
     );
 
-    return _Object.freeze(eventCaster);
+    return Object.freeze(eventCaster);
   };
 
   /**
@@ -2307,7 +2298,7 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    * @returns {Array<string>} A list of enclosures linked to by the given one.
    */
   const listLinksTo = (enclosure) => {
-    return _Array.from(getEnclosure(enclosure).linked).sort();
+    return Array.from(getEnclosure(enclosure).linked).sort();
   };
 
   /**
@@ -2351,30 +2342,30 @@ const workerRunner = (_bootTunnel, _defaultEnclosureName, _listen, _shout) => {
    */
   const executeDependency = (enclosure, dependency, args) => {
     const { dependencies } = getEnclosure(enclosure);
-    const importedNames = _Object.keys(dependency.dependencies);
+    const importedNames = Object.keys(dependency.dependencies);
     {
       if (IMPORT_LIMIT < importedNames.length) {
-        throw new _Error(`too many imports 1024 < ${importedNames.length.toString()}`);
+        throw new Error(`too many imports 1024 < ${importedNames.length.toString()}`);
       }
       const missing = importedNames.filter((name) => !((dependency.dependencies[name] ?? '') in dependencies));
       if (0 !== missing.length) {
-        throw new _Error(
-          `missing dependencies: [${_Array.from(new _Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
+        throw new Error(
+          `missing dependencies: [${Array.from(new Set(missing.map((name) => dependency.dependencies[name]))).join(', ')}]`,
         );
       }
       const aliased = importedNames.filter((name) => name in globalThis);
       if (0 !== aliased.length) {
-        throw new _Error(`aliased dependencies: [${_Array.from(new _Set(aliased)).join(', ')}]`);
+        throw new Error(`aliased dependencies: [${Array.from(new Set(aliased)).join(', ')}]`);
       }
     }
-    const argumentNames = _Array.from(args.keys());
+    const argumentNames = Array.from(args.keys());
     {
       if (ARGUMENTS_LIMIT < argumentNames.length) {
-        throw new _Error(`too many arguments 1024 < ${argumentNames.length.toString()}`);
+        throw new Error(`too many arguments 1024 < ${argumentNames.length.toString()}`);
       }
       const shadowed = argumentNames.filter((name) => name in dependency.dependencies);
       if (0 < shadowed.length) {
-        throw new _Error(`shadowing arguments [${_Array.from(new _Set(shadowed)).sort().join(', ')}]`);
+        throw new Error(`shadowing arguments [${Array.from(new Set(shadowed)).sort().join(', ')}]`);
       }
     }
 
@@ -2408,10 +2399,10 @@ return null;`,
   const installDependency = (enclosure, dependency) => {
     const { dependencies } = getEnclosure(enclosure);
     if (dependency.name in dependencies) {
-      throw new _Error(`duplicate dependency ${dependency.name.toString()}`);
+      throw new Error(`duplicate dependency ${dependency.name.toString()}`);
     }
-    const result = executeDependency(enclosure, dependency, new _Map());
-    dependencies[dependency.name] = 'object' === typeof result ? _Object.freeze(result) : result;
+    const result = executeDependency(enclosure, dependency, new Map());
+    dependencies[dependency.name] = 'object' === typeof result ? Object.freeze(result) : result;
   };
 
   /**
@@ -2426,16 +2417,16 @@ return null;`,
   const addPredefined = (enclosure, idx, name) => {
     const { dependencies, port } = getEnclosure(enclosure);
     if (name in dependencies) {
-      throw new _Error(`duplicate dependency ${name}`);
+      throw new Error(`duplicate dependency ${name}`);
     }
-    const __predefined = _Object.freeze(
+    const __predefined = Object.freeze(
       /**
        * @description PLACEHOLDER.
        * @param {...unknown} args - Arguments to use.
        * @returns {Promise<unknown>} The execution result.
        */
       (...args) =>
-        new _Promise((resolve, reject) => {
+        new Promise((resolve, reject) => {
           postCallMessage(enclosurePorts[port] ?? '', addTunnel(enclosure, resolve, reject), idx, args);
         }),
     );
@@ -2457,7 +2448,7 @@ return null;`,
    * @param {any} e - Error to retrieve the message of.
    * @returns {string} The error message to use.
    */
-  const getErrorMessage = (e) => (e instanceof _Error ? e.message : 'unknown error');
+  const getErrorMessage = (e) => (e instanceof Error ? e.message : 'unknown error');
 
   try {
     // --------------------------------------------------------------------------------------------
@@ -2506,7 +2497,7 @@ return null;`,
        *
        * @type {{[key: string]: (string | symbol)[]}}
        */
-      const keep = _Object.create(null);
+      const keep = Object.create(null);
       /* eslint-disable sonarjs/no-duplicate-string */
       keep['this'] = [
         'globalThis',
@@ -2648,7 +2639,7 @@ return null;`,
         'for',
         'keyFor',
       ];
-      keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', _Symbol.toPrimitive, _Symbol.toStringTag];
+      keep['Symbol.prototype'] = [...keep['Object.prototype'], 'description', Symbol.toPrimitive, Symbol.toStringTag];
       keep['Error'] = [...keep['Function.instance'], 'prototype'];
       keep['Error.prototype'] = [...keep['Object.prototype'], 'name'];
       keep['AggregateError'] = keep['Error'];
@@ -2693,7 +2684,7 @@ return null;`,
       keep['BigInt'] = [...keep['Function.instance'], 'prototype', 'asIntN', 'asUintN'];
       keep['BigInt.prototype'] = [
         ...keep['Object.prototype'],
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         // "toLocaleString", // ---> BigInt.prototype.toString
       ];
       keep['Math'] = [
@@ -2705,7 +2696,7 @@ return null;`,
         'PI',
         'SQRT1_2',
         'SQRT2',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'abs',
         'ceil',
         'floor',
@@ -2796,7 +2787,7 @@ return null;`,
         // "toLocaleTimeString", // ---> Date.prototype.toTimeString
         // "toString", // ---> Date.prototype.toISOString
         // "toLocaleString", // ---> Date.prototype.toString
-        _Symbol.toPrimitive,
+        Symbol.toPrimitive,
       ];
       keep['String'] = [...keep['Function.instance'], 'prototype', 'fromCharCode', 'fromCodePoint', 'raw'];
       keep['String.prototype'] = [
@@ -2835,7 +2826,7 @@ return null;`,
         // "toLocaleUpperCase", // ---> String.prototype.toLowerCase
         'toLowerCase',
         'toUpperCase',
-        _Symbol.iterator,
+        Symbol.iterator,
         // "anchor", // Deprecated
         // "big", // Deprecated
         // "blink", // Deprecated
@@ -2872,7 +2863,7 @@ return null;`,
         // "$`", // Deprecated // ???
         // "rightContext", // Deprecated // ???
         // "$'", // Deprecated // ???
-        _Symbol.species,
+        Symbol.species,
       ];
       keep['RegExp.prototype'] = [
         ...keep['Object.prototype'],
@@ -2890,16 +2881,16 @@ return null;`,
         // "compile", // Deprecated
         'exec',
         'test',
-        _Symbol.match,
-        _Symbol.matchAll,
-        _Symbol.replace,
-        _Symbol.split,
-        _Symbol.search,
+        Symbol.match,
+        Symbol.matchAll,
+        Symbol.replace,
+        Symbol.split,
+        Symbol.search,
       ];
       keep['Array'] = [
         ...keep['Function.instance'],
         'prototype',
-        _Symbol.species,
+        Symbol.species,
         'from',
         'fromAsync',
         'isArray',
@@ -2907,7 +2898,7 @@ return null;`,
       ];
       keep['Array.prototype'] = [
         ...keep['Object.prototype'],
-        _Symbol.unscopables,
+        Symbol.unscopables,
         'at',
         'length',
         'concat',
@@ -2946,12 +2937,12 @@ return null;`,
         'toSorted',
         'toSpliced',
         'with',
-        _Symbol.iterator,
+        Symbol.iterator,
       ];
       keep['TypedArray'] = [
         ...keep['Function.instance'],
         'prototype',
-        _Symbol.species,
+        Symbol.species,
         'BYTES_PER_ELEMENT',
         'from',
         'of',
@@ -2989,18 +2980,18 @@ return null;`,
         'forEach',
         'includes',
         'join',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         // "toLocaleString", // ---> TypedArray.prototype.toString
         'toReversed',
         'toSorted',
         'with',
-        _Symbol.iterator,
+        Symbol.iterator,
       ];
-      keep['Map'] = [...keep['Function.instance'], 'prototype', _Symbol.species, 'groupBy'];
+      keep['Map'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'groupBy'];
       keep['Map.prototype'] = [
         ...keep['Object.prototype'],
         'size',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'delete',
         'get',
         'has',
@@ -3010,13 +3001,13 @@ return null;`,
         'values',
         'clear',
         'forEach',
-        _Symbol.iterator,
+        Symbol.iterator,
       ];
-      keep['Set'] = [...keep['Function.instance'], 'prototype', _Symbol.species];
+      keep['Set'] = [...keep['Function.instance'], 'prototype', Symbol.species];
       keep['Set.prototype'] = [
         ...keep['Object.prototype'],
         'size',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'add',
         'clear',
         'delete',
@@ -3032,20 +3023,20 @@ return null;`,
         'keys',
         'values',
         'forEach',
-        _Symbol.iterator,
+        Symbol.iterator,
       ];
-      keep['WeakMap'] = [...keep['Function.instance'], 'prototype', _Symbol.toStringTag];
+      keep['WeakMap'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
       keep['WeakMap.prototype'] = [...keep['Object.prototype'], 'delete', 'get', 'has', 'set'];
-      keep['WeakSet'] = [...keep['Function.instance'], 'prototype', _Symbol.toStringTag];
+      keep['WeakSet'] = [...keep['Function.instance'], 'prototype', Symbol.toStringTag];
       keep['WeakSet.prototype'] = [...keep['Object.prototype'], 'add', 'delete', 'has'];
-      keep['ArrayBuffer'] = [...keep['Function.instance'], 'prototype', _Symbol.species, 'isView'];
+      keep['ArrayBuffer'] = [...keep['Function.instance'], 'prototype', Symbol.species, 'isView'];
       keep['ArrayBuffer.prototype'] = [
         ...keep['Object.prototype'],
         'byteLength',
         'maxByteLength',
         'detached',
         'resizable',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'resize',
         'slice',
         'transfer',
@@ -3057,7 +3048,7 @@ return null;`,
         'buffer',
         'byteLength',
         'byteOffset',
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'getBigInt64',
         'getBigUint64',
         'getFloat32',
@@ -3080,7 +3071,7 @@ return null;`,
         'setUint32',
       ];
       keep['Atomics'] = [
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'add',
         'and',
         'compareExchange',
@@ -3095,20 +3086,20 @@ return null;`,
         'wait',
         'waitAsync',
       ];
-      keep['JSON'] = [_Symbol.toStringTag, 'parse', 'stringify'];
+      keep['JSON'] = [Symbol.toStringTag, 'parse', 'stringify'];
       keep['WeakRef'] = [...keep['Function.instance'], 'prototype'];
-      keep['WeakRef.prototype'] = [...keep['Object.prototype'], 'deref', _Symbol.toStringTag];
+      keep['WeakRef.prototype'] = [...keep['Object.prototype'], 'deref', Symbol.toStringTag];
       keep['FinalizationRegistry'] = [...keep['Function.instance'], 'prototype'];
       keep['FinalizationRegistry.prototype'] = [
         ...keep['Object.prototype'],
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'register',
         'unregister',
       ];
       keep['Promise'] = [
         ...keep['Function.instance'],
         'prototype',
-        _Symbol.species,
+        Symbol.species,
         'all',
         'allSettled',
         'any',
@@ -3117,16 +3108,16 @@ return null;`,
         'resolve',
         'withResolvers',
       ];
-      keep['Promise.prototype'] = [...keep['Object.prototype'], _Symbol.toStringTag, 'catch', 'finally', 'then'];
+      keep['Promise.prototype'] = [...keep['Object.prototype'], Symbol.toStringTag, 'catch', 'finally', 'then'];
       keep['GeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['GeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
+      keep['GeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
       keep['AsyncGeneratorFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['AsyncGeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
+      keep['AsyncGeneratorFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
       keep['AsyncFunction'] = [...keep['Function.instance'], 'prototype'];
-      keep['AsyncFunction.prototype'] = [...keep['Function.prototype'], 'prototype', _Symbol.toStringTag];
+      keep['AsyncFunction.prototype'] = [...keep['Function.prototype'], 'prototype', Symbol.toStringTag];
       keep['Proxy'] = [...keep['Function.instance'], 'revocable'];
       keep['Reflect'] = [
-        _Symbol.toStringTag,
+        Symbol.toStringTag,
         'apply',
         'construct',
         'defineProperty',
@@ -3161,7 +3152,7 @@ return null;`,
       const prune = (start, name, toKeep) => {
         let current = start;
         do {
-          [..._Object.getOwnPropertyNames(current), ..._Object.getOwnPropertySymbols(current)].forEach((key) => {
+          [...Object.getOwnPropertyNames(current), ...Object.getOwnPropertySymbols(current)].forEach((key) => {
             if (!keep[toKeep]?.includes(key)) {
               try {
                 // @ts-expect-error Element implicitly has an 'any' type because expression of type 'string | symbol' can't be used to index type '{}'.
@@ -3176,7 +3167,7 @@ return null;`,
               }
             }
           });
-          current = _Object.getPrototypeOf(current);
+          current = Object.getPrototypeOf(current);
         } while (null !== current);
       };
 
@@ -3352,7 +3343,7 @@ return null;`,
         case 'reject':
           {
             const { error, tunnel } = parsedData;
-            rejectTunnel(tunnel, new _Error(error));
+            rejectTunnel(tunnel, new Error(error));
           }
           break;
         case 'emit':
@@ -3530,7 +3521,7 @@ return null;`,
           if (undefined !== tunnel && 'string' === typeof name) {
             postRejectMessage(tunnel, `unknown event name ${name}`);
           } else {
-            throw new _Error(`unknown event name`);
+            throw new Error(`unknown event name`);
           }
         }
       }
