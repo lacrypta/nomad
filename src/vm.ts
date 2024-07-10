@@ -578,13 +578,13 @@ export const _defaultShutdownTimeout: Readonly<number> = 100;
  * The default number of milliseconds to wait between `ping` messages to the {@link VMWorker}.
  *
  */
-export const _defaultPingInterval: Readonly<number> = 100;
+export const _defaultPingInterval: Readonly<number> = 1000;
 
 /**
  * The default number of milliseconds that must elapse between `pong` messages in order to consider a {@link VMWorker} "unresponsive".
  *
  */
-export const _defaultPongLimit: Readonly<number> = 1000;
+export const _defaultPongLimit: Readonly<number> = 10000;
 
 /**
  * Retrieve the VM registered under the given name.
