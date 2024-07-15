@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.6.0
-        version: 9.6.0
+        specifier: ^9.7.0
+        version: 9.7.0
       '@lacrypta/nomad':
         specifier: 'link:'
         version: 'link:'
@@ -587,6 +587,10 @@ packages:
 
   '@eslint/js@9.6.0':
     resolution: {integrity: sha512-D9B0/3vNg44ZeWbYMpBoXqNP4j6eQD5vNwIlGAuFRRzK/WtT/jvDQW3Bi9kkf3PMDMlM7Yi+73VLUsn5bJcl8A==, tarball: https://registry.npmjs.org/@eslint/js/-/js-9.6.0.tgz}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@eslint/js@9.7.0':
+    resolution: {integrity: sha512-ChuWDQenef8OSFnvuxv0TCVxEwmu3+hPNKvM9B34qpM0rDRbjL8t5QkQeHHeAfsKQjuH9wS82WeCi1J/owatng==, tarball: https://registry.npmjs.org/@eslint/js/-/js-9.7.0.tgz}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@eslint/object-schema@2.1.4':
@@ -3038,6 +3042,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@9.6.0': {}
+
+  '@eslint/js@9.7.0': {}
 
   '@eslint/object-schema@2.1.4': {}
 
