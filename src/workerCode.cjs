@@ -2497,7 +2497,6 @@ return null;`,
        * @type {{[key: string]: (string | symbol)[]}}
        */
       const keep = Object.create(null);
-      /* eslint-disable sonarjs/no-duplicate-string */
       keep['this'] = [
         'globalThis',
         'Infinity',
@@ -3123,7 +3122,6 @@ return null;`,
         'set',
         'setPrototypeOf',
       ];
-      /* eslint-enable sonarjs/no-duplicate-string */
 
       /**
        * @type {string[]}

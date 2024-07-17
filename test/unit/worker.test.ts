@@ -22,8 +22,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-/* eslint-disable sonarjs/no-duplicate-string */
-
 import WebWorker from 'web-worker';
 
 import { _wrapCode, VMWorkerImplementation } from '../../src/worker';
