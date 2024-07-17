@@ -3,7 +3,9 @@
 
 # Nomad
 
-The Nomad Virtual Machine reference implementation
+The Nomad Virtual Machine reference implementation and NIP proposals.
+
+- [**NIP-XX-1: Nomad**](./assets/docs/nip-XX-1/nomad.md).
 
 <!-- markdownlint-disable-next-line MD033 -->
 <details><summary>
