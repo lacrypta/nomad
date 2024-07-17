@@ -6,6 +6,7 @@
 The Nomad Virtual Machine reference implementation and NIP proposals.
 
 - [**NIP-XX-1: Nomad**](./assets/docs/nip-XX-1/nomad.md).
+- [**NIP-XX-2: Nostracts**](./assets/docs/nip-XX-2/nostracts.md).
 
 <!-- markdownlint-disable-next-line MD033 -->
 <details><summary>
