@@ -393,7 +393,7 @@ In this example, we'll start off with some pre-assigned tokens, but any other se
 
 The transfer event will have the form:
 
-```json
+```javascript
 {
   ...,
   "kind": 2222,
@@ -403,22 +403,22 @@ The transfer event will have the form:
     ["p", "{destination_pubkey}"],
     ...,
     ["n", "{ledger_nostract_id}"],
-    ...
+    ...,
   ],
   ...,
   "content": "{transfer_content}",
-  ...
+  ...,
 }
 ```
 
 Where `{destination_pubkey}` is a public key mentioned in the content's output block (see below).
 The `{transfer_content}` is the JSON serialization of an object of the following form:
 
-```json
+```javascript
 {
   ...,
   "{destination_pubkey}": "{amount}",
-  ...
+  ...,
 }
 ```
 
