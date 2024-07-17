@@ -168,8 +168,9 @@ The corresponding [pseudo-event](#pseudo-event-definition) is:
 }
 ```
 
-When this function is called from within a Nomad script, the host will parse the given `filters`, and **MAYBE** use the `suggestedRelays` list, sending a `REQ` message with the given `filters`, and closing the connection on reception of an `EOSE` message.
+When this function is called from within a Nomad script, the host will parse the given `filters`, and **MUST** use the `suggestedRelays` list if given, sending a `REQ` message with the given `filters`, and closing the connection on reception of an `EOSE` message.
 As messages are received, they're asynchronously `yield`ed to the calling Nomad script.
+Duplicate messages (arising from different relays) **MUST** be returned.
 
 ### The `nostr/req` Predefined Dependency
 
