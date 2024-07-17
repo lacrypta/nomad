@@ -203,8 +203,6 @@ Any number of `"n"` tags **MAY** be attached to any one event, but it makes no s
 
 ### Witnesses
 
-ACA VA UN VALIDADOR QUE TOMA UN VALIDADOR Y LOS PARAMETROS QUE SE LE PASAN Y TE VALIDA QUE EL RESULTADO SEA EL DADO
-
 ...
 
 ### Bridges / Oracles
