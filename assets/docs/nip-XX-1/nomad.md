@@ -103,16 +103,16 @@ An `n:import` tag **MUST** have the following form:
 
 where:
 
-`{identifier}`
-: This value **MUST** be a valid JavaScript identifier name, satisfying the following regular expression: `/^[a-zA-Z][_a-zA-Z0-9]*$/`.
-: Additionally, this value **MUST NOT** be a JavaScript [reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words) (including strict mode reserved words and reserved words in module code or async function bodies), nor a [future reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#future_reserved_words) (including future reserved words in older standards), nor [identifiers with special meanings](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers_with_special_meanings), nor the names of [standard built-in objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects).
+- **`{identifier}`:**
+  This value **MUST** be a valid JavaScript identifier name, satisfying the following regular expression: `/^[a-zA-Z][_a-zA-Z0-9]*$/`.
 
-`{nomad_event_id}`
-: This value **MUST** be a valid NOSTR event `.id`, consisting of 64 hexadecimal characters (lowercase).
-: This **MUST** be the `.id` of a Nomad event (ie. a `kind:1337` event itself).
+  Additionally, this value **MUST NOT** be a JavaScript [reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words) (including strict mode reserved words and reserved words in module code or async function bodies), nor a [future reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#future_reserved_words) (including future reserved words in older standards), nor [identifiers with special meanings](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers_with_special_meanings), nor the names of [standard built-in objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects).
+- **`{nomad_event_id}`:**
+  This value **MUST** be a valid NOSTR event `.id`, consisting of 64 hexadecimal characters (lowercase).
+  This **MUST** be the `.id` of a Nomad event (ie. a `kind:1337` event itself).
 
-`{recommended_relay_url}`
-: This value, if present, **MUST** be a valid NOSTR relay URL.
+- **`{recommended_relay_url}`:**
+  This value, if present, **MUST** be a valid NOSTR relay URL.
 
 > [!note]
 > Although JavaScript identifiers may be much more complex, the restriction on the form of `{identifier}` is in place to simplify both the specification proper and the subsequent implementation and auditing procedures.
@@ -138,11 +138,11 @@ An `n:metadata` tag **MUST** have the following form:
 
 where:
 
-`{identifier}`
-: This value **MUST** adhere to the same conditions as the `{identifier}` field of the [`n:import`](#the-nimport-tag) tag.
+- **`{identifier}`:**
+  This value **MUST** adhere to the same conditions as the `{identifier}` field of the [`n:import`](#the-nimport-tag) tag.
 
-`{arg[1]}`, `{arg[2]}`, ..., `{arg[n]}`
-: These **MUST** be zero or more arbitrary strings.
+- **`{arg[1]}`, `{arg[2]}`, ..., `{arg[n]}`:**
+  These **MUST** be zero or more arbitrary strings.
 
 If two instances of this tag have the same `{identifier}`, then they **MUST** also have the same list of arguments (byte-by-byte equal, that is).
 
@@ -314,17 +314,21 @@ There's more that can be done with the Nomad runtime as it stands today, and, th
 
 ## FAQs
 
-**Why do we need a Virtual Machine?**
-: ...
+...
 
-**Why use JavaScript?**
-: ...
+### Why do we need a Virtual Machine?
 
-**How is this "unstoppable" or "uncensorable"?**
-: ...
+...
 
-**Why is NOSTR used?**
-: ...
+### Why use JavaScript?
+
+...
+
+### How is this "unstoppable" or "uncensorable"?
+
+...
+
+### Why is NOSTR used?
 
 ...
 
