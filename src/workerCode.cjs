@@ -3319,56 +3319,6 @@ return null;`,
     _listen((parsedData) => {
       const { name } = parsedData;
       switch (name) {
-        case 'ping':
-          postPongMessage();
-          break;
-        case 'resolve':
-          {
-            const { payload, tunnel } = parsedData;
-            resolveTunnel(tunnel, payload);
-          }
-          break;
-        case 'reject':
-          {
-            const { error, tunnel } = parsedData;
-            rejectTunnel(tunnel, new Error(error));
-          }
-          break;
-        case 'emit':
-          {
-            const { args, enclosure, event } = parsedData;
-            castHost(enclosure, event, args);
-          }
-          break;
-        case 'install':
-          {
-            const { dependency, enclosure, tunnel } = parsedData;
-            installDependency(enclosure, dependency).then(
-              () => postResolveMessage(tunnel, undefined),
-              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
-            );
-          }
-          break;
-        case 'execute':
-          {
-            const { args, dependency, enclosure, tunnel } = parsedData;
-            executeDependency(enclosure, dependency, new Map(Object.entries(args))).then(
-              (r) => postResolveMessage(tunnel, r),
-              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
-            );
-          }
-          break;
-        case 'predefine':
-          {
-            const { enclosure, function: fName, idx, tunnel } = parsedData;
-            try {
-              addPredefined(enclosure, idx, fName);
-              postResolveMessage(tunnel, undefined);
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
         case 'create':
           {
             const { enclosure, tunnel } = parsedData;
@@ -3390,12 +3340,45 @@ return null;`,
             }
           }
           break;
-        case 'merge':
+        case 'emit':
+          {
+            const { args, enclosure, event } = parsedData;
+            castHost(enclosure, event, args);
+          }
+          break;
+        case 'execute':
+          {
+            const { args, dependency, enclosure, tunnel } = parsedData;
+            executeDependency(enclosure, dependency, new Map(Object.entries(args))).then(
+              (r) => postResolveMessage(tunnel, r),
+              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
+            );
+          }
+          break;
+        case 'getSubEnclosures':
+          {
+            const { depth, enclosure, tunnel } = parsedData;
+            try {
+              postResolveMessage(tunnel, enclosureSubEnclosures(enclosure, depth));
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'install':
+          {
+            const { dependency, enclosure, tunnel } = parsedData;
+            installDependency(enclosure, dependency).then(
+              () => postResolveMessage(tunnel, undefined),
+              (e) => postRejectMessage(tunnel, getErrorMessage(e)),
+            );
+          }
+          break;
+        case 'isMuted':
           {
             const { enclosure, tunnel } = parsedData;
             try {
-              mergeEnclosure(enclosure);
-              postResolveMessage(tunnel, undefined);
+              postResolveMessage(tunnel, isMuted(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -3411,61 +3394,11 @@ return null;`,
             }
           }
           break;
-        case 'unlink':
-          {
-            const { enclosure, target, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, unlinkEnclosure(enclosure, target));
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
-        case 'mute':
-          {
-            const { enclosure, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, muteEnclosure(enclosure));
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
-        case 'unmute':
-          {
-            const { enclosure, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, unmuteEnclosure(enclosure));
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
-        case 'listRootEnclosures':
-          {
-            const { tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, listRootEnclosures());
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
         case 'listInstalled':
           {
             const { enclosure, tunnel } = parsedData;
             try {
               postResolveMessage(tunnel, listInstalled(enclosure));
-            } catch (e) {
-              postRejectMessage(tunnel, getErrorMessage(e));
-            }
-          }
-          break;
-        case 'listLinksTo':
-          {
-            const { enclosure, tunnel } = parsedData;
-            try {
-              postResolveMessage(tunnel, listLinksTo(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
@@ -3481,21 +3414,88 @@ return null;`,
             }
           }
           break;
-        case 'isMuted':
+        case 'listLinksTo':
           {
             const { enclosure, tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, isMuted(enclosure));
+              postResolveMessage(tunnel, listLinksTo(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }
           }
           break;
-        case 'getSubEnclosures':
+        case 'listRootEnclosures':
           {
-            const { depth, enclosure, tunnel } = parsedData;
+            const { tunnel } = parsedData;
             try {
-              postResolveMessage(tunnel, enclosureSubEnclosures(enclosure, depth));
+              postResolveMessage(tunnel, listRootEnclosures());
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'merge':
+          {
+            const { enclosure, tunnel } = parsedData;
+            try {
+              mergeEnclosure(enclosure);
+              postResolveMessage(tunnel, undefined);
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'mute':
+          {
+            const { enclosure, tunnel } = parsedData;
+            try {
+              postResolveMessage(tunnel, muteEnclosure(enclosure));
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'ping':
+          postPongMessage();
+          break;
+        case 'predefine':
+          {
+            const { enclosure, function: fName, idx, tunnel } = parsedData;
+            try {
+              addPredefined(enclosure, idx, fName);
+              postResolveMessage(tunnel, undefined);
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'reject':
+          {
+            const { error, tunnel } = parsedData;
+            rejectTunnel(tunnel, new Error(error));
+          }
+          break;
+        case 'resolve':
+          {
+            const { payload, tunnel } = parsedData;
+            resolveTunnel(tunnel, payload);
+          }
+          break;
+        case 'unlink':
+          {
+            const { enclosure, target, tunnel } = parsedData;
+            try {
+              postResolveMessage(tunnel, unlinkEnclosure(enclosure, target));
+            } catch (e) {
+              postRejectMessage(tunnel, getErrorMessage(e));
+            }
+          }
+          break;
+        case 'unmute':
+          {
+            const { enclosure, tunnel } = parsedData;
+            try {
+              postResolveMessage(tunnel, unmuteEnclosure(enclosure));
             } catch (e) {
               postRejectMessage(tunnel, getErrorMessage(e));
             }

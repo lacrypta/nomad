@@ -94,9 +94,9 @@ addEventListener("rejectionhandled", (event) => {
         new VMWorkerImplementation('THE CODE GOES HERE', 0, 'root', 'THE NAME GOES HERE', workerCtor),
       ).toBeInstanceOf(VMWorkerImplementation);
 
-      const [scriptUrl, options]: [URL | string, WorkerOptions | undefined] = workerCtor.mock.calls[0] as [
-        URL | string,
-        WorkerOptions | undefined,
+      const [scriptUrl, options]: [string | URL, undefined | WorkerOptions] = workerCtor.mock.calls[0] as [
+        string | URL,
+        undefined | WorkerOptions,
       ];
 
       expect(await blobUriToText(scriptUrl)).toStrictEqual(_wrapCode('THE CODE GOES HERE', 0, 'root'));

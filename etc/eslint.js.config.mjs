@@ -6,7 +6,7 @@ import eslint_plugin_import from 'eslint-plugin-import';
 import eslint_plugin_jest from 'eslint-plugin-jest';
 import arrayFunc from 'eslint-plugin-array-func';
 import * as regexpPlugin from 'eslint-plugin-regexp';
-import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
+import perfectionist from 'eslint-plugin-perfectionist';
 
 import eslint_plugin_jsdoc from 'eslint-plugin-jsdoc';
 
@@ -15,7 +15,7 @@ export default [
   eslint_config_prettier,
   arrayFunc.configs.all,
   regexpPlugin.configs['flat/recommended'],
-  perfectionistNatural,
+  perfectionist.configs['recommended-natural'],
   eslint_plugin_jsdoc.configs['flat/recommended'],
   {
     files: ['test/**/*.test.{m,c,}js'],

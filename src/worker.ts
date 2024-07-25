@@ -49,7 +49,7 @@ export type ErrorCallback = (error: Error) => void;
  * @param scriptURL - The URL to retrieve the {@link !Worker} code from.
  * @param options - Any {@link !Worker} options to pass on.
  */
-export type WorkerConstructor = (scriptURL: URL | string, options?: WorkerOptions) => Worker;
+export type WorkerConstructor = (scriptURL: string | URL, options?: WorkerOptions) => Worker;
 
 /**
  * An instance of an environment-agnostic worker.
@@ -163,7 +163,7 @@ export class VMWorkerImplementation implements VMWorker {
    * The {@link !Worker} instance (or `null` if killed).
    *
    */
-  #worker?: Worker | undefined;
+  #worker?: undefined | Worker;
 
   /**
    * Construct a new {@link VMWorkerImplementation} with the given parameters.
@@ -179,14 +179,14 @@ export class VMWorkerImplementation implements VMWorker {
     tunnel: number,
     defaultEnclosure: string,
     name: string,
-    workerCtor?: (scriptURL: URL | string, options?: WorkerOptions) => Worker,
+    workerCtor?: (scriptURL: string | URL, options?: WorkerOptions) => Worker,
   ) {
     this.#blobURL = URL.createObjectURL(
       new Blob([_wrapCode(code, tunnel, defaultEnclosure)], { type: 'application/javascript' }),
     );
 
     this.#worker = (
-      workerCtor ?? ((scriptURL: URL | string, options?: WorkerOptions): Worker => new Worker(scriptURL, options))
+      workerCtor ?? ((scriptURL: string | URL, options?: WorkerOptions): Worker => new Worker(scriptURL, options))
     )(this.#blobURL, {
       credentials: 'omit',
       name,

@@ -592,7 +592,7 @@ export const _defaultPongLimit: Readonly<number> = 10000;
  * @param name - VM name to retrieve.
  * @returns The VM registered under the given name, or `undefined` if none found.
  */
-export const get: (name: string) => VM | undefined = (name: string): VM | undefined => {
+export const get: (name: string) => undefined | VM = (name: string): undefined | VM => {
   return _names.get(name)?.deref();
 };
 
@@ -748,16 +748,16 @@ export class VMImplementation implements VM {
   readonly #name: Readonly<string>;
 
   /**
-   * Number of milliseconds to wait between pings to the worker.
-   *
-   */
-  #pingInterval?: number | undefined;
-
-  /**
    * The interval ID for the pinger, or `null` if not yet set up.
    *
    */
   #pinger?: ReturnType<typeof setInterval> | undefined;
+
+  /**
+   * Number of milliseconds to wait between pings to the worker.
+   *
+   */
+  #pingInterval?: number | undefined;
 
   /**
    * Maximum number of milliseconds between pong responses from the worker before declaring it unresponsive.
@@ -804,7 +804,7 @@ export class VMImplementation implements VM {
    * The {@link VMWorker} this VM is using for secure execution, or `null` if none create or stopped.
    *
    */
-  #worker?: VMWorker | undefined;
+  #worker?: undefined | VMWorker;
 
   /**
    * Construct a new {@link VMImplementation} instance, using the given name.

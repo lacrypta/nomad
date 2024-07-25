@@ -6,7 +6,7 @@ import eslint_plugin_import from 'eslint-plugin-import';
 import eslint_plugin_jest from 'eslint-plugin-jest';
 import arrayFunc from 'eslint-plugin-array-func';
 import * as regexpPlugin from 'eslint-plugin-regexp';
-import perfectionistNatural from 'eslint-plugin-perfectionist/configs/recommended-natural';
+import perfectionist from 'eslint-plugin-perfectionist';
 
 import tseslint from 'typescript-eslint';
 import eslint_plugin_tsdoc from 'eslint-plugin-tsdoc';
@@ -16,7 +16,7 @@ export default tseslint.config(
   eslint_config_prettier,
   arrayFunc.configs.all,
   regexpPlugin.configs['flat/recommended'],
-  perfectionistNatural,
+  perfectionist.configs['recommended-natural'],
   ...tseslint.configs.strictTypeChecked,
   {
     files: ['test/**/*.test.{m,c,}ts'],

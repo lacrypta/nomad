@@ -37,11 +37,11 @@ import {
   _eventPrefix,
   _makeError,
   _pseudoRandomString,
-  EnclosureImplementation,
-  VMImplementation,
   create,
+  EnclosureImplementation,
   events,
   get,
+  VMImplementation,
 } from '../../src/vm';
 import { _wrapCode } from '../../src/worker';
 import { asyncRestoringMocks, delay, restoringMocks, stringToDataUri, testAll, withFakeTimers } from '../helpers';
@@ -101,7 +101,7 @@ describe('vm', (): void => {
   describe('get()', (): void => {
     test('should retrieve created VM', (): void => {
       create('test-get-1');
-      const gotten: VM | undefined = get('test-get-1');
+      const gotten: undefined | VM = get('test-get-1');
       expect(gotten).toBeInstanceOf(VMImplementation);
       expect(gotten?.name).toStrictEqual('test-get-1');
     });
@@ -114,7 +114,7 @@ describe('vm', (): void => {
   describe('VMImplementation', (): void => {
     const makeWorkerCtor: (body: (...args: AnyArgs) => void) => WorkerConstructor =
       (body: (...args: AnyArgs) => void): WorkerConstructor =>
-      (_scriptURL: URL | string, options?: WorkerOptions): Worker =>
+      (_scriptURL: string | URL, options?: WorkerOptions): Worker =>
         new WebWorker(
           stringToDataUri(_wrapCode(body.toString().toString(), 0, 'root').replaceAll('ErrorEvent', 'Event')),
           options,
@@ -136,65 +136,65 @@ describe('vm', (): void => {
         _listen((data: Record<string, unknown>) => {
           const name: string = data.name as string;
           switch (name) {
-            case 'ping':
-              _shout({ name: 'pong' });
-              break;
-            case 'resolve':
-              // NOP
-              break;
-            case 'reject':
-              // NOP
-              break;
-            case 'emit':
-              // NOP
-              break;
-            case 'install':
-              _shout({ name: 'resolve', tunnel: data.tunnel });
-              break;
-            case 'execute':
-              _shout({ name: 'resolve', tunnel: data.tunnel });
-              break;
-            case 'predefine':
-              _shout({ name: 'resolve', tunnel: data.tunnel });
-              break;
             case 'create':
               _shout({ name: 'resolve', tunnel: data.tunnel });
               break;
             case 'delete':
               _shout({ name: 'resolve', payload: [data.enclosure], tunnel: data.tunnel });
               break;
-            case 'merge':
+            case 'emit':
+              // NOP
+              break;
+            case 'execute':
               _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'getSubEnclosures':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            case 'install':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'isMuted':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
               break;
             case 'link':
               _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
               break;
-            case 'unlink':
-              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
-              break;
-            case 'mute':
-              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
-              break;
-            case 'unmute':
-              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
-              break;
-            case 'listRootEnclosures':
-              _shout({ name: 'resolve', payload: ['root'], tunnel: data.tunnel });
-              break;
             case 'listInstalled':
-              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
-              break;
-            case 'listLinksTo':
               _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
               break;
             case 'listLinkedFrom':
               _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
               break;
-            case 'isMuted':
+            case 'listLinksTo':
+              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+              break;
+            case 'listRootEnclosures':
+              _shout({ name: 'resolve', payload: ['root'], tunnel: data.tunnel });
+              break;
+            case 'merge':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'mute':
               _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
               break;
-            case 'getSubEnclosures':
-              _shout({ name: 'resolve', payload: [], tunnel: data.tunnel });
+            case 'ping':
+              _shout({ name: 'pong' });
+              break;
+            case 'predefine':
+              _shout({ name: 'resolve', tunnel: data.tunnel });
+              break;
+            case 'reject':
+              // NOP
+              break;
+            case 'resolve':
+              // NOP
+              break;
+            case 'unlink':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
+              break;
+            case 'unmute':
+              _shout({ name: 'resolve', payload: false, tunnel: data.tunnel });
               break;
             default: {
               _shout({ error: `unknown event name ${name}`, name: 'reject', tunnel: data.tunnel });
@@ -310,7 +310,7 @@ describe('vm', (): void => {
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
-          const workerCtor: WorkerConstructor = (scriptURL: URL | string, options?: WorkerOptions): Worker => {
+          const workerCtor: WorkerConstructor = (scriptURL: string | URL, options?: WorkerOptions): Worker => {
             const theWorker = emptyWorkerCtor(scriptURL, options);
             theWorkers.push(theWorker);
             return theWorker;
@@ -1356,7 +1356,7 @@ describe('vm', (): void => {
           throw new Error('something');
         }) as typeof global.clearInterval;
         try {
-          const workerCtor: WorkerConstructor = (_scriptURL: URL | string, options?: WorkerOptions): Worker => {
+          const workerCtor: WorkerConstructor = (_scriptURL: string | URL, options?: WorkerOptions): Worker => {
             const theWorker = dummyWorkerCtor(_scriptURL, options);
             theWorkers.push(theWorker);
             return theWorker;

@@ -27,9 +27,9 @@ import type { AnyFunction } from '../../src/dependency';
 import {
   _getDependencyPrimitive,
   _removeComments,
-  DependencyImplementation,
   asDependency,
   create,
+  DependencyImplementation,
   from,
   sort,
 } from '../../src/dependency';

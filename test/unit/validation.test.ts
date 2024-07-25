@@ -76,13 +76,13 @@ describe('validation', (): void => {
   });
 
   testAll(it, functionCode, {
-    'should pass with Function body': {
-      expected: 'return Math.PI',
-      input: ['return Math.PI'],
-    },
     'should pass with empty string': {
       expected: '',
       input: [''],
+    },
+    'should pass with Function body': {
+      expected: 'return Math.PI',
+      input: ['return Math.PI'],
     },
     'should throw with non-ASCII characters': {
       error: new Error('expected function code to only contain printable ASCII characters, HT, LF, FF, or CR'),
