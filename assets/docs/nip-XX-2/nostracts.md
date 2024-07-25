@@ -141,7 +141,7 @@ return async function (event: NostrEvent, nostractId: string): boolean {
 };
 ```
 
-Where `NostrEvent` is as defined in [NIP-XX-1](../nip-XX-1/nomad.md), Appendix A, _"Predefined Nomad Dependencies List"_.
+Where `NostrEvent` is as defined in [NIP-XX-1, Appendix A, _"Predefined Nomad Dependencies List"_](../nip-XX-1/appendix-a.md#predefined-nomad-dependencies-list).
 Its corresponding pseudo-event is:
 
 ```json
