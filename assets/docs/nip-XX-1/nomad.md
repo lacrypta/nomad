@@ -35,6 +35,7 @@ A couple of appendixes is included as well:
 
 - [Appendix A](./appendix-a) deals with the predefined dependencies that conforming implementations need to provide to Nomad scripts.
 - [Appendix B](./appendix-b) lists the standard global objects that conforming implementations need to make available to Nomad code.
+- [Appendix C](./appendix-c) specifies the virtual machine interface proper, with all of its exposed functionalities.
 
 ## Nomad Syntax
 
