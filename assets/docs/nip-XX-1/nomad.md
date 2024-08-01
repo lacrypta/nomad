@@ -320,6 +320,10 @@ There's more that can be done with the Nomad runtime as it stands today, and, th
 
 ...
 
+### Why is there no "version" in Nomad?
+
+...
+
 ### Why use JavaScript?
 
 ...
