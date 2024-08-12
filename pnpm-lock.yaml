@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@noble/curves':
-        specifier: ^1.4.2
-        version: 1.4.2
+        specifier: ^1.5.0
+        version: 1.5.0
       '@noble/hashes':
         specifier: ^1.4.0
         version: 1.4.0
@@ -691,8 +691,8 @@ packages:
   '@microsoft/tsdoc@0.15.0':
     resolution: {integrity: sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==, tarball: https://registry.npmjs.org/@microsoft/tsdoc/-/tsdoc-0.15.0.tgz}
 
-  '@noble/curves@1.4.2':
-    resolution: {integrity: sha512-TavHr8qycMChk8UwMld0ZDRvatedkzWfH8IiaeGCfymOP5i0hSCozz9vHOL0nkwk7HRMlFnAiKpS2jrUmSybcw==, tarball: https://registry.npmjs.org/@noble/curves/-/curves-1.4.2.tgz}
+  '@noble/curves@1.5.0':
+    resolution: {integrity: sha512-J5EKamIHnKPyClwVrzmaf5wSdQXgdHcPZIZLu3bwnbeCx8/7NPK5q2ZBWF+5FvYGByjiQQsJYX6jfgB2wDPn3A==, tarball: https://registry.npmjs.org/@noble/curves/-/curves-1.5.0.tgz}
 
   '@noble/hashes@1.4.0':
     resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==, tarball: https://registry.npmjs.org/@noble/hashes/-/hashes-1.4.0.tgz}
@@ -3227,7 +3227,7 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@noble/curves@1.4.2':
+  '@noble/curves@1.5.0':
     dependencies:
       '@noble/hashes': 1.4.0
 
