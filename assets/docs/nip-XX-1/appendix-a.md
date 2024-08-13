@@ -42,11 +42,7 @@ A TypeScript reference implementation of exactly _how_ this is done is given bel
 
 ```typescript
 import { mod } from "@noble/curves/abstract/modular";
-import {
-  bytesToHex,
-  numberToBytesBE,
-  bytesToNumberBE,
-} from "@noble/curves/abstract/utils";
+import { bytesToHex, numberToBytesBE, bytesToNumberBE, } from "@noble/curves/abstract/utils";
 import { secp256k1, schnorr } from "@noble/curves/secp256k1";
 import { hkdf } from "@noble/hashes/hkdf";
 import { sha256 } from "@noble/hashes/sha256";
@@ -62,8 +58,7 @@ function buildPredefinedDependencyEvent(predefinedName: string): object {
 
   const encoder: TextEncoder = new TextEncoder();
   const privkey: Uint8Array = numberToBytesBE(
-    // re-implement @noble/curves/abstract/modular.hashToPrivateScalar
-    //   without the annoying deprecation notice
+    // re-implement @noble/curves/abstract/modular.hashToPrivateScalar without the annoying deprecation notice
     mod(
       bytesToNumberBE(hkdf(sha256, encoder.encode(predefinedName), undefined, undefined, 48)),
       secp256k1.CURVE.n - 1n,
