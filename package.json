@@ -79,7 +79,7 @@
     "@types/eslint__js": "^8.42.3",
     "@types/jest": "^29.5.12",
     "@yookue/typedoc-plugin-raw-content": "^0.2.1",
-    "esbuild": "^0.23.0",
+    "esbuild": "^0.23.1",
     "esbuild-plugin-umd-wrapper": "^3.0.0",
     "eslint": "^9.9.0",
     "eslint-config-prettier": "^9.1.0",
