@@ -609,9 +609,9 @@ export const create: (name?: string) => VM = (name?: string): VM => {
 /**
  * Rejection part of a {@link !Promise}.
  *
- * @param error - {@link !Error} being thrown.
+ * @param error - Error being thrown.
  */
-export type Rejection = (error: Error) => void;
+export type Rejection = (error: unknown) => void;
 
 /**
  * Resolution part of a {@link !Promise}.
@@ -947,8 +947,9 @@ export class VMImplementation implements VM {
       this.#castEvent('stop:ok');
       resolve?.();
     } catch (e) {
-      this.#castEvent('stop:error', e);
-      reject?.(_makeError(e));
+      const errorError: Error = _makeError(e);
+      this.#castEvent('stop:error', errorError);
+      reject?.(errorError);
     }
   }
 
@@ -1601,15 +1602,17 @@ export class VMImplementation implements VM {
                 this.#castEvent(`${enclosure}:create:ok`);
                 resolve(new EnclosureImplementation(this, enclosure));
               },
-              (error: Error): void => {
-                this.#castEvent(`${enclosure}:create:error`, error);
-                reject(error);
+              (error: unknown): void => {
+                const errorError: Error = _makeError(error);
+                this.#castEvent(`${enclosure}:create:error`, errorError);
+                reject(errorError);
               },
             ),
           );
         } catch (e) {
-          this.#castEvent(`${enclosure}:create:error`, e);
-          reject(_makeError(e));
+          const errorError: Error = _makeError(e);
+          this.#castEvent(`${enclosure}:create:error`, errorError);
+          reject(errorError);
         }
       },
     );
@@ -1636,16 +1639,18 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:delete:ok`, deleted);
               resolve(deleted);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:delete:error`, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:delete:error`, errorError);
+              reject(errorError);
             },
           ),
           enclosure,
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:delete:error`, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:delete:error`, errorError);
+        reject(errorError);
       }
     });
   }
@@ -1687,17 +1692,19 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:execute:ok`, dependency, theArgs, result);
               resolve(result);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:execute:error`, dependency, theArgs, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:execute:error`, dependency, theArgs, errorError);
+              reject(errorError);
             },
           ),
           dependency.asObject(),
           theArgs,
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:execute:error`, dependency, args, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:execute:error`, dependency, args, errorError);
+        reject(errorError);
       }
     });
   }
@@ -1744,16 +1751,18 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:install:ok`, dependency);
               resolve();
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:install:error`, dependency, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:install:error`, dependency, errorError);
+              reject(errorError);
             },
           ),
           dependency.asObject(),
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:install:error`, dependency, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:install:error`, dependency, errorError);
+        reject(errorError);
       }
     });
   }
@@ -1771,13 +1780,13 @@ export class VMImplementation implements VM {
       try {
         this.createEnclosure(`${enclosure}.tmp_${_pseudoRandomString()}`).then(
           (wrapper: EnclosureImplementation): void => {
-            const rejectAndDeleteEnclosure: Rejection = (error: Error): void => {
+            const rejectAndDeleteEnclosure: Rejection = (error: unknown): void => {
               this.deleteEnclosure(wrapper.enclosure).then(
                 (): void => {
-                  reject(error);
+                  reject(_makeError(error));
                 },
                 (): void => {
-                  reject(error);
+                  reject(_makeError(error));
                 },
               );
             };
@@ -1841,16 +1850,18 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:link:ok`, target, linked);
               resolve(linked);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:link:error`, target, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:link:error`, target, errorError);
+              reject(errorError);
             },
           ),
           target,
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:link:error`, target, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:link:error`, target, errorError);
+        reject(errorError);
       }
     });
   }
@@ -1949,15 +1960,17 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:merge:ok`);
               resolve();
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:merge:error`, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:merge:error`, errorError);
+              reject(errorError);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:merge:error`, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:merge:error`, errorError);
+        reject(errorError);
       }
     });
   }
@@ -1982,15 +1995,17 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:mute:ok`, previous);
               resolve(previous);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:mute:error`, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:mute:error`, errorError);
+              reject(errorError);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:mute:error`, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:mute:error`, errorError);
+        reject(errorError);
       }
     });
   }
@@ -2063,19 +2078,21 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:predefined:add:ok`, name, callback, idx);
               resolve();
             },
-            (error: Error): void => {
+            (error: unknown): void => {
               /* eslint-disable-next-line @typescript-eslint/no-array-delete, @typescript-eslint/no-dynamic-delete */
               delete this.#predefined[idx];
-              this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, error);
-              reject(error);
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, errorError);
+              reject(errorError);
             },
           ),
           idx,
           name,
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:predefined:add:error`, name, callback, idx, errorError);
+        reject(errorError);
       }
     });
   }
@@ -2102,26 +2119,36 @@ export class VMImplementation implements VM {
         this.#state = 'stopping';
       }
 
-      this.listRootEnclosures().then((rootEnclosures: string[]) => {
-        rootEnclosures.forEach((rootEnclosure: string): void => {
-          this.emit(rootEnclosure, 'shutdown');
-        });
+      this.listRootEnclosures().then(
+        (rootEnclosures: string[]) => {
+          rootEnclosures.forEach((rootEnclosure: string): void => {
+            this.emit(rootEnclosure, 'shutdown');
+          });
 
-        setTimeout((): void => {
-          // TODO: race these
+          setTimeout((): void => {
+            // TODO: race these
 
-          Promise.race([
-            new Promise((r) => {
-              setTimeout(r, theTimeout / 10);
-            }),
-            Promise.allSettled(
-              rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
-            ),
-          ]).then((): void => {
-            this.#doStop(resolve, reject);
-          }, reject);
-        }, theTimeout);
-      }, reject);
+            Promise.race([
+              new Promise((r) => {
+                setTimeout(r, theTimeout / 10);
+              }),
+              Promise.allSettled(
+                rootEnclosures.map((rootEnclosure: string): Promise<string[]> => this.deleteEnclosure(rootEnclosure)),
+              ),
+            ]).then(
+              (): void => {
+                this.#doStop(resolve, reject);
+              },
+              (error: unknown): void => {
+                reject(_makeError(error));
+              },
+            );
+          }, theTimeout);
+        },
+        (error: unknown): void => {
+          reject(_makeError(error));
+        },
+      );
     });
   }
 
@@ -2160,14 +2187,15 @@ export class VMImplementation implements VM {
 
             resolve(new EnclosureImplementation(this, theRootEnclosure));
           };
-          const bootReject: Rejection = (error: Error): void => {
-            this.#castEvent('start:error', error);
+          const bootReject: Rejection = (error: unknown): void => {
+            const errorError: Error = _makeError(error);
+            this.#castEvent('start:error', errorError);
             this.#doStop(
               (): void => {
-                reject(error);
+                reject(errorError);
               },
               (): void => {
-                reject(error);
+                reject(errorError);
               },
             );
           };
@@ -2198,9 +2226,9 @@ export class VMImplementation implements VM {
             this.#rejectTunnel(bootTunnel, _makeError(e));
           }
         } catch (e) {
-          const error = _makeError(e);
-          this.#castEvent('start:error', error);
-          reject(error);
+          const errorError = _makeError(e);
+          this.#castEvent('start:error', errorError);
+          reject(errorError);
         }
       },
     );
@@ -2284,16 +2312,18 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:unlink:ok`, target, unlinked);
               resolve(unlinked);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:unlink:error`, target, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:unlink:error`, target, errorError);
+              reject(errorError);
             },
           ),
           target,
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:unlink:error`, target, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:unlink:error`, target, errorError);
+        reject(errorError);
       }
     });
   }
@@ -2318,15 +2348,17 @@ export class VMImplementation implements VM {
               this.#castEvent(`${enclosure}:unmute:ok`, prev);
               resolve(prev);
             },
-            (error: Error): void => {
-              this.#castEvent(`${enclosure}:unmute:error`, error);
-              reject(error);
+            (error: unknown): void => {
+              const errorError: Error = _makeError(error);
+              this.#castEvent(`${enclosure}:unmute:error`, errorError);
+              reject(errorError);
             },
           ),
         );
       } catch (e) {
-        this.#castEvent(`${enclosure}:unmute:error`, e);
-        reject(_makeError(e));
+        const errorError: Error = _makeError(e);
+        this.#castEvent(`${enclosure}:unmute:error`, errorError);
+        reject(errorError);
       }
     });
   }

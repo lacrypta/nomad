@@ -1426,8 +1426,8 @@ describe('vm', (): void => {
           (): void => {
             throw new Error('RESOLVED');
           },
-          (error: Error): void => {
-            rejectError = error;
+          (error: unknown): void => {
+            rejectError = _makeError(error);
           },
         );
 
