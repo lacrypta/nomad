@@ -11,6 +11,38 @@
 > [!note]
 > The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **SHOULD**, **SHOULD NOT**, **RECOMMENDED**, **MAY**, and **OPTIONAL** in this document are to be interpreted as described in [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119.txt).
 
+---
+
+1. [Motivation](#motivation)
+2. [Short Description](#short-description)
+3. [Overview](#overview)
+4. [Preliminary Definitions](#preliminary-definitions)
+   1. [Simple Identifier](#simple-identifier)
+   2. [Simple Body](#simple-body)
+   3. [Simple Path](#simple-path)
+5. [Nomad Syntax](#nomad-syntax)
+   1. [The `n:import` Tag](#the-nimport-tag)
+   2. [The `n:metadata` Tag](#the-nmetadata-tag)
+      1. [The `predefined` Metadata Identifier](#the-predefined-metadata-identifier)
+      2. [The `internal` Metadata Identifier](#the-internal-metadata-identifier)
+      3. [The `external` Metadata Identifier](#the-external-metadata-identifier)
+   3. [Validation](#validation)
+6. [Nomad Semantics](#nomad-semantics)
+   1. [_External_ Execution](#external-execution)
+   2. [_Internal_ Execution](#internal-execution)
+   3. [General Execution Procedure](#general-execution-procedure)
+      1. [The `internal` / `external` Metadata Identifiers](#the-internal--external-metadata-identifiers)
+      2. [Dealing with Imports and Script Parameters](#dealing-with-imports-and-script-parameters)
+7. [FAQs](#faqs)
+   1. [Why do we need a Virtual Machine?](#why-do-we-need-a-virtual-machine)
+   2. [Why is there no "version" in Nomad?](#why-is-there-no-version-in-nomad)
+   3. [Why use JavaScript?](#why-use-javascript)
+   4. [How is this "unstoppable" or "uncensorable"?](#how-is-this-unstoppable-or-uncensorable)
+   5. [Why is NOSTR used?](#why-is-nostr-used)
+8. [Philosophical Musings](#philosophical-musings)
+
+---
+
 ## Motivation
 
 This proposal aims to provide a NOSTR-powered **uncensorable**, **decentralized**, and **highly available** application repository framework.
@@ -25,7 +57,9 @@ The code therein is expected to be executed in a secure, curated, and idempotent
 
 ## Overview
 
-First, we present the [Nomad Syntax](#nomad-syntax), the mechanism by which users may publish code to relays to make it available to consumers.
+First, we deal with some [Preliminary Definitions](#preliminary-definitions).
+
+Next, we present the [Nomad Syntax](#nomad-syntax), the mechanism by which users may publish code to relays to make it available to consumers.
 
 Next, we define the [Nomad Semantics](#nomad-semantics): the expected semantics for code execution, importing, and metadata handling.
 
@@ -36,6 +70,60 @@ A couple of appendixes is included as well:
 - [Appendix A](./appendix-a) deals with the predefined dependencies that conforming implementations need to provide to Nomad scripts.
 - [Appendix B](./appendix-b) lists the standard global objects that conforming implementations need to make available to Nomad code.
 - [Appendix C](./appendix-c) specifies the virtual machine interface proper, with all of its exposed functionalities.
+
+## Preliminary Definitions
+
+In what follows, we'll define some terms to be used throughout the specification.
+
+### Simple Identifier
+
+A _simple identifier_ **MUST** be a string containing a valid JavaScript identifier name, satisfying the following regular expression: `/^[a-zA-Z][_a-zA-Z0-9]*$/`.
+Additionally, this value **MUST NOT** be:
+
+- a JavaScript [reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words) (including strict mode reserved words and reserved words in module code or async function bodies), nor
+- a [future reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#future_reserved_words) (including future reserved words in older standards), nor
+- an [identifier with special meaning](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers_with_special_meanings), nor
+- the names of [standard built-in objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects).
+
+> [!note]
+> Note that, in particular, identifiers as such defined **MAY NOT** start with an underscore (`_`) nor contain any dollar signs (`$`).
+>
+> Note as well, that although JavaScript identifiers [may contain any arbitrary Unicode code points or be specified by escape sequences](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers), this is **NOT** allowed here.
+>
+> Furthermore, the forbidden identifier names boil down to: `AggregateError`, `Array`, `ArrayBuffer`, `AsyncFunction`, `AsyncGenerator`, `AsyncGeneratorFunction`, `AsyncIterator`, `Atomics`, `BigInt`, `BigInt64Array`, `BigUint64Array`, `Boolean`, `DataView`, `Date`, `Error`, `EvalError`, `FinalizationRegistry`, `Float32Array`, `Float64Array`, `Function`, `Generator`, `GeneratorFunction`, `Infinity`, `Int16Array`, `Int32Array`, `Int8Array`, `InternalError`, `Intl`, `Iterator`, `JSON`, `Map`, `Math`, `NaN`, `Number`, `Object`, `Promise`, `Proxy`, `RangeError`, `ReferenceError`, `Reflect`, `RegExp`, `Set`, `SharedArrayBuffer`, `String`, `Symbol`, `SyntaxError`, `TypeError`, `URIError`, `Uint16Array`, `Uint32Array`, `Uint8Array`, `Uint8ClampedArray`, `WeakMap`, `WeakRef`, `WeakSet`, `abstract`, `arguments`, `as`, `async`, `await`, `boolean`, `break`, `byte`, `case`, `catch`, `char`, `class`, `const`, `continue`, `debugger`, `decodeURI`, `decodeURIComponent`, `default`, `delete`, `do`, `double`, `else`, `encodeURI`, `encodeURIComponent`, `enum`, `escape`, `eval`, `eval`, `export`, `extends`, `false`, `final`, `finally`, `float`, `for`, `from`, `function`, `get`, `globalThis`, `goto`, `if`, `implements`, `import`, `in`, `instanceof`, `int`, `interface`, `isFinite`, `isNaN`, `let`, `long`, `native`, `new`, `null`, `of`, `package`, `parseFloat`, `parseInt`, `private`, `protected`, `public`, `return`, `set`, `short`, `static`, `super`, `switch`, `synchronized`, `this`, `throw`, `throws`, `transient`, `true`, `try`, `typeof`, `undefined`, `unescape`, `var`, `void`, `volatile`, `while`, `with`, and `yield`.
+
+### Simple Body
+
+A _simple body_ **MUST** be a string consisting of valid JavaScript asynchronous function body code (ie. code that may legally be used as the sole argument to the standard-but-indirectly-available [`AsyncFunction` constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncFunction/AsyncFunction)) under _strict mode_ (ie. preceded by `"use strict";`), and most likely **SHOULD** contain at least one `return` statement.
+Alternatively, if `body` contains the prospective simple body, the following JavaScript code **MUST NOT** throw:
+
+```javascript
+new (Object.getPrototypeOf(async function () {}).constructor)(`"use strict"; ${body}`);
+```
+
+> [!warning]
+> Note that a simple body is not expected to be a `Generator`, thus, you **MAY NOT** use `yield` _within its global scope_.
+> Incidentally, you **MAY** use `yield` in an internally-defined function within the body proper.
+
+Furthermore, a simple body **MUST** consist solely of the following byte values:
+
+- `0x09`, `0x0a`, `0x0c`, `0x0d`, or
+- `0x20` to `0x7e`.
+
+These are the ASCII values of:
+
+- horizontal tab,
+- line feed,
+- form feed,
+- carriage return, and
+- all [printable characters](https://en.wikipedia.org/wiki/ASCII#Printable_characters).
+
+> [!note]
+> As is the case [above](#simple-identifier), whereas JavaScript allows for arbitrary code points to be a part of a function body, we do **NOT**: if they're required, they can be built up from escape sequences.
+
+### Simple Path
+
+A _simple path_ **MUST** be a string consisting of one or more [simple identifiers](#simple-identifier) separated by slashes (`/`).
 
 ## Nomad Syntax
 
@@ -69,25 +157,13 @@ A _Nomad event_ is a `kind:1337` event of the form:
 ```
 
 Note that `1337` is an _enumerated kind_, meaning it is a _regular_ event: relays **MUST** store and return them to clients for an indefinite amount of time.
-
 Furthermore, `kind:1337` events are _non-deletable_ events[^non-deletable]: upon receiving a `kind:5` event targeting a `kind:1337` event, relays **MUST** ignore it and not forward it.
 
 [^non-deletable]: There's a precedent for _non-deletable_ events in [NIP-09's _"Deleting a Deletion"_](https://github.com/nostr-protocol/nips/blob/master/09.md#deleting-a-deletion) section.
 
 A Nomad event's `.tag` field **MAY** contain any number of `n:import` or `n:metadata` tags.
 
-A Nomad event's `.content` field **MUST** consist of valid JavaScript asynchronous function body code (ie. code that may legally be used as the sole argument to the standard-but-indirectly-available [`AsyncFunction` constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncFunction/AsyncFunction)) under _strict mode_ (ie. preceded by `"use strict";`), and most likely **SHOULD** contain at least one `return` statement.
-
-> [!warning]
-> Note that the `.content` field is not expected to be a `Generator`, thus, you **MAY NOT** use `yield` _within its global scope_.
-> Incidentally, you **MAY** use `yield` in a function being _returned_ by the body proper.
-
-Furthermore, a Nomad event's `.content` field **MUST** consist solely of the following byte values:
-
-- `0x09`, `0x0a`, `0x0c`, `0x0d`, or
-- `0x20` to `0x7e`,
-
-We'll call the `.content` of a Nomad event a _Nomad script_ or simply _a Nomad_.
+A Nomad event's `.content` field **MUST** be a [simple body](#simple-body); we'll call the `.content` of a Nomad event a _Nomad script_ or simply _a Nomad_.
 
 ### The `n:import` Tag
 
@@ -105,22 +181,13 @@ An `n:import` tag **MUST** have the following form:
 where:
 
 - **`{identifier}`:**
-  This value **MUST** be a valid JavaScript identifier name, satisfying the following regular expression: `/^[a-zA-Z][_a-zA-Z0-9]*$/`.
-
-  Additionally, this value **MUST NOT** be a JavaScript [reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words) (including strict mode reserved words and reserved words in module code or async function bodies), nor a [future reserved word](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#future_reserved_words) (including future reserved words in older standards), nor [identifiers with special meanings](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers_with_special_meanings), nor the names of [standard built-in objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects).
+  This value **MUST** be a [simple identifier](#simple-identifier).
 - **`{nomad_event_id}`:**
-  This value **MUST** be a valid NOSTR event `.id`, consisting of 64 hexadecimal characters (lowercase).
+  This value **MUST** be a valid NOSTR event `.id`, consisting of 64 lowercase hexadecimal characters.
   This **MUST** be the `.id` of a Nomad event (ie. a `kind:1337` event itself).
 
 - **`{recommended_relay_url}`:**
   This value, if present, **MUST** be a valid NOSTR relay URL.
-
-> [!note]
-> Although JavaScript identifiers may be much more complex, the restriction on the form of `{identifier}` is in place to simplify both the specification proper and the subsequent implementation and auditing procedures.
->
-> Note that, in particular, identifiers as such defined **MAY NOT** start with an underscore (`_`) nor contain any dollar signs (`$`).
->
-> Furthermore, the forbidden identifier names boil down to: `AggregateError`, `Array`, `ArrayBuffer`, `AsyncFunction`, `AsyncGenerator`, `AsyncGeneratorFunction`, `AsyncIterator`, `Atomics`, `BigInt`, `BigInt64Array`, `BigUint64Array`, `Boolean`, `DataView`, `Date`, `Error`, `EvalError`, `FinalizationRegistry`, `Float32Array`, `Float64Array`, `Function`, `Generator`, `GeneratorFunction`, `Infinity`, `Int16Array`, `Int32Array`, `Int8Array`, `InternalError`, `Intl`, `Iterator`, `JSON`, `Map`, `Math`, `NaN`, `Number`, `Object`, `Promise`, `Proxy`, `RangeError`, `ReferenceError`, `Reflect`, `RegExp`, `Set`, `SharedArrayBuffer`, `String`, `Symbol`, `SyntaxError`, `TypeError`, `URIError`, `Uint16Array`, `Uint32Array`, `Uint8Array`, `Uint8ClampedArray`, `WeakMap`, `WeakRef`, `WeakSet`, `abstract`, `arguments`, `as`, `async`, `await`, `boolean`, `break`, `byte`, `case`, `catch`, `char`, `class`, `const`, `continue`, `debugger`, `decodeURI`, `decodeURIComponent`, `default`, `delete`, `do`, `double`, `else`, `encodeURI`, `encodeURIComponent`, `enum`, `escape`, `eval`, `eval`, `export`, `extends`, `false`, `final`, `finally`, `float`, `for`, `from`, `function`, `get`, `globalThis`, `goto`, `if`, `implements`, `import`, `in`, `instanceof`, `int`, `interface`, `isFinite`, `isNaN`, `let`, `long`, `native`, `new`, `null`, `of`, `package`, `parseFloat`, `parseInt`, `private`, `protected`, `public`, `return`, `set`, `short`, `static`, `super`, `switch`, `synchronized`, `this`, `throw`, `throws`, `transient`, `true`, `try`, `typeof`, `undefined`, `unescape`, `var`, `void`, `volatile`, `while`, `with`, and `yield`.
 
 If two instances of this tag have the same `{identifier}`, then they **MUST** have the same `{nomad_event_id}` field, but may differ in their `{recommended_relay_url}` fields.
 On the other hand, the same `{nomad_event_id}` **MAY** appear more than once, even on tags with different `{identifier}` values.
@@ -140,7 +207,7 @@ An `n:metadata` tag **MUST** have the following form:
 where:
 
 - **`{identifier}`:**
-  This value **MUST** adhere to the same conditions as the `{identifier}` field of the [`n:import`](#the-nimport-tag) tag.
+  This value **MUST** be a [simple identifier](#simple-identifier).
 
 - **`{arg[1]}`, `{arg[2]}`, ..., `{arg[n]}`:**
   These **MUST** be zero or more arbitrary strings.
@@ -159,6 +226,41 @@ Future specifications may further define additional metadata `{identifier}` valu
 > [!TIP]
 > In order to avoid future conflicts, it is **RECOMMENDED** that non-standardized `n:metadata` identifiers start with `x-`, so as to make absolutely apparent the fact that they're intended for experimental or non-standard purposes.
 
+#### The `predefined` Metadata Identifier
+
+A `predefined` metadata identifier has the form:
+
+```javascript
+["n:metadata", "predefined". "{predefined_name}"]
+```
+
+where:
+
+- **`{predefined_name}`:**
+  This value **MUST** be a [simple path](#simple-path).
+
+See the [general execution procedure](#general-execution-procedure) for its intended semantics.
+
+#### The `internal` Metadata Identifier
+
+An `internal` metadata identifier has the form (note the absence of arguments):
+
+```javascript
+["n:metadata", "internal"]
+```
+
+See the [general execution procedure](#general-execution-procedure) for its intended semantics.
+
+#### The `external` Metadata Identifier
+
+An `external` metadata identifier has the form (note the absence of arguments):
+
+```javascript
+["n:metadata", "external"]
+```
+
+See the [general execution procedure](#general-execution-procedure) for its intended semantics.
+
 ### Validation
 
 In order for a NOSTR event to be a valid Nomad event, it **MUST** be a valid NOSTR event, and furthermore the following conditions need to be satisfied:
@@ -168,22 +270,112 @@ In order for a NOSTR event to be a valid Nomad event, it **MUST** be a valid NOS
 3. For any two `n:metadata` tags in `.tags` with identical `{identifier}` parts their arguments **MUST** be identical (byte-by-byte equal).
 4. For every `n:import` tag in `.tags`:
     1. Their `{nomad_event_id}` part **MUST** be the `.id` field of a NOSTR event that is itself valid according to these rules.
-    2. Their `{identifier}` part **MUST**:
-        1. Conform to the `/^[a-zA-Z][_a-zA-Z0-9]*$/` regex.
-        2. Be distinct from: `AggregateError`, `Array`, `ArrayBuffer`, `AsyncFunction`, `AsyncGenerator`, `AsyncGeneratorFunction`, `AsyncIterator`, `Atomics`, `BigInt`, `BigInt64Array`, `BigUint64Array`, `Boolean`, `DataView`, `Date`, `Error`, `EvalError`, `FinalizationRegistry`, `Float32Array`, `Float64Array`, `Function`, `Generator`, `GeneratorFunction`, `Infinity`, `Int16Array`, `Int32Array`, `Int8Array`, `InternalError`, `Intl`, `Iterator`, `JSON`, `Map`, `Math`, `NaN`, `Number`, `Object`, `Promise`, `Proxy`, `RangeError`, `ReferenceError`, `Reflect`, `RegExp`, `Set`, `SharedArrayBuffer`, `String`, `Symbol`, `SyntaxError`, `TypeError`, `URIError`, `Uint16Array`, `Uint32Array`, `Uint8Array`, `Uint8ClampedArray`, `WeakMap`, `WeakRef`, `WeakSet`, `abstract`, `arguments`, `as`, `async`, `await`, `boolean`, `break`, `byte`, `case`, `catch`, `char`, `class`, `const`, `continue`, `debugger`, `decodeURI`, `decodeURIComponent`, `default`, `delete`, `do`, `double`, `else`, `encodeURI`, `encodeURIComponent`, `enum`, `escape`, `eval`, `eval`, `export`, `extends`, `false`, `final`, `finally`, `float`, `for`, `from`, `function`, `get`, `globalThis`, `goto`, `if`, `implements`, `import`, `in`, `instanceof`, `int`, `interface`, `isFinite`, `isNaN`, `let`, `long`, `native`, `new`, `null`, `of`, `package`, `parseFloat`, `parseInt`, `private`, `protected`, `public`, `return`, `set`, `short`, `static`, `super`, `switch`, `synchronized`, `this`, `throw`, `throws`, `transient`, `true`, `try`, `typeof`, `undefined`, `unescape`, `var`, `void`, `volatile`, `while`, `with`, and `yield`.
+    2. Their `{identifier}` part **MUST** be a valid [simple identifier](#simple-identifier).
     3. Their `{recommended_relay_url}` part **MUST** be a _syntactically_ valid Secure WebSocket URL.
 5. For every `n:metadata` tag in `.tags`:
-    1. Their `{identifier}` part **MUST**:
-        1. Conform to the `/^[a-zA-Z][_a-zA-Z0-9]*$/` regex.
-        2. Be distinct from: `AggregateError`, `Array`, `ArrayBuffer`, `AsyncFunction`, `AsyncGenerator`, `AsyncGeneratorFunction`, `AsyncIterator`, `Atomics`, `BigInt`, `BigInt64Array`, `BigUint64Array`, `Boolean`, `DataView`, `Date`, `Error`, `EvalError`, `FinalizationRegistry`, `Float32Array`, `Float64Array`, `Function`, `Generator`, `GeneratorFunction`, `Infinity`, `Int16Array`, `Int32Array`, `Int8Array`, `InternalError`, `Intl`, `Iterator`, `JSON`, `Map`, `Math`, `NaN`, `Number`, `Object`, `Promise`, `Proxy`, `RangeError`, `ReferenceError`, `Reflect`, `RegExp`, `Set`, `SharedArrayBuffer`, `String`, `Symbol`, `SyntaxError`, `TypeError`, `URIError`, `Uint16Array`, `Uint32Array`, `Uint8Array`, `Uint8ClampedArray`, `WeakMap`, `WeakRef`, `WeakSet`, `abstract`, `arguments`, `as`, `async`, `await`, `boolean`, `break`, `byte`, `case`, `catch`, `char`, `class`, `const`, `continue`, `debugger`, `decodeURI`, `decodeURIComponent`, `default`, `delete`, `do`, `double`, `else`, `encodeURI`, `encodeURIComponent`, `enum`, `escape`, `eval`, `eval`, `export`, `extends`, `false`, `final`, `finally`, `float`, `for`, `from`, `function`, `get`, `globalThis`, `goto`, `if`, `implements`, `import`, `in`, `instanceof`, `int`, `interface`, `isFinite`, `isNaN`, `let`, `long`, `native`, `new`, `null`, `of`, `package`, `parseFloat`, `parseInt`, `private`, `protected`, `public`, `return`, `set`, `short`, `static`, `super`, `switch`, `synchronized`, `this`, `throw`, `throws`, `transient`, `true`, `try`, `typeof`, `undefined`, `unescape`, `var`, `void`, `volatile`, `while`, `with`, and `yield`.
-    2. The event as a whole **MUST** be valid according to the `{identifier}`'s validation rules.
-6. The `.content` field **MUST**:
-    1. Consist solely of `0x09`, `0x0a`, `0x0c`, `0x0d`, and `0x20` to `0x7e` byte values.
-    2. Consist of a valid JavaScript function body code (ie. it should be possible to pass it as the sole parameter of the [`AsyncFunction` constructor](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncFunction/AsyncFunction)).
+    1. Their `{identifier}` part **MUST** be a valid [simple identifier](#simple-identifier).
+    2. The event as a whole **MUST** be valid according to the validation rules the metadata definition for `{identifier}` establishes.
+6. The `.content` field **MUST** be a valid [simple body](#simple-body).
 
 Note that this is simply a _syntactic_ validation: Nomad events may still be invalid by virtue of their dynamic behavior.
 
 ## Nomad Semantics
+
+Execution of Nomad event with id `id` (a `string`), querying `relays` (a list of `string`s), and parameters `params` (a mapping from `string`s to arbitrary values), comes in two _flavours_:
+
+- **external:** denoted as `executeExternal(id, relays, params)`, it's the main execution form, used when executing a Nomad script on the "outer" scope.
+- **internal:** denoted as `executeInternal(id, relays, params)`, used to execute imported and predefined scripts.
+
+Both of these are very similar, but differ in their handling the resulting value.
+To that end, we define the `toJsonResult` procedure first, that takes an arbitrary `data` parameter and proceeds as follows:
+
+> 1. Let `result` be the result of executing:
+>
+>    ```javascript
+>    JSON.stringify(data);
+>    ```
+>
+> 2. If the previous operation threw, return `FAILURE`.
+> 3. If `result` is `undefined`, return `FAILURE`.
+> 4. Return `result`.
+
+Now, we'll treat each execution procedure in turn.
+
+### _External_ Execution
+
+An `executeExternal(id, relays, params)` call proceeds as follows:
+
+> 1. Query `relays` for the event with id `id`, call the result `e`.
+> 2. If `e` is empty, return `FAILURE`.
+> 3. if `e` is not valid according to the [validation procedure](#validation) above, return `FAILURE`.
+> 4. If `e.tags` does not contain an `n:metadata` tag with an `external` metadata identifier, return `FAILURE`.
+> 5. If `e.tags` contains an `n:metadata` tag with a `predefined` metadata identifier, then:
+>    1. If `id` is not recognized as a [predefined dependency](./appendix-a) by the executing agent, return `FAILURE`.
+>    2. Let `result` be the result of executing the [predefined dependency](./appendix-a).
+>    3. Return the result of calling `toJsonResult(result)`.
+>
+> 6. Let `imports` be a new empty mapping with `string` keys and arbitrary values.
+> 7. For each `n:import` tag in `e.tags`, call it `t`, do:
+>    1. Let `name` be `t[1]` (ie, the `{identifier}` part of an `n:import` tag).
+>    2. If `name` is a key in `params`, return `FAILURE`.
+>    3. Let `iid` be `t[2]` (ie. the `{nomad_event_id}` part of an `n:import` tag).
+>    4. Let `rrelays` be `[t[3]]` (ie. the `{recommended_relay_url}` part of an `n:import` tag), or `[]` if `t[3]` does not exist.
+>    5. Let `value` be the result of calling `executeInternal(iid, [...rrelays, ...relays], {})`.
+>    6. If `value` is `FAILURE`, return `FAILURE`.
+>    7. Assign `value` to `imports[name]`.
+> 8. Let `body` be the result of prepending `'"use strict";'` to `e.content`.
+> 9. Let `importedNames` be the keys of `imports`, and `importedValues` their corresponding values.
+> 10. Let `paramNames` be the keys of `params`, and `paramValues` their corresponding values.
+> 11. Let `result` be the result of executing:
+>
+>     ```javascript
+>     await (new AsyncFunction(
+>       ...importedNames, ...paramNames, body,
+>     ))(
+>       ...importedValues, ...paramValues,
+>     );
+>     ```
+>
+> 12. If the previous operation threw, return `FAILURE`.
+> 13. Return the result of executing `toJsonResult(result)`.
+
+### _Internal_ Execution
+
+An `executeInternal(id, relays, params)` call proceeds very similarly:
+
+> 1. Query `relays` for the event with id `id`, call the result `e`.
+> 2. If `e` is empty, return `FAILURE`.
+> 3. if `e` is not valid according to the [validation procedure](#validation) above, return `FAILURE`.
+> 4. If `e.tags` does not contain an `n:metadata` tag with an `internal` metadata identifier, return `FAILURE`.
+> 5. If `e.tags` contains an `n:metadata` tag with a `predefined` metadata identifier, then:
+>    1. If `id` is not recognized as a [predefined dependency](./appendix-a) by the executing agent, return `FAILURE`.
+>    2. Return the result of executing the [predefined dependency](./appendix-a).
+> 6. Let `imports` be a new empty mapping with `string` keys and arbitrary values.
+> 7. For each `n:import` tag in `e.tags`, call it `t`, do:
+>    1. Let `name` be `t[1]` (ie, the `{identifier}` part of an `n:import` tag).
+>    2. If `name` is a key in `params`, return `FAILURE`.
+>    3. Let `iid` be `t[2]` (ie. the `{nomad_event_id}` part of an `n:import` tag).
+>    4. Let `rrelays` be `[t[3]]` (ie. the `{recommended_relay_url}` part of an `n:import` tag), or `[]` if `t[3]` does not exist.
+>    5. Let `value` be the result of calling `executeInternal(iid, [...rrelays, ...relays], {})`.
+>    6. If `value` is `FAILURE`, return `FAILURE`.
+>    7. Assign `value` to `imports[name]`.
+> 8. Let `body` be the result of prepending `'"use strict";'` to `e.content`.
+> 9. Let `importedNames` be the keys of `imports`, and `importedValues` their corresponding values.
+> 10. Let `paramNames` be the keys of `params`, and `paramValues` their corresponding values.
+> 11. Let `result` be the result of executing:
+>
+>     ```javascript
+>     await (new AsyncFunction(
+>       ...importedNames, ...paramNames, body,
+>     ))(
+>       ...importedValues, ...paramValues,
+>     )
+>     ```
+>
+> 12. If the previous operation threw, return `FAILURE`.
+> 13. Return `result`.
+
+---
 
 Conforming agents **MAY** _execute_ a Nomad event.
 This is done by spinning up a **Nomad Virtual Machine**, and submitting the Nomad event in question for execution, taking `n:import` tags into account.
@@ -252,14 +444,13 @@ By mean of example, consider this Nomad event:
 ```javascript
 {
   "id": "0101010101010101010101010101010101010101010101010101010101010101",
-  "pubkey": ...,
-  "created_at": ...,
+  ...,
   "kind": 1337,
   "tags": [
-    ["n:metadata", "internal"],
+    ["n:metadata", "internal"]
   ],
   "content": "return { hello: (x) => `Hello ${x}!!`, goodbye: (x) => `Goodbye ${x}!!` };",
-  "sig": ...,
+  ...,
 }
 ```
 
@@ -268,15 +459,14 @@ Now, let's use it as a import in a new Nomad event:
 ```javascript
 {
   "id": "0202020202020202020202020202020202020202020202020202020202020202",
-  "pubkey": ...,
-  "created_at": ...,
+  ...,
   "kind": 1337,
   "tags": [
     ["n:import", "say", "0101010101010101010101010101010101010101010101010101010101010101"],
-    ["n:metadata", "external"],
+    ["n:metadata", "external"]
   ],
-  "content": "return `${say.hello('foo')}...${say.goodbye('bar')}`;",
-  "sig": ...,
+  "content": "let sayHello = say.hello('foo'); let sayGoodbye = say.goodbye('bar'); return `${sayHello}...${sayGoodbye}`;",
+  ...,
 }
 ```
 
@@ -297,15 +487,14 @@ By way of example, consider the following Nomad event (nb. the `x-with-current-t
 ```javascript
 {
   "id": "0303030303030303030303030303030303030303030303030303030303030303",
-  "pubkey": ...,
-  "created_at": ...,
+  ...,
   "kind": 1337,
   "tags": [
     ["n:metadata", "x-with-current-time"],
-    ["n:metadata", "external"],
+    ["n:metadata", "external"]
   ],
   "content": "return currentTime.toString();",
-  "sig": ...,
+  ...,
 }
 ```
 
