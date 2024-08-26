@@ -81,7 +81,7 @@
     "@yookue/typedoc-plugin-raw-content": "^0.2.1",
     "esbuild": "^0.23.1",
     "esbuild-plugin-umd-wrapper": "^3.0.0",
-    "eslint": "^9.9.0",
+    "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-array-func": "^5.0.2",
