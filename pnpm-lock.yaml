@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@noble/curves':
-        specifier: ^1.5.0
-        version: 1.5.0
+        specifier: ^1.7.0
+        version: 1.7.0
       '@noble/hashes':
         specifier: ^1.4.0
         version: 1.4.0
@@ -457,10 +457,6 @@ packages:
     resolution: {integrity: sha512-fuXtbiP5GWIn8Fz+LWoOMVf/Jxm+aajZYkhi6CuEm4SxymFM+eUWzbO9qXT+L0iCkL5+KGYMCSGxo686H19S1g==, tarball: https://registry.npmjs.org/@eslint/js/-/js-9.10.0.tgz}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@eslint/js@9.9.0':
-    resolution: {integrity: sha512-hhetes6ZHP3BlXLxmd8K2SNgkhNSi+UcecbnwWKwpP7kyi/uC75DJ1lOOBO3xrC4jyojtGE3YxKZPHfk4yrgug==, tarball: https://registry.npmjs.org/@eslint/js/-/js-9.9.0.tgz}
-    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
-
   '@eslint/object-schema@2.1.4':
     resolution: {integrity: sha512-BsWiH1yFGjXXS2yvrf5LyuoSIIbPrGUWob917o+BTKuZ7qJdxX8aJLRxs1fS9n6r7vESrq1OUqb68dANcFXuQQ==, tarball: https://registry.npmjs.org/@eslint/object-schema/-/object-schema-2.1.4.tgz}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -579,12 +575,17 @@ packages:
   '@microsoft/tsdoc@0.15.0':
     resolution: {integrity: sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==, tarball: https://registry.npmjs.org/@microsoft/tsdoc/-/tsdoc-0.15.0.tgz}
 
-  '@noble/curves@1.5.0':
-    resolution: {integrity: sha512-J5EKamIHnKPyClwVrzmaf5wSdQXgdHcPZIZLu3bwnbeCx8/7NPK5q2ZBWF+5FvYGByjiQQsJYX6jfgB2wDPn3A==, tarball: https://registry.npmjs.org/@noble/curves/-/curves-1.5.0.tgz}
+  '@noble/curves@1.7.0':
+    resolution: {integrity: sha512-UTMhXK9SeDhFJVrHeUJ5uZlI6ajXg10O6Ddocf9S6GjbSBVZsJo88HzKwXznNfGpMTRDyJkqMjNDPYgf0qFWnw==, tarball: https://registry.npmjs.org/@noble/curves/-/curves-1.7.0.tgz}
+    engines: {node: ^14.21.3 || >=16}
 
   '@noble/hashes@1.4.0':
     resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==, tarball: https://registry.npmjs.org/@noble/hashes/-/hashes-1.4.0.tgz}
     engines: {node: '>= 16'}
+
+  '@noble/hashes@1.6.0':
+    resolution: {integrity: sha512-YUULf0Uk4/mAA89w+k3+yUYh6NrEvxZa5T6SY3wlMvE2chHkxFUUIDI8/XW1QSC357iA5pSnqt7XEhvFOqmDyQ==, tarball: https://registry.npmjs.org/@noble/hashes/-/hashes-1.6.0.tgz}
+    engines: {node: ^14.21.3 || >=16}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==, tarball: https://registry.npmjs.org/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz}
@@ -2844,8 +2845,6 @@ snapshots:
 
   '@eslint/js@9.10.0': {}
 
-  '@eslint/js@9.9.0': {}
-
   '@eslint/object-schema@2.1.4': {}
 
   '@eslint/plugin-kit@0.1.0':
@@ -3063,11 +3062,13 @@ snapshots:
 
   '@microsoft/tsdoc@0.15.0': {}
 
-  '@noble/curves@1.5.0':
+  '@noble/curves@1.7.0':
     dependencies:
-      '@noble/hashes': 1.4.0
+      '@noble/hashes': 1.6.0
 
   '@noble/hashes@1.4.0': {}
+
+  '@noble/hashes@1.6.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
